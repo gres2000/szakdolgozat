@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/destination_tasks"
+        android:title="Tasks"
+        android:icon="@drawable/left_side_icon"/>
+    <item
+        android:id="@+id/destination_home"
+        android:title="Home"
+        android:icon="@drawable/mid_icon"/>
+    <item
+        android:id="@+id/destination_calendar"
+        android:title="Calendar"
+        android:icon="@drawable/right_side_icon"/>
+
+</menu>

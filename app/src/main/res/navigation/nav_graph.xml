@@ -3,17 +3,17 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/nav_graph"
-    app:startDestination="@id/leftFragment">
+    app:startDestination="@id/leftFragment_id">
     <fragment
-        android:id="@+id/leftFragment"
+        android:id="@+id/leftFragment_id"
         android:name="com.example.myapplication.LeftFragment"
         android:label="LeftFragment" />
     <fragment
-        android:id="@+id/midFragment"
+        android:id="@+id/midFragment_id"
         android:name="com.example.myapplication.MidFragment"
         android:label="MidFragment" />
     <fragment
-        android:id="@+id/rightFragment"
+        android:id="@+id/rightFragment_id"
         android:name="com.example.myapplication.RightFragment"
         android:label="RightFragment" />
     <activity
