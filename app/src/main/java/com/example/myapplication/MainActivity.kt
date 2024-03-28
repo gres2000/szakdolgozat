@@ -1,11 +1,13 @@
 package com.example.myapplication
 
 import android.os.Bundle
-import androidx.activity.OnBackPressedDispatcher
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.navigation.NavController
 import com.example.myapplication.databinding.ActivityMainBinding
+import com.example.myapplication.fragments.LeftFragment
+import com.example.myapplication.fragments.MidFragment
+import com.example.myapplication.fragments.RightFragment
 import com.google.android.material.bottomnavigation.BottomNavigationView
 
 class MainActivity : AppCompatActivity() {
@@ -25,7 +27,6 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
         setupFragments()
         setupBottomNavigationView()
-
     }
 
     private fun setupBottomNavigationView() {
