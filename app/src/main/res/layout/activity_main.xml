@@ -12,8 +12,7 @@
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNavigationView"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="4dp"
+        android:layout_height="75dp"
         android:background="@color/bottom_nav_background"
         app:itemActiveIndicatorStyle="@style/NavigationBarSelectedItem"
         app:itemIconSize="35dp"
@@ -21,5 +20,14 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:menu="@menu/bottom_nav_menu"
         tools:layout_editor_absoluteX="-16dp" />
+
+    <FrameLayout
+        android:id="@+id/main_layout"
+        android:layout_width="409dp"
+        android:layout_height="649dp"
+        tools:layout_editor_absoluteX="1dp"
+        tools:layout_editor_absoluteY="1dp">
+
+    </FrameLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

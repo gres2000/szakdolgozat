@@ -10,4 +10,7 @@
 
     <color name="blue">#384CFF</color>
     <color  name="pink">#FF5BFF</color>
+
+    <color name="transparent">#00FFFFFF</color>
+
 </resources>

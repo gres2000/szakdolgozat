@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/action_previous"
+        android:icon="@drawable/arrow_left"
+        android:title="Previous" />
+    <item
+        android:id="@+id/action_next"
+        android:icon="@drawable/arrow_right"
+        android:title="Next" />
+
+</menu>

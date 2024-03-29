@@ -1,9 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/leftFragment_id"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/black">
+
+    <FrameLayout
+        android:id="@+id/view_pager_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_constraintBottom_toTopOf="@id/tasks_navbar">
+
+    </FrameLayout>
+
+    <FrameLayout
+        android:id="@+id/menu_pushup_box"
+        android:layout_width="match_parent"
+        android:layout_height="75dp"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+    </FrameLayout>
+
+    <androidx.viewpager2.widget.ViewPager2
+        android:id="@+id/viewPagerId"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@id/tasks_navbar">
+
+    </androidx.viewpager2.widget.ViewPager2>
+
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/tasks_navbar"
+        android:layout_width="match_parent"
+        android:layout_height="45dp"
+        android:layout_alignParentBottom="true"
+        app:menu="@menu/tasks_fragment_navbar"
+        app:labelVisibilityMode="unlabeled"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/menu_pushup_box"/>
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>
