@@ -27,14 +27,8 @@ class LeftFragment : Fragment() {
         _binding = LeftFragmentBinding.inflate(inflater, container, false)
         return binding.root
     }
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-    }
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
         viewPager = view.findViewById(R.id.viewPagerId)
         bottomNavigationView = view.findViewById(R.id.tasks_navbar)
         viewPager.isSaveEnabled = false;
@@ -42,8 +36,7 @@ class LeftFragment : Fragment() {
 
         pagerAdapter = DayPagerAdapter(this)
         viewPager.adapter = pagerAdapter
-
-
+        viewPager.offscreenPageLimit = pagerAdapter.itemCount - 1
 
         bottomNavigationView.setOnItemSelectedListener { menuItem ->
             when (menuItem.itemId) {
@@ -62,11 +55,7 @@ class LeftFragment : Fragment() {
                 else -> false
             }
         }
-
-
     }
-
-
 
     override fun onDestroyView() {
         super.onDestroyView()
