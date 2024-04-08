@@ -8,14 +8,6 @@
     android:background="@color/bottom_nav_background">
 
     <FrameLayout
-        android:id="@+id/view_pager_container"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        app:layout_constraintBottom_toTopOf="@id/tasks_navbar">
-
-    </FrameLayout>
-
-    <FrameLayout
         android:id="@+id/menu_pushup_box"
         android:layout_width="match_parent"
         android:layout_height="75dp"
@@ -26,8 +18,12 @@
     <androidx.viewpager2.widget.ViewPager2
         android:id="@+id/viewPagerId"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_above="@id/tasks_navbar">
+        android:layout_height="620dp"
+        android:layout_above="@id/tasks_navbar"
+        app:layout_constraintBottom_toTopOf="@id/tasks_navbar"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="1.0"
+        tools:layout_editor_absoluteX="0dp">
 
     </androidx.viewpager2.widget.ViewPager2>
 
@@ -36,6 +32,8 @@
         android:layout_width="match_parent"
         android:layout_height="45dp"
         android:layout_alignParentBottom="true"
+        app:itemActiveIndicatorStyle="@color/transparent"
+        app:itemIconTint="@color/black"
         app:menu="@menu/tasks_fragment_navbar"
         app:labelVisibilityMode="unlabeled"
         app:layout_constraintBottom_toBottomOf="parent"

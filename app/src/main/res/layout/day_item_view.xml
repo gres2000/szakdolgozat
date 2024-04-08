@@ -2,34 +2,54 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/taskLinearLayoutId"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:background="@drawable/task_fragment_background"
+    android:layout_height="70dp"
     android:layout_margin="2dp"
+    android:layout_marginTop="5dp"
     android:layout_marginBottom="5dp"
-    android:layout_marginTop="5dp">
+    android:background="@drawable/task_fragment_background"
+    android:orientation="horizontal">
 
 
-    <Button
-        android:id="@+id/doneButton"
+    <LinearLayout
         android:layout_width="250dp"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"
-        android:text="@string/task_button_text" />
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/textViewTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="8dp"
+            android:layout_marginStart="5dp"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:text="@string/test_capital_letter"/>
+
+        <TextView
+            android:id="@+id/textViewDescription"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="15dp"
+            android:textSize="14sp"
+            android:text="@string/text_lower_case"/>
+
+    </LinearLayout>
 
     <TextView
-        android:id="@+id/textViewTitle"
-        android:layout_width="match_parent"
+        android:layout_gravity="center"
+        android:id="@+id/textViewTime"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        android:padding="8dp"/>
+        android:textSize="30sp"
+        android:text="@string/test"/>
 
-    <TextView
-        android:id="@+id/textViewDescription"
+    <CheckBox
+        android:id="@+id/checkBox"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textSize="14sp"
-        android:padding="8dp"/>
+        android:layout_height="match_parent"
+        android:scaleX="1.70"
+        android:scaleY="1.70"/>
+<!--        android:button="@drawable/tick_mark_radio_button"
+custom view currently not being used due to issues with not showing up properly-->
 
 </LinearLayout>
