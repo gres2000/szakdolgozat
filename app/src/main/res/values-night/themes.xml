@@ -4,4 +4,7 @@
         <!-- Customize your dark theme here. -->
         <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
     </style>
+    <color name="cyan">#0b3259</color>
+    <color name="black">#FFFFFF</color>
+    <color name="white">#000000</color>
 </resources>

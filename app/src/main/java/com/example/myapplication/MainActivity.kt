@@ -33,15 +33,20 @@ class MainActivity : AppCompatActivity() {
         setupFragments()
         setupBottomNavigationView()
 
-        viewModel.someEvent.observe(this, Observer { eventData ->
-            // React to changes in the LiveData
-            // eventData is the value emitted by the LiveData
-            // Update UI or perform any necessary action
+        viewModel.someEvent.observe(this) { eventData ->
             val transaction = fragmentManager.beginTransaction()
             transaction.replace(R.id.constraint_container, DetailFragment(eventData))
             transaction.addToBackStack(null)
             transaction.commit()
-        })
+        }
+
+        viewModel.dayId.observe(this) { eventData ->
+            if (viewModel.taskReady) {
+                val transaction = fragmentManager.beginTransaction()
+                transaction.replace(R.id.constraint_container, fragmentMap["tasks"]!!)
+                transaction.commit()
+            }
+        }
 
     }
 
@@ -84,4 +89,5 @@ class MainActivity : AppCompatActivity() {
         fragmentMap["home"] = homeFragment
         fragmentMap["calendar"] = calendarFragment
     }
+
 }
