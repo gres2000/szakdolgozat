@@ -14,4 +14,6 @@
     <string name="save">Save</string>
     <string name="title">Title</string>
     <string name="description">Description</string>
+    <string name="calendars_title">Calendars</string>
+    <string name="add_new_task_button_description">Add new task button</string>
 </resources>

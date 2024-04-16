@@ -7,13 +7,13 @@
     android:layout_height="match_parent"
     android:background="@color/cyan">
 
-    <FrameLayout
+    <Space
         android:id="@+id/menu_pushup_box"
         android:layout_width="match_parent"
         android:layout_height="75dp"
         app:layout_constraintBottom_toBottomOf="parent">
 
-    </FrameLayout>
+    </Space>
 
     <com.google.android.material.tabs.TabLayout
         android:id="@+id/tabLayout"

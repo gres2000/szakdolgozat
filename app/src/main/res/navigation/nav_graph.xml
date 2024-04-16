@@ -6,15 +6,15 @@
     app:startDestination="@id/leftFragment_id">
     <fragment
         android:id="@+id/leftFragment_id"
-        android:name="com.example.myapplication.fragments.LeftFragment"
+        android:name="com.example.myapplication.mainFragments.LeftFragment"
         android:label="LeftFragment" />
     <fragment
         android:id="@+id/midFragment_id"
-        android:name="com.example.myapplication.fragments.MidFragment"
+        android:name="com.example.myapplication.mainFragments.MidFragment"
         android:label="MidFragment" />
     <fragment
         android:id="@+id/rightFragment_id"
-        android:name="com.example.myapplication.fragments.RightFragment"
+        android:name="com.example.myapplication.mainFragments.RightFragment"
         android:label="RightFragment" />
     <activity
         android:id="@+id/mainActivity"

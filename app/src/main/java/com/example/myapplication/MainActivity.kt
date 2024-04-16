@@ -1,20 +1,21 @@
 package com.example.myapplication
 
 import android.os.Bundle
-import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentActivity
-import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
-import androidx.navigation.NavController
 import com.example.myapplication.databinding.ActivityMainBinding
-import com.example.myapplication.fragments.LeftFragment
-import com.example.myapplication.fragments.MidFragment
-import com.example.myapplication.fragments.RightFragment
+import com.example.myapplication.mainFragments.LeftFragment
+import com.example.myapplication.mainFragments.MidFragment
+import com.example.myapplication.mainFragments.RightFragment
 import com.example.myapplication.tasks.DetailFragment
 import com.example.myapplication.viewModel.MainViewModel
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 
 class MainActivity : AppCompatActivity() {
@@ -81,13 +82,21 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupFragments() {
-        val tasksFragment = LeftFragment()
-        val homeFragment = MidFragment()
-        val calendarFragment = RightFragment()
+        CoroutineScope(Dispatchers.Default).launch {
+            val tasksFragmentDeferred = async { LeftFragment() }
+            val calendarFragmentDeferred = async { RightFragment() }
+            val homeFragmentDeferred = async { MidFragment() }
 
-        fragmentMap["tasks"] = tasksFragment
-        fragmentMap["home"] = homeFragment
-        fragmentMap["calendar"] = calendarFragment
+            val tasksFragment = tasksFragmentDeferred.await()
+            val calendarFragment = calendarFragmentDeferred.await()
+            val homeFragment = homeFragmentDeferred.await()
+
+            withContext(Dispatchers.Main) {
+                fragmentMap["tasks"] = tasksFragment
+                fragmentMap["calendar"] = calendarFragment
+                fragmentMap["home"] = homeFragment
+            }
+        }
     }
 
 }

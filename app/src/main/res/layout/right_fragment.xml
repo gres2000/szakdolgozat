@@ -3,6 +3,30 @@
     android:id="@+id/rightFragment_id"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/pink">
+    android:background="@color/cyan">
 
+    <LinearLayout
+        android:id="@+id/calendarListLayout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <Space
+            android:layout_width="match_parent"
+            android:layout_height="25dp" />
+
+        <TextView
+            android:id="@+id/textViewCalendarTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/calendars_title"
+            android:gravity="center"
+            android:textSize="40sp"
+            android:textColor="@color/black"/>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/calendarsRecyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"/>
+    </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

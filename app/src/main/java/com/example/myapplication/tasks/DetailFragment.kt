@@ -48,8 +48,7 @@ class DetailFragment(private val task: Task) : Fragment() {
                 viewModel.taskId,
                 view.findViewById<EditText>(R.id.editTextTitle).text.toString(),
                 view.findViewById<EditText>(R.id.editTextDescription).text.toString(),
-                view.findViewById<TimePicker>(R.id.timePicker).hour.toString() + ":" +
-                        view.findViewById<TimePicker>(R.id.timePicker).minute.toString(),
+                "${view.findViewById<TimePicker>(R.id.timePicker).hour}:${view.findViewById<TimePicker>(R.id.timePicker).minute}",
                 false
             )
             viewModel.taskStorage = task
