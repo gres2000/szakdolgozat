@@ -2,6 +2,11 @@ package com.example.myapplication.viewModel
 
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
+import androidx.lifecycle.createSavedStateHandle
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.myapplication.tasks.Task
 
 class MainViewModel : ViewModel() {
@@ -14,7 +19,7 @@ class MainViewModel : ViewModel() {
     val dayId
         get() = _dayId
     val taskReady
-            get() = _taskReady
+        get() = _taskReady
     val someEvent
         get() = _someEvent
     val isNewTask
@@ -22,7 +27,7 @@ class MainViewModel : ViewModel() {
     private val _weeklyTasksList: List<MutableList<Task>> = List(7) { mutableListOf() }
     val weeklyTasksList
         get() = _weeklyTasksList
-    init {
+        init {
         for (i in 0 until 7) {
             val task1 = Task(0, "Munka", "leírás", "16:02", false)
             val task2 = Task(1, "Edzés", "leírás", "18:02", false)
@@ -34,16 +39,24 @@ class MainViewModel : ViewModel() {
             }
         }
     }
+
     fun updateEvent(eventData: Task) {
         _someEvent.value = eventData
     }
+
     fun toggleNewTask() {
         _isNewTask = !_isNewTask
     }
+
     fun setNewTaskFalse() {
         _isNewTask = false
     }
+
     fun toggleTaskReady() {
         _taskReady = !_taskReady
+    }
+
+    fun authenticateUser() {
+        TODO("Not yet implemented")
     }
 }

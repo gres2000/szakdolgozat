@@ -30,8 +30,7 @@
         android:padding="8dp"
         android:text="@string/test"
         android:textSize="20sp"
-        android:textStyle="bold"
-        android:background="draw"/>
+        android:textStyle="bold"/>
 
 
 </LinearLayout>

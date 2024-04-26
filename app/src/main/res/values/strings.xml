@@ -6,7 +6,7 @@
     <string name="second_fragment_label">Second Fragment</string>
 
     <string name="hello_blank_fragment">Hello blank fragment</string>
-    <string name="task_button_text">Kész</string>
+    <string name="task_button_text">Done</string>
     <string name="test_capital_letter">TEST_CAPITAL_LETTER</string>
     <string name="text_lower_case">text_lower_case</string>
     <string name="test">TEST</string>
@@ -16,4 +16,11 @@
     <string name="description">Description</string>
     <string name="calendars_title">Calendars</string>
     <string name="add_new_task_button_description">Add new task button</string>
+    <string name="log_in">Log in</string>
+    <string name="password_hint">Password</string>
+    <string name="email_hint">Email</string>
+    <string name="login_button">Login</string>
+    <string name="register_button">Register</string>
+    <string name="confirm_password_hint">Confirm Password</string>
+    <string name="user_name">User Name</string>
 </resources>
