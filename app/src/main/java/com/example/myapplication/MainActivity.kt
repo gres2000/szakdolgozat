@@ -20,6 +20,7 @@ import kotlinx.coroutines.withContext
 
 class MainActivity : AppCompatActivity() {
 
+    private lateinit var bottomNavView: BottomNavigationView
     private lateinit var binding: ActivityMainBinding
     private val fragmentManager = supportFragmentManager
     private val fragmentMap = mutableMapOf<String, Fragment>()
@@ -31,6 +32,7 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         viewModel = ViewModelProvider(this)[MainViewModel::class.java]
+        bottomNavView  = findViewById(R.id.bottomNavigationView)
         setupFragments()
         setupBottomNavigationView()
 
@@ -48,12 +50,18 @@ class MainActivity : AppCompatActivity() {
                 transaction.commit()
             }
         }
+        bottomNavView.isSaveEnabled = false
+
+        bottomNavView.selectedItemId = R.id.destination_home
+        fragmentManager.beginTransaction()
+            .replace(R.id.constraint_container, fragmentMap["home"]!!)
+            .commit()
 
     }
 
+
+
     private fun setupBottomNavigationView() {
-        val bottomNavView  = findViewById<BottomNavigationView>(R.id.bottomNavigationView)
-        bottomNavView.menu.findItem(R.id.destination_home).isChecked = true
 
 
         bottomNavView.setOnItemSelectedListener { menuItem ->
@@ -79,22 +87,22 @@ class MainActivity : AppCompatActivity() {
                 else -> false
             }
         }
+
     }
 
     private fun setupFragments() {
+        val homeFragment = MidFragment()
+        fragmentMap["home"] = homeFragment
         CoroutineScope(Dispatchers.Default).launch {
             val tasksFragmentDeferred = async { LeftFragment() }
             val calendarFragmentDeferred = async { RightFragment() }
-            val homeFragmentDeferred = async { MidFragment() }
 
             val tasksFragment = tasksFragmentDeferred.await()
             val calendarFragment = calendarFragmentDeferred.await()
-            val homeFragment = homeFragmentDeferred.await()
 
             withContext(Dispatchers.Main) {
                 fragmentMap["tasks"] = tasksFragment
                 fragmentMap["calendar"] = calendarFragment
-                fragmentMap["home"] = homeFragment
             }
         }
     }

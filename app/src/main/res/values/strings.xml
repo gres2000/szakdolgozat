@@ -23,4 +23,5 @@
     <string name="register_button">Register</string>
     <string name="confirm_password_hint">Confirm Password</string>
     <string name="user_name">User Name</string>
+    <string name="log_out">Log out</string>
 </resources>

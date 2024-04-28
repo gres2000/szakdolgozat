@@ -2,11 +2,6 @@ package com.example.myapplication.viewModel
 
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
-import androidx.lifecycle.createSavedStateHandle
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.myapplication.tasks.Task
 
 class MainViewModel : ViewModel() {
@@ -57,6 +52,6 @@ class MainViewModel : ViewModel() {
     }
 
     fun authenticateUser() {
-        TODO("Not yet implemented")
+//        TODO("Not yet implemented")
     }
 }
