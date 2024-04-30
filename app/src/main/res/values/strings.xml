@@ -24,4 +24,10 @@
     <string name="confirm_password_hint">Confirm Password</string>
     <string name="user_name">User Name</string>
     <string name="log_out">Log out</string>
+    <string name="not_logged_in">Not logged in</string>
+    <string name="delete_button_description">delete calendar</string>
+    <string name="are_you_sure_you_want_to_delete_this_item">Are you sure you want to delete this item?</string>
+    <string name="delete">Delete</string>
+
+
 </resources>

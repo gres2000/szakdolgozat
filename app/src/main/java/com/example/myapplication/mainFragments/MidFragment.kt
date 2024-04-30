@@ -7,6 +7,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.TextView
 import com.example.myapplication.R
 import com.example.myapplication.authentication.LoginActivity
 import com.example.myapplication.authentication.UserPreferences
@@ -16,6 +17,7 @@ import com.google.firebase.auth.FirebaseAuth
 class MidFragment : Fragment() {
     private var _binding: MidFragmentBinding? = null
     private lateinit var logoutButton: Button
+    private lateinit var currentUserTextView: TextView
 
     private val binding get() = _binding!!
 
@@ -32,6 +34,13 @@ class MidFragment : Fragment() {
         val auth = FirebaseAuth.getInstance()
 
         logoutButton = view.findViewById(R.id.buttonLogOut)
+        currentUserTextView = view.findViewById(R.id.textViewCurrentUser)
+        if (auth.currentUser != null) {
+            currentUserTextView.text = auth.currentUser!!.email
+        }
+        else {
+            currentUserTextView.text = getString(R.string.not_logged_in)
+        }
 
         logoutButton.setOnClickListener {
             auth.signOut()

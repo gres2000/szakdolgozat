@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import com.example.myapplication.databinding.ActivityMainBinding
 import com.example.myapplication.mainFragments.LeftFragment
 import com.example.myapplication.mainFragments.MidFragment
@@ -15,6 +16,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 
 
@@ -32,6 +34,10 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         viewModel = ViewModelProvider(this)[MainViewModel::class.java]
+
+        lifecycleScope.launch {
+            viewModel.authenticateUser()
+        }
         bottomNavView  = findViewById(R.id.bottomNavigationView)
         setupFragments()
         setupBottomNavigationView()

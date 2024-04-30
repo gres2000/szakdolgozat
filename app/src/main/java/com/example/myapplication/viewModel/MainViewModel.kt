@@ -1,16 +1,44 @@
 package com.example.myapplication.viewModel
 
+import android.content.ContentValues.TAG
+import android.content.Context
+import android.util.Log
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.room.Room
+import com.example.myapplication.authentication.User
+import com.example.myapplication.calendar.Calendar
+import com.example.myapplication.local_database_room.AppDatabase
+import com.example.myapplication.local_database_room.CalendarData
+import com.example.myapplication.local_database_room.EventData
+import com.example.myapplication.local_database_room.UserData
 import com.example.myapplication.tasks.Task
+import com.google.common.reflect.TypeToken
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.ktx.Firebase
+import com.google.gson.Gson
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.tasks.await
 
 class MainViewModel : ViewModel() {
+    private val _weeklyTasksList: List<MutableList<Task>> = List(7) { mutableListOf() }
+    private val firestoreDB = FirebaseFirestore.getInstance()
+    private val calendarsCollection = firestoreDB.collection("calendars")
     private val _someEvent = MutableLiveData<Task>()
     private var _taskReady = false
     private val _dayId = MutableLiveData<Int>()
     var taskId: Int = -1
     private var _isNewTask = false
     lateinit var taskStorage: Task
+    var auth = Firebase.auth
+    var loggedInUser: User? = null
+    val loggedInDeferred = CompletableDeferred<User?>()
+
+    init {
+
+    }
     val dayId
         get() = _dayId
     val taskReady
@@ -19,10 +47,9 @@ class MainViewModel : ViewModel() {
         get() = _someEvent
     val isNewTask
         get() = _isNewTask
-    private val _weeklyTasksList: List<MutableList<Task>> = List(7) { mutableListOf() }
     val weeklyTasksList
         get() = _weeklyTasksList
-        init {
+    init {
         for (i in 0 until 7) {
             val task1 = Task(0, "Munka", "leírás", "16:02", false)
             val task2 = Task(1, "Edzés", "leírás", "18:02", false)
@@ -52,6 +79,131 @@ class MainViewModel : ViewModel() {
     }
 
     fun authenticateUser() {
-//        TODO("Not yet implemented")
+        val docRef = firestoreDB.collection("registered_users").document(Firebase.auth.currentUser?.email.toString())
+        docRef.get().addOnSuccessListener { documentSnapshot ->
+            val username = documentSnapshot.getString("username") ?: ""
+            val emailAddress = documentSnapshot.getString("email") ?: ""
+            loggedInDeferred.complete(User(username, emailAddress))
+            Log.d("authenticateUser", "successfully fetched user data ")
+        }.addOnFailureListener { exception ->
+            // Log the error
+            Log.e("authenticateUser", "Error fetching user data: ", exception)
+            loggedInDeferred.complete(null)
+        }
     }
+
+    suspend fun getAllCalendars(context: Context): MutableList<Calendar> {
+        val roomDB = Room.databaseBuilder(
+            context,
+            AppDatabase::class.java, "database-name"
+        ).build()
+
+        val calendarDao = roomDB.calendarItemDao()
+
+        authenticateUser()
+
+        loggedInUser = loggedInDeferred.await()
+
+        val loggedInUserJson = Gson().toJson(UserData(null, loggedInUser!!.username, loggedInUser!!.emailAddress)).toString()
+
+        val calendarList = mutableListOf<Calendar>()
+
+        val calendarDataList = calendarDao.getAllCalendarsForUser(loggedInUserJson, loggedInUser!!.emailAddress)
+//        val calendarDataList = calendarDao.getAllCalendars()
+        val tempcales = calendarDao.getAllCalendars()
+        val k = tempcales.size
+        if (calendarDataList.isNotEmpty()) {
+
+            for (calendarData in calendarDataList) {
+                val sharedPeopleData = calendarDao.getSharedPeopleForCalendar(calendarData.id.toString())
+
+                val sharedPeopleList = mutableListOf<User>()
+                for (userData in sharedPeopleData) {
+                    sharedPeopleList.add(User(userData.username, userData.emailAddress))
+                }
+
+                calendarList.add(
+                    Calendar(
+                        name = calendarData.name,
+                        sharedPeopleNumber = calendarData.sharedPeopleNumber,
+                        sharedPeople = sharedPeopleList,
+                        owner = User(calendarData.owner.username, calendarData.owner.emailAddress),
+                        events = mutableListOf(), // Populate events as needed
+                        lastUpdated = calendarData.lastUpdated
+                    )
+                )
+            }
+        }
+
+
+        return calendarList
+    }
+    suspend fun addCalendar(context: Context, calendar: Calendar) {
+        val roomDB = Room.databaseBuilder(
+            context,
+            AppDatabase::class.java, "database-name"
+        ).build()
+
+        val calendarDao = roomDB.calendarItemDao()
+        val sharedPeopleDao = roomDB.sharedUsersDao() // Assuming you have a DAO for shared people
+
+        for (user in calendar.sharedPeople) {
+            val userData = UserData(calendar.name, user.username, user.emailAddress)
+            sharedPeopleDao.insertUser(userData)
+        }
+
+        // Create CalendarData object
+        val newCalendar = CalendarData(
+            name = calendar.name,
+            sharedPeopleNumber = calendar.sharedPeopleNumber,
+            owner = UserData(null, calendar.owner.username, calendar.owner.emailAddress),
+            eventList = calendar.events.map { event ->
+                EventData(
+                    title = event.title,
+                    description = event.description,
+                    startTime = event.startTime,
+                    endTime = event.endTime,
+                    location = event.location
+                )
+            }.toMutableList(),
+            lastUpdated = calendar.lastUpdated
+        )
+        calendarDao.insertCalendarItem(newCalendar)
+    }
+
+    suspend fun saveAllCalendarsToFirestoreDB(context: Context, userId: String) {
+        val firestoreDB = FirebaseFirestore.getInstance()
+        val calendarsCollection = firestoreDB.collection("calendars")
+        try {
+            val calendars = getAllCalendars(context)
+            loggedInUser = loggedInDeferred.await()
+            val loggedInUserEmail = loggedInUser?.emailAddress
+
+            if (loggedInUserEmail != null) {
+
+                val userDocument =
+                    calendarsCollection.document(loggedInUserEmail).get().await()
+
+                if (userDocument.exists()) {
+                    userDocument.reference.update("calendars", calendars).await()
+                } else {
+                    val userData = hashMapOf(
+                        "userId" to userId,
+                        "email" to loggedInUserEmail,
+                        "calendars" to calendars
+                    )
+                    calendarsCollection.document(loggedInUserEmail).set(userData)
+                        .await()
+                }
+            }
+
+            // Log success message
+            Log.d(TAG, "Calendars saved to Firestore for user: $loggedInUserEmail")
+        } catch (e: Exception) {
+            // Log error message
+            Log.e(TAG, "Error saving calendars to Firestore: $e")
+        }
+    }
+
+
 }

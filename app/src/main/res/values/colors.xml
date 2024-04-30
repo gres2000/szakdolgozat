@@ -12,5 +12,6 @@
     <color  name="pink">#FF5BFF</color>
 
     <color name="transparent">#00FFFFFF</color>
+    <color name="red">#fc0303</color>
 
 </resources>

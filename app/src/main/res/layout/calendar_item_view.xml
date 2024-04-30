@@ -17,12 +17,13 @@
         android:layout_marginStart="5dp"
         android:gravity="center"
         android:padding="8dp"
-        android:text="@string/test_capital_letter"
+        android:text="@string/test"
         android:textSize="20sp"
-        android:textStyle="bold" />
+        android:textStyle="bold"
+        android:layout_weight="2"/>
 
     <TextView
-        android:id="@+id/textViewCalendarItemNumber"
+        android:id="@+id/textViewPeopleNumber"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="5dp"
@@ -30,7 +31,33 @@
         android:padding="8dp"
         android:text="@string/test"
         android:textSize="20sp"
-        android:textStyle="bold"/>
+        android:textStyle="bold"
+        android:layout_weight="2"/>
+
+    <TextView
+        android:id="@+id/textViewLastUpdated"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="5dp"
+        android:gravity="center"
+        android:padding="8dp"
+        android:text="@string/test"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        android:layout_weight="2"/>
+
+    <ImageButton
+        android:id="@+id/imageButtonDelete"
+        android:scaleX="1.7"
+        android:scaleY="1.7"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="15dp"
+        android:layout_gravity="center"
+        android:background="?android:attr/selectableItemBackground"
+        android:src="@android:drawable/ic_menu_close_clear_cancel"
+        android:contentDescription="@string/delete_button_description"
+        android:layout_weight="1"/>
 
 
 </LinearLayout>

@@ -93,7 +93,7 @@ class RegisterActivity: AppCompatActivity() {
                                 "email" to emailInput,
                                 "username" to usernameInput
                             )
-                            firestoreDB.collection("registered_users").document(usernameInput)
+                            firestoreDB.collection("registered_users").document(emailInput)
                                 .set(userDoc)
                                 .addOnSuccessListener { Log.d(TAG, "DocumentSnapshot successfully written!") }
                                 .addOnFailureListener { e -> Log.w(TAG, "Error writing document", e) }

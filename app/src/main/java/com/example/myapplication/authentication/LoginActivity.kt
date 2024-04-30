@@ -70,16 +70,6 @@ class LoginActivity: AppCompatActivity() {
                     passwordEditText.error = "Field cannot be empty"
                 }
                 else {
-                    /*val userDoc = hashMapOf(
-                        "email" to emailInput,
-                        "username" to passwordInput
-
-                    )
-                    firestoreDB.collection("registered_users").document(emailInput)
-                        .set(userDoc)
-                        .addOnSuccessListener { Log.d(TAG, "DocumentSnapshot successfully written!") }
-                        .addOnFailureListener { e -> Log.w(TAG, "Error writing document", e) }
-    */
                     auth.signInWithEmailAndPassword(emailInput, passwordInput)
                         .addOnCompleteListener(this) { task ->
                             if (task.isSuccessful) {
@@ -88,7 +78,7 @@ class LoginActivity: AppCompatActivity() {
                                 //set user logged in for later
                                 UserPreferences.setUserLoggedIn(this, true)
 
-                                viewModel.authenticateUser()
+
                                 val intent = Intent(this, MainActivity::class.java)
                                 startActivity(intent)
                                 finish()
