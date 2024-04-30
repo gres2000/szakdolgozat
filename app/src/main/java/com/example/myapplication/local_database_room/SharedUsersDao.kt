@@ -1,6 +1,7 @@
 package com.example.myapplication.local_database_room
 
 import androidx.room.Dao
+import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
 
@@ -11,4 +12,6 @@ interface SharedUsersDao {
 
     @Insert
     suspend fun insertUser(user: UserData): Long
+    @Delete
+    suspend fun deleteUser(user: UserData)
 }

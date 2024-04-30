@@ -26,4 +26,7 @@ interface CalendarItemDao {
 
     @Query("SELECT * FROM user WHERE calendarId = :calendarId")
     suspend fun getSharedPeopleForCalendar(calendarId: String): List<UserData>
+
+    @Query("SELECT * FROM calendar_items WHERE name = :calendarName")
+    suspend fun getCalendarByName(calendarName: String): CalendarData?
 }

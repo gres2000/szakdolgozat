@@ -205,5 +205,25 @@ class MainViewModel : ViewModel() {
         }
     }
 
+    suspend fun deleteCalendarFromRoom(context: Context, calendar: Calendar) {
+        val roomDB = Room.databaseBuilder(
+            context,
+            AppDatabase::class.java, "database-name"
+        ).build()
 
+        val calendarDao = roomDB.calendarItemDao()
+        val sharedPeopleDao = roomDB.sharedUsersDao()
+
+        for (user in calendar.sharedPeople) {
+            val userData = sharedPeopleDao.getUserByEmail(user.emailAddress)
+            if (userData != null) {
+                sharedPeopleDao.deleteUser(userData)
+            }
+        }
+
+        val newCalendar = calendarDao.getCalendarByName(calendar.name)
+        if (newCalendar != null) {
+            calendarDao.deleteCalendarItem(newCalendar)
+        }
+    }
 }

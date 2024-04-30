@@ -13,10 +13,12 @@ import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
 import androidx.recyclerview.widget.RecyclerView
 import com.example.myapplication.R
 import com.example.myapplication.tasks.Task
 import com.example.myapplication.viewModel.MainViewModel
+import kotlinx.coroutines.launch
 import org.w3c.dom.Text
 import java.time.Instant
 import java.time.LocalDate
@@ -55,7 +57,7 @@ class CustomCalendarAdapter(val activity: AppCompatActivity, private val dataLis
 
         viewHolder.lastUpdatedTextView.text = formattedDate
         viewHolder.deleteImageButton.setOnClickListener{
-            showDeleteDialog()
+            showDeleteDialog(position)
         }
     }
     @RequiresApi(Build.VERSION_CODES.O)
@@ -77,7 +79,7 @@ class CustomCalendarAdapter(val activity: AppCompatActivity, private val dataLis
         notifyItemInserted(dataList.size)
     }
 
-    private fun showDeleteDialog() {
+    private fun showDeleteDialog(position: Int) {
         val builder = AlertDialog.Builder(activity)
         val inflater = LayoutInflater.from(activity)
         val dialogView = inflater.inflate(R.layout.delete_dialog, null)
@@ -95,7 +97,12 @@ class CustomCalendarAdapter(val activity: AppCompatActivity, private val dataLis
         buttonDelete.setOnClickListener {
             // Perform the delete action here
             // For example, call a method to delete the item from your data source
-
+            val viewModel = ViewModelProvider(activity)[MainViewModel::class.java]
+            viewModel.viewModelScope.launch { // Launch a coroutine
+                viewModel.deleteCalendarFromRoom(activity, dataList[position])
+                dataList.removeAt(position)
+                notifyItemRemoved(position)
+            }
             dialog.dismiss()
         }
 
