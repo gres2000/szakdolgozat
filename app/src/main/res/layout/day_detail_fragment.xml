@@ -61,12 +61,11 @@
             android:textSize="20sp" />
 
     </LinearLayout>
-    <FrameLayout
+    <Space
         android:id="@+id/menu_pushup_box"
         android:layout_width="match_parent"
         android:layout_height="75dp"
-        app:layout_constraintBottom_toBottomOf="parent">
+        app:layout_constraintBottom_toBottomOf="parent"/>
 
-    </FrameLayout>
 
 </LinearLayout>

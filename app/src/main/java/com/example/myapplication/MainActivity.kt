@@ -9,14 +9,13 @@ import com.example.myapplication.databinding.ActivityMainBinding
 import com.example.myapplication.mainFragments.LeftFragment
 import com.example.myapplication.mainFragments.MidFragment
 import com.example.myapplication.mainFragments.RightFragment
-import com.example.myapplication.tasks.DetailFragment
+import com.example.myapplication.tasks.DayDetailFragment
 import com.example.myapplication.viewModel.MainViewModel
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 
 
@@ -44,7 +43,7 @@ class MainActivity : AppCompatActivity() {
 
         viewModel.someEvent.observe(this) { eventData ->
             val transaction = fragmentManager.beginTransaction()
-            transaction.replace(R.id.constraint_container, DetailFragment(eventData))
+            transaction.replace(R.id.constraint_container, DayDetailFragment(eventData))
             transaction.addToBackStack(null)
             transaction.commit()
         }

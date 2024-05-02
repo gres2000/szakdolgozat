@@ -28,6 +28,12 @@
     <string name="delete_button_description">delete calendar</string>
     <string name="are_you_sure_you_want_to_delete_this_item">Are you sure you want to delete this item?</string>
     <string name="delete">Delete</string>
+    <string name="arrow_left_button_description">return to calendars screen</string>
+    <string name="owner_double_dots">Owner:</string>
+    <string name="off">Off</string>
+    <string name="on">On</string>
+    <string name="whole_day_event">Whole day event</string>
+    <string name="select_date">Select Date</string>
 
 
 </resources>

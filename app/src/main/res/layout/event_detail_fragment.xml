@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:layout_gravity="bottom"
+    android:background="@color/white">
+
+    <EditText
+        android:id="@+id/editTextTitleEventDetail"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/title"
+        android:inputType="text"
+        android:maxLines="1"
+        android:padding="16dp"
+        android:autofillHints="@string/title" />
+
+    <EditText
+        android:id="@+id/editTextDescriptionEventDetail"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/description"
+        android:inputType="textMultiLine"
+        android:minLines="3"
+        android:padding="16dp"
+        android:autofillHints="@string/description"/>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_gravity="center_horizontal">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="25sp"
+            android:gravity="center_horizontal"
+            android:text="@string/whole_day_event"
+            android:layout_weight="2"/>
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/switchButtonEventDetail"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:paddingEnd="20dp"
+            android:gravity="center"
+            android:scaleX="1.7"
+            android:scaleY="1.7"
+            android:textOff="@string/off"
+            android:textOn="@string/on" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_gravity="center_horizontal">
+
+        <TextView
+            android:id="@+id/dateFromTextView"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:text="@string/select_date"
+            android:background="?android:attr/selectableItemBackground"
+            android:textSize="20sp"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:layout_weight="1"/>
+
+        <TextView
+            android:id="@+id/dateUntilTextView"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:text="@string/select_date"
+            android:background="?android:attr/selectableItemBackground"
+            android:textSize="20sp"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:layout_weight="1"/>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="2" />
+
+        <NumberPicker
+            android:id="@+id/hourPickerFrom"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:layout_weight="1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="2" />
+
+        <NumberPicker
+            android:id="@+id/minutePickerFrom"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:layout_weight="1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="2" />
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="2" />
+
+        <NumberPicker
+            android:id="@+id/hourPickerUntil"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:layout_weight="1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="2" />
+
+        <NumberPicker
+            android:id="@+id/minutePickerUntil"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:layout_weight="1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="2" />
+    </LinearLayout>
+
+
+
+    <LinearLayout
+        android:id="@+id/action_buttons_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/cancelButtonEventDetail"
+            style="?android:attr/buttonBarButtonStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textColor="@color/red"
+            android:text="@string/cancel"
+            android:textSize="20sp" />
+
+        <Button
+            android:id="@+id/saveButtonEventDetail"
+            style="?android:attr/buttonBarButtonStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/save"
+            android:textSize="20sp" />
+
+    </LinearLayout>
+    <Space
+        android:id="@+id/menu_pushup_box"
+        android:layout_width="match_parent"
+        android:layout_height="75dp"
+        app:layout_constraintBottom_toBottomOf="parent"/>
+
+
+</LinearLayout>

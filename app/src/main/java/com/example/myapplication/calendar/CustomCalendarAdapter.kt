@@ -1,12 +1,10 @@
 package com.example.myapplication.calendar
 
 import android.os.Build
-import android.util.MutableLong
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
-import android.widget.CheckBox
 import android.widget.ImageButton
 import android.widget.TextView
 import androidx.annotation.RequiresApi
@@ -16,18 +14,14 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.recyclerview.widget.RecyclerView
 import com.example.myapplication.R
-import com.example.myapplication.tasks.Task
 import com.example.myapplication.viewModel.MainViewModel
 import kotlinx.coroutines.launch
-import org.w3c.dom.Text
 import java.time.Instant
 import java.time.LocalDate
-import java.time.Month
 import java.time.ZoneId
-import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 
-class CustomCalendarAdapter(val activity: AppCompatActivity, private val dataList: MutableList<Calendar>) : RecyclerView.Adapter<CustomCalendarAdapter.CalendarItemViewHolder>() {
+class CustomCalendarAdapter(val activity: AppCompatActivity, private val dataList: MutableList<MyCalendar>) : RecyclerView.Adapter<CustomCalendarAdapter.CalendarItemViewHolder>() {
     inner class CalendarItemViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val titleTextView: TextView = itemView.findViewById(R.id.textViewTitleCalendarItem)
         val numberTextView: TextView = itemView.findViewById(R.id.textViewPeopleNumber)
@@ -49,7 +43,8 @@ class CustomCalendarAdapter(val activity: AppCompatActivity, private val dataLis
         viewHolder.viewModel = ViewModelProvider(activity)[MainViewModel::class.java]
         val currentItem = dataList[position]
         viewHolder.titleTextView.text = currentItem.name
-        viewHolder.numberTextView.text = currentItem.sharedPeopleNumber.toString()
+        val tempString = "People: " + currentItem.sharedPeopleNumber.toString()
+        viewHolder.numberTextView.text = tempString
         //convert instant to date
         val lastUpdatedDate =  Instant.now()
         val localDate = instantToLocalDate(lastUpdatedDate)
@@ -58,6 +53,18 @@ class CustomCalendarAdapter(val activity: AppCompatActivity, private val dataLis
         viewHolder.lastUpdatedTextView.text = formattedDate
         viewHolder.deleteImageButton.setOnClickListener{
             showDeleteDialog(position)
+        }
+
+        viewHolder.itemView.setOnClickListener{
+            val calendarDetailFragment = CalendarDetailFragment()
+
+            viewHolder.viewModel.passCalendarToFragment(dataList[position])
+
+            val fragmentManager = activity.supportFragmentManager
+            fragmentManager.beginTransaction()
+                .replace(R.id.constraint_container, calendarDetailFragment) // Replace R.id.fragment_container with your actual container id
+                .addToBackStack(null) // Add to back stack to allow navigating back
+                .commit()
         }
     }
     @RequiresApi(Build.VERSION_CODES.O)
@@ -73,7 +80,7 @@ class CustomCalendarAdapter(val activity: AppCompatActivity, private val dataLis
 
     override fun getItemCount() = dataList.size
 
-    fun updateData(newData: List<Calendar>) {
+    fun updateData(newData: List<MyCalendar>) {
         dataList.clear()
         dataList.addAll(newData)
         notifyItemInserted(dataList.size)

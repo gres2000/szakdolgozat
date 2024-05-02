@@ -7,19 +7,17 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.room.Room
 import com.example.myapplication.authentication.User
-import com.example.myapplication.calendar.Calendar
+import com.example.myapplication.calendar.MyCalendar
 import com.example.myapplication.local_database_room.AppDatabase
 import com.example.myapplication.local_database_room.CalendarData
 import com.example.myapplication.local_database_room.EventData
 import com.example.myapplication.local_database_room.UserData
 import com.example.myapplication.tasks.Task
-import com.google.common.reflect.TypeToken
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.ktx.Firebase
 import com.google.gson.Gson
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
 
 class MainViewModel : ViewModel() {
@@ -35,7 +33,7 @@ class MainViewModel : ViewModel() {
     var auth = Firebase.auth
     var loggedInUser: User? = null
     val loggedInDeferred = CompletableDeferred<User?>()
-
+    private var _myCalendarToPass: MyCalendar? = null
     init {
 
     }
@@ -92,7 +90,7 @@ class MainViewModel : ViewModel() {
         }
     }
 
-    suspend fun getAllCalendars(context: Context): MutableList<Calendar> {
+    suspend fun getAllCalendars(context: Context): MutableList<MyCalendar> {
         val roomDB = Room.databaseBuilder(
             context,
             AppDatabase::class.java, "database-name"
@@ -106,7 +104,7 @@ class MainViewModel : ViewModel() {
 
         val loggedInUserJson = Gson().toJson(UserData(null, loggedInUser!!.username, loggedInUser!!.emailAddress)).toString()
 
-        val calendarList = mutableListOf<Calendar>()
+        val myCalendarList = mutableListOf<MyCalendar>()
 
         val calendarDataList = calendarDao.getAllCalendarsForUser(loggedInUserJson, loggedInUser!!.emailAddress)
 //        val calendarDataList = calendarDao.getAllCalendars()
@@ -122,8 +120,8 @@ class MainViewModel : ViewModel() {
                     sharedPeopleList.add(User(userData.username, userData.emailAddress))
                 }
 
-                calendarList.add(
-                    Calendar(
+                myCalendarList.add(
+                    MyCalendar(
                         name = calendarData.name,
                         sharedPeopleNumber = calendarData.sharedPeopleNumber,
                         sharedPeople = sharedPeopleList,
@@ -136,9 +134,9 @@ class MainViewModel : ViewModel() {
         }
 
 
-        return calendarList
+        return myCalendarList
     }
-    suspend fun addCalendar(context: Context, calendar: Calendar) {
+    suspend fun addCalendar(context: Context, myCalendar: MyCalendar) {
         val roomDB = Room.databaseBuilder(
             context,
             AppDatabase::class.java, "database-name"
@@ -147,17 +145,17 @@ class MainViewModel : ViewModel() {
         val calendarDao = roomDB.calendarItemDao()
         val sharedPeopleDao = roomDB.sharedUsersDao() // Assuming you have a DAO for shared people
 
-        for (user in calendar.sharedPeople) {
-            val userData = UserData(calendar.name, user.username, user.emailAddress)
+        for (user in myCalendar.sharedPeople) {
+            val userData = UserData(myCalendar.name, user.username, user.emailAddress)
             sharedPeopleDao.insertUser(userData)
         }
 
         // Create CalendarData object
         val newCalendar = CalendarData(
-            name = calendar.name,
-            sharedPeopleNumber = calendar.sharedPeopleNumber,
-            owner = UserData(null, calendar.owner.username, calendar.owner.emailAddress),
-            eventList = calendar.events.map { event ->
+            name = myCalendar.name,
+            sharedPeopleNumber = myCalendar.sharedPeopleNumber,
+            owner = UserData(null, myCalendar.owner.username, myCalendar.owner.emailAddress),
+            eventList = myCalendar.events.map { event ->
                 EventData(
                     title = event.title,
                     description = event.description,
@@ -166,7 +164,7 @@ class MainViewModel : ViewModel() {
                     location = event.location
                 )
             }.toMutableList(),
-            lastUpdated = calendar.lastUpdated
+            lastUpdated = myCalendar.lastUpdated
         )
         calendarDao.insertCalendarItem(newCalendar)
     }
@@ -205,7 +203,7 @@ class MainViewModel : ViewModel() {
         }
     }
 
-    suspend fun deleteCalendarFromRoom(context: Context, calendar: Calendar) {
+    suspend fun deleteCalendarFromRoom(context: Context, myCalendar: MyCalendar) {
         val roomDB = Room.databaseBuilder(
             context,
             AppDatabase::class.java, "database-name"
@@ -214,16 +212,31 @@ class MainViewModel : ViewModel() {
         val calendarDao = roomDB.calendarItemDao()
         val sharedPeopleDao = roomDB.sharedUsersDao()
 
-        for (user in calendar.sharedPeople) {
+        for (user in myCalendar.sharedPeople) {
             val userData = sharedPeopleDao.getUserByEmail(user.emailAddress)
             if (userData != null) {
                 sharedPeopleDao.deleteUser(userData)
             }
         }
 
-        val newCalendar = calendarDao.getCalendarByName(calendar.name)
+        val newCalendar = calendarDao.getCalendarByName(myCalendar.name)
         if (newCalendar != null) {
             calendarDao.deleteCalendarItem(newCalendar)
+        }
+    }
+
+    fun passCalendarToFragment(myCalendar: MyCalendar) {
+        _myCalendarToPass = myCalendar
+    }
+
+    fun getCalendarToFragment(): MyCalendar? {
+        val temp = _myCalendarToPass
+        _myCalendarToPass = null
+        if (temp != null) {
+            return temp
+        }
+        else {
+            return null
         }
     }
 }

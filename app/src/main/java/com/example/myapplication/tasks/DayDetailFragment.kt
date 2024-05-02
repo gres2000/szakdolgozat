@@ -1,6 +1,5 @@
 package com.example.myapplication.tasks
 
-import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -8,20 +7,17 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TimePicker
-import androidx.activity.OnBackPressedCallback
-import androidx.activity.OnBackPressedDispatcher
-import androidx.activity.addCallback
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.example.myapplication.R
 import com.example.myapplication.viewModel.MainViewModel
 
-class DetailFragment(private val task: Task) : Fragment() {
+class DayDetailFragment(private val task: Task) : Fragment() {
     private lateinit var viewModel: MainViewModel
 
     companion object {
-        fun newInstance(position: Int, task: Task): DetailFragment {
-            val fragment = DetailFragment(task)
+        fun newInstance(position: Int, task: Task): DayDetailFragment {
+            val fragment = DayDetailFragment(task)
             val args = Bundle()
             args.putInt("position", position)
             fragment.arguments = args
@@ -30,7 +26,7 @@ class DetailFragment(private val task: Task) : Fragment() {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        return inflater.inflate(R.layout.detail_fragment, container, false)
+        return inflater.inflate(R.layout.day_detail_fragment, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
