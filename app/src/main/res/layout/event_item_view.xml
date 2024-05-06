@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/eventLinearLayoutId"
+    android:layout_width="match_parent"
+    android:layout_height="50dp"
+    android:layout_margin="2dp"
+    android:layout_marginTop="5dp"
+    android:layout_marginBottom="5dp"
+    android:background="@drawable/task_fragment_background"
+    android:orientation="horizontal">
+
+
+    <TextView
+        android:layout_weight="2"
+        android:id="@+id/textViewStartingTime"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="5dp"
+        android:gravity="center"
+        android:padding="3dp"
+        android:text="@string/test"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        android:textColor="@color/black"/>
+
+    <LinearLayout
+        android:layout_weight="9"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:paddingTop="2dp">
+
+        <TextView
+            android:id="@+id/textViewEventTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="5dp"
+            android:gravity="center"
+            android:text="@string/test"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:maxLength="15"/>
+
+        <TextView
+            android:id="@+id/textViewInterval"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="5dp"
+            android:gravity="center"
+            android:text="@string/test"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+    </LinearLayout>
+
+    <ImageButton
+        android:layout_weight="1"
+        android:id="@+id/imageButtonDeleteEvent"
+        android:scaleX="1.7"
+        android:scaleY="1.7"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="15dp"
+        android:layout_gravity="center"
+        android:background="?android:attr/selectableItemBackground"
+        android:src="@android:drawable/ic_menu_close_clear_cancel"
+        android:contentDescription="@string/delete_button_description"/>
+
+
+</LinearLayout>

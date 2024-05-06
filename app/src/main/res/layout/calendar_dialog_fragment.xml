@@ -4,12 +4,17 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:layout_gravity="bottom"
-    android:background="@color/white">
+    android:background="@color/white"
+    android:paddingTop="30dp"
+    android:paddingStart="30dp"
+    android:paddingEnd="30dp">
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        />
+        android:text="@string/create_new_calendar"
+        android:textSize="20sp"
+        android:gravity="center" />
 
     <EditText
         android:id="@+id/editTextNewCalendarTitle"
@@ -20,7 +25,8 @@
         android:maxLines="1"
         android:padding="16dp"
         android:textSize="20sp"
-        android:autofillHints="@string/title" />
+        android:autofillHints="@string/title"
+        android:maxLength="20"/>
 
     <LinearLayout
         android:id="@+id/dialog_buttons_layout"

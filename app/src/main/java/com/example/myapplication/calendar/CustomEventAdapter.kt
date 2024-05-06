@@ -16,55 +16,51 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.myapplication.R
 import com.example.myapplication.viewModel.MainViewModel
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
-class CustomCalendarAdapter(private val activity: AppCompatActivity, private val dataList: MutableList<MyCalendar>) : RecyclerView.Adapter<CustomCalendarAdapter.CalendarItemViewHolder>() {
-    inner class CalendarItemViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        val titleTextView: TextView = itemView.findViewById(R.id.textViewTitleCalendarItem)
-        val numberTextView: TextView = itemView.findViewById(R.id.textViewPeopleNumber)
-        val lastUpdatedTextView: TextView = itemView.findViewById(R.id.textViewLastUpdated)
-        val deleteImageButton: ImageButton = itemView.findViewById(R.id.imageButtonDelete)
+class CustomEventAdapter(private val activity: AppCompatActivity, private val dataList: MutableList<Event>, private val calendarId: String) : RecyclerView.Adapter<CustomEventAdapter.EventItemViewHolder>() {
+    inner class EventItemViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        val startingTimeTextView: TextView = itemView.findViewById(R.id.textViewStartingTime)
+        val eventTitleTextView: TextView = itemView.findViewById(R.id.textViewEventTitle)
+        val intervalTextView: TextView = itemView.findViewById(R.id.textViewInterval)
+        val deleteEventImageButton: ImageButton = itemView.findViewById(R.id.imageButtonDeleteEvent)
         var viewHolderId: Int = -1
         lateinit var viewModel: MainViewModel
     }
 
-    override fun onCreateViewHolder(view: ViewGroup, viewType: Int): CalendarItemViewHolder {
-        val itemView = LayoutInflater.from(view.context).inflate(R.layout.calendar_item_view, view, false)
-        return CalendarItemViewHolder(itemView)
+    override fun onCreateViewHolder(view: ViewGroup, viewType: Int): EventItemViewHolder {
+        val itemView = LayoutInflater.from(view.context).inflate(R.layout.event_item_view, view, false)
+        return EventItemViewHolder(itemView)
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
-    override fun onBindViewHolder(viewHolder: CalendarItemViewHolder, position: Int) {
+    override fun onBindViewHolder(viewHolder: EventItemViewHolder, position: Int) {
         viewHolder.viewModel = ViewModelProvider(activity)[MainViewModel::class.java]
         val currentItem = dataList[position]
-        viewHolder.titleTextView.text = currentItem.name
-        val tempString = "People: " + currentItem.sharedPeopleNumber.toString()
-        viewHolder.numberTextView.text = tempString
-        //convert instant to date
-        val lastUpdatedDate =  Instant.now()
-        val localDate = instantToLocalDate(lastUpdatedDate)
-        val formattedDate = localDate.format(DateTimeFormatter.ofPattern("yyyy-MM-d"))
 
-        viewHolder.lastUpdatedTextView.text = formattedDate
-        viewHolder.deleteImageButton.setOnClickListener{
+        val dateFormat = SimpleDateFormat("HH:mm")
+
+        viewHolder.startingTimeTextView.text = if (!currentItem.wholeDayEvent) dateFormat.format(currentItem.startTime).toString() else "--:--"
+        viewHolder.eventTitleTextView.text = currentItem.title
+
+        val tmpString = if (!currentItem.wholeDayEvent) dateFormat.format(currentItem.startTime).toString() + "-" + dateFormat.format(currentItem.endTime).toString() else "Whole day event"
+        viewHolder.intervalTextView.text = tmpString
+
+        viewHolder.deleteEventImageButton.setOnClickListener{
             showDeleteDialog(position)
         }
 
         viewHolder.itemView.setOnClickListener{
-            val calendarDetailFragment = CalendarDetailFragment()
-
-            viewHolder.viewModel.passCalendarToFragment(dataList[position])
-
-            val fragmentManager = activity.supportFragmentManager
-            fragmentManager.beginTransaction()
-                .replace(R.id.constraint_container, calendarDetailFragment) // Replace R.id.fragment_container with your actual container id
-                .addToBackStack(null) // Add to back stack to allow navigating back
-                .commit()
+            //open event for editing needs implementation
+//            viewHolder.viewModel.toggleExistingEvent()
+//            val clickedEvent = dataList[position]
+//            openEventDetailFragmentForEditing(clickedEvent)
         }
     }
+
     @RequiresApi(Build.VERSION_CODES.O)
     fun instantToLocalDate(instant: Instant): LocalDate {
         // Convert Instant to Epoch Milliseconds
@@ -78,7 +74,7 @@ class CustomCalendarAdapter(private val activity: AppCompatActivity, private val
 
     override fun getItemCount() = dataList.size
 
-    fun updateData(newData: List<MyCalendar>) {
+    fun updateData(newData: List<Event>) {
         dataList.clear()
         dataList.addAll(newData)
         notifyItemInserted(dataList.size)
@@ -104,7 +100,7 @@ class CustomCalendarAdapter(private val activity: AppCompatActivity, private val
             // For example, call a method to delete the item from your data source
             val viewModel = ViewModelProvider(activity)[MainViewModel::class.java]
             viewModel.viewModelScope.launch { // Launch a coroutine
-                viewModel.deleteCalendarFromRoom(activity, dataList[position])
+                viewModel.deleteEventFromRoom(activity, dataList[position], calendarId)
                 dataList.removeAt(position)
                 notifyItemRemoved(position)
             }

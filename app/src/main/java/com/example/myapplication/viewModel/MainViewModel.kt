@@ -2,11 +2,14 @@ package com.example.myapplication.viewModel
 
 import android.content.ContentValues.TAG
 import android.content.Context
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.room.Room
 import com.example.myapplication.authentication.User
+import com.example.myapplication.calendar.Event
 import com.example.myapplication.calendar.MyCalendar
 import com.example.myapplication.local_database_room.AppDatabase
 import com.example.myapplication.local_database_room.CalendarData
@@ -19,6 +22,9 @@ import com.google.firebase.ktx.Firebase
 import com.google.gson.Gson
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.tasks.await
+import java.time.LocalDate
+import java.time.ZoneId
+import java.util.Date
 
 class MainViewModel : ViewModel() {
     private val _weeklyTasksList: List<MutableList<Task>> = List(7) { mutableListOf() }
@@ -34,9 +40,12 @@ class MainViewModel : ViewModel() {
     var loggedInUser: User? = null
     val loggedInDeferred = CompletableDeferred<User?>()
     private var _myCalendarToPass: MyCalendar? = null
+    private var _isExistingEvent: Boolean = false
     init {
 
     }
+    val isExistingEvent
+        get() = _isExistingEvent
     val dayId
         get() = _dayId
     val taskReady
@@ -58,6 +67,9 @@ class MainViewModel : ViewModel() {
                 add(task3)
             }
         }
+    }
+    fun toggleExistingEvent() {
+        _isExistingEvent = !_isExistingEvent
     }
 
     fun updateEvent(eventData: Task) {
@@ -97,6 +109,7 @@ class MainViewModel : ViewModel() {
         ).build()
 
         val calendarDao = roomDB.calendarItemDao()
+        val eventDao = roomDB.eventItemDao()
 
         authenticateUser()
 
@@ -107,17 +120,28 @@ class MainViewModel : ViewModel() {
         val myCalendarList = mutableListOf<MyCalendar>()
 
         val calendarDataList = calendarDao.getAllCalendarsForUser(loggedInUserJson, loggedInUser!!.emailAddress)
-//        val calendarDataList = calendarDao.getAllCalendars()
-        val tempcales = calendarDao.getAllCalendars()
-        val k = tempcales.size
+
         if (calendarDataList.isNotEmpty()) {
 
             for (calendarData in calendarDataList) {
                 val sharedPeopleData = calendarDao.getSharedPeopleForCalendar(calendarData.id.toString())
+                val eventDataForCalendar = calendarDao.getEventsForCalendar(calendarData.name)
 
                 val sharedPeopleList = mutableListOf<User>()
                 for (userData in sharedPeopleData) {
                     sharedPeopleList.add(User(userData.username, userData.emailAddress))
+                }
+
+                val eventList = mutableListOf<Event>()
+                for (eventData in eventDataForCalendar) {
+                    eventList.add(Event(
+                        eventData.title,
+                        eventData.description,
+                        eventData.startTime,
+                        eventData.endTime,
+                        eventData.location,
+                        eventData.wholeDayEvent)
+                    )
                 }
 
                 myCalendarList.add(
@@ -126,7 +150,7 @@ class MainViewModel : ViewModel() {
                         sharedPeopleNumber = calendarData.sharedPeopleNumber,
                         sharedPeople = sharedPeopleList,
                         owner = User(calendarData.owner.username, calendarData.owner.emailAddress),
-                        events = mutableListOf(), // Populate events as needed
+                        events = eventList,
                         lastUpdated = calendarData.lastUpdated
                     )
                 )
@@ -143,30 +167,77 @@ class MainViewModel : ViewModel() {
         ).build()
 
         val calendarDao = roomDB.calendarItemDao()
-        val sharedPeopleDao = roomDB.sharedUsersDao() // Assuming you have a DAO for shared people
+        val sharedPeopleDao = roomDB.sharedUsersDao()
+        val eventDao = roomDB.eventItemDao()
 
         for (user in myCalendar.sharedPeople) {
             val userData = UserData(myCalendar.name, user.username, user.emailAddress)
             sharedPeopleDao.insertUser(userData)
         }
 
-        // Create CalendarData object
+
+        val eventList = myCalendar.events.map { event ->
+            EventData(
+                calendarId = myCalendar.name,
+                title = event.title,
+                description = event.description,
+                startTime = event.startTime,
+                endTime = event.endTime,
+                location = event.location,
+                wholeDayEvent = event.wholeDayEvent
+            )
+        }.toList()
+
+        for (event in eventList) {
+            eventDao.insertEvent(event)
+        }
+        
         val newCalendar = CalendarData(
             name = myCalendar.name,
             sharedPeopleNumber = myCalendar.sharedPeopleNumber,
             owner = UserData(null, myCalendar.owner.username, myCalendar.owner.emailAddress),
-            eventList = myCalendar.events.map { event ->
-                EventData(
-                    title = event.title,
-                    description = event.description,
-                    startTime = event.startTime,
-                    endTime = event.endTime,
-                    location = event.location
-                )
-            }.toMutableList(),
             lastUpdated = myCalendar.lastUpdated
         )
         calendarDao.insertCalendarItem(newCalendar)
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    suspend fun addEventToCalendar(context: Context, event: Event, myCalendar: MyCalendar) {
+        // maybe update events here as well
+        val roomDB = Room.databaseBuilder(
+            context,
+            AppDatabase::class.java, "database-name"
+        ).build()
+
+        val eventDao = roomDB.eventItemDao()
+
+        val newEventData = EventData(
+            myCalendar.name,
+            event.title,
+            event.description,
+            event.startTime,
+            event.endTime,
+            event.location,
+            event.wholeDayEvent
+        )
+
+        eventDao.insertEvent(newEventData)
+        val enetList = eventDao.getEventByCalendarName(myCalendar.name)?.toMutableList()?.map { eventData ->
+            Event(
+                eventData.title,
+                eventData.description,
+                eventData.startTime,
+                eventData.endTime,
+                eventData.location,
+                eventData.wholeDayEvent
+            )
+        }?.toMutableList()
+        if (enetList != null) {
+            myCalendar.events.clear()
+            myCalendar.events.addAll(enetList)
+        }
+
+        myCalendar.lastUpdated = Date.from(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant())
     }
 
     suspend fun saveAllCalendarsToFirestoreDB(context: Context, userId: String) {
@@ -195,10 +266,8 @@ class MainViewModel : ViewModel() {
                 }
             }
 
-            // Log success message
             Log.d(TAG, "Calendars saved to Firestore for user: $loggedInUserEmail")
         } catch (e: Exception) {
-            // Log error message
             Log.e(TAG, "Error saving calendars to Firestore: $e")
         }
     }
@@ -239,4 +308,19 @@ class MainViewModel : ViewModel() {
             return null
         }
     }
+
+    suspend fun deleteEventFromRoom(context: Context, event: Event, calendarId: String) {
+        val roomDB = Room.databaseBuilder(
+            context,
+            AppDatabase::class.java, "database-name"
+        ).build()
+
+        val eventDao = roomDB.eventItemDao()
+
+        val eventData = eventDao.getSpecificEvent(calendarId, event.title, event.startTime, event.endTime)
+        if (eventData != null) {
+            eventDao.deleteEvent(eventData)
+        }
+    }
+
 }

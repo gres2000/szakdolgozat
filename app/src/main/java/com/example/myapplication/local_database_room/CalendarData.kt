@@ -12,7 +12,7 @@ data class CalendarData(
     val sharedPeopleNumber: Int,
     //val sharedPeople: MutableList<UserData>,
     val owner: UserData,
-    val eventList: MutableList<EventData>,
+    //val eventList: MutableList<EventData>,
     val lastUpdated: Date
 ) {
     // Secondary constructor to allow creation without specifying the ID
@@ -21,7 +21,7 @@ data class CalendarData(
         sharedPeopleNumber: Int,
         //sharedPeople: MutableList<UserData>,
         owner: UserData,
-        eventList: MutableList<EventData>,
+        //eventList: MutableList<EventData>,
         lastUpdated: Date
     ) : this(
         id = 0,
@@ -29,7 +29,7 @@ data class CalendarData(
         sharedPeopleNumber = sharedPeopleNumber,
         //sharedPeople = sharedPeople,
         owner = owner,
-        eventList = eventList,
+        //eventList = eventList,
         lastUpdated = lastUpdated
     )
 }

@@ -34,6 +34,7 @@
     <string name="on">On</string>
     <string name="whole_day_event">Whole day event</string>
     <string name="select_date">Select Date</string>
+    <string name="create_new_calendar">Create new calendar</string>
 
 
 </resources>
