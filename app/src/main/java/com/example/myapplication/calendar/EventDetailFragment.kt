@@ -81,8 +81,8 @@ class EventDetailFragment : Fragment() {
 
         minutePickerUntil.setFormatter { String.format("%02d", it) }
         val calendar = Calendar.getInstance()
-        updateDateInView(calendar, dateUntilTextView)
-        updateDateInView(calendar, dateFromTextView)
+        updateDateInView(viewModel.newEventStartingDay!!, dateUntilTextView)
+        updateDateInView(viewModel.newEventStartingDay!!, dateFromTextView)
         hourPickerFrom.value = LocalDateTime.now().hour
         hourPickerUntil.value = LocalDateTime.now().hour + 1
 

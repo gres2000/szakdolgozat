@@ -24,6 +24,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.tasks.await
 import java.time.LocalDate
 import java.time.ZoneId
+import java.util.Calendar
 import java.util.Date
 
 class MainViewModel : ViewModel() {
@@ -41,6 +42,7 @@ class MainViewModel : ViewModel() {
     val loggedInDeferred = CompletableDeferred<User?>()
     private var _myCalendarToPass: MyCalendar? = null
     private var _isExistingEvent: Boolean = false
+    var newEventStartingDay: Calendar? = null
     init {
 
     }

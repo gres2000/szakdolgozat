@@ -54,6 +54,7 @@ class CustomCalendarAdapter(private val activity: AppCompatActivity, private val
         }
 
         viewHolder.itemView.setOnClickListener{
+            viewHolder.viewModel.newEventStartingDay = null
             val calendarDetailFragment = CalendarDetailFragment()
 
             viewHolder.viewModel.passCalendarToFragment(dataList[position])

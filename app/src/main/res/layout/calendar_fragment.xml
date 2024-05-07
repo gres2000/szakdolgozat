@@ -56,11 +56,34 @@
             android:textSize="18sp"
             android:layout_weight="1"/>
 
-        <CalendarView
-            android:id="@+id/calendarViewCalendarDetail"
+        <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"/>
+            android:layout_height="wrap_content">
+
+            <CalendarView
+                android:id="@+id/calendarViewCalendarDetail"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+
+
+            <GridLayout
+                android:id="@+id/gridLayoutCalendarOverlay"
+                android:layout_marginTop="99dp"
+                android:layout_marginBottom="40dp"
+                android:layout_marginStart="17dp"
+                android:layout_marginEnd="23dp"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:columnCount="7"
+                android:rowCount="5"
+                android:useDefaultMargins="true"
+                android:alignmentMode="alignBounds"
+                android:columnOrderPreserved="true"
+                android:rowOrderPreserved="false">
+
+            </GridLayout>
+        </FrameLayout>
+
 
         <androidx.recyclerview.widget.RecyclerView
             android:layout_marginTop="-40dp"

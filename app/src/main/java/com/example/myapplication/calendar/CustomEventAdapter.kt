@@ -31,6 +31,14 @@ class CustomEventAdapter(private val activity: AppCompatActivity, private val da
         var viewHolderId: Int = -1
         lateinit var viewModel: MainViewModel
     }
+    private var onItemRemovedListener: OnItemRemovedListener? = null
+
+    interface OnItemRemovedListener {
+        fun onItemRemoved(event: Event)
+    }
+    fun setOnItemRemovedListener(listener: OnItemRemovedListener) {
+        onItemRemovedListener = listener
+    }
 
     override fun onCreateViewHolder(view: ViewGroup, viewType: Int): EventItemViewHolder {
         val itemView = LayoutInflater.from(view.context).inflate(R.layout.event_item_view, view, false)
@@ -75,9 +83,15 @@ class CustomEventAdapter(private val activity: AppCompatActivity, private val da
     override fun getItemCount() = dataList.size
 
     fun updateData(newData: List<Event>) {
+        val originSize = dataList.size
         dataList.clear()
         dataList.addAll(newData)
-        notifyItemInserted(dataList.size)
+        if (newData.isNotEmpty()) {
+            notifyDataSetChanged()
+        }
+        else {
+            notifyItemRangeRemoved(0, originSize)
+        }
     }
 
     private fun showDeleteDialog(position: Int) {
@@ -96,17 +110,20 @@ class CustomEventAdapter(private val activity: AppCompatActivity, private val da
         }
 
         buttonDelete.setOnClickListener {
-            // Perform the delete action here
-            // For example, call a method to delete the item from your data source
             val viewModel = ViewModelProvider(activity)[MainViewModel::class.java]
-            viewModel.viewModelScope.launch { // Launch a coroutine
+            viewModel.viewModelScope.launch {
                 viewModel.deleteEventFromRoom(activity, dataList[position], calendarId)
+                onItemRemovedListener?.onItemRemoved(dataList[position])
                 dataList.removeAt(position)
                 notifyItemRemoved(position)
+
             }
             dialog.dismiss()
         }
 
         dialog.show()
+    }
+    fun getDataList():List<Event> {
+        return dataList
     }
 }
