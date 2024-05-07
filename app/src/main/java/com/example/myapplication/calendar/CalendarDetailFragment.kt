@@ -167,8 +167,16 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
 
 
         val firstDayOfWeek = calendar.firstDayOfWeek
-        val row = (dayOfMonth + firstDayOfWeek) / 7
-        val column = (dayOfWeek + 5) % 7
+        val row: Int
+        val column: Int
+        if (calendar.firstDayOfWeek == Calendar.MONDAY) {
+            row = (dayOfMonth + firstDayOfWeek) / 7
+            column = (dayOfWeek + 5) % 7
+        }
+        else {
+            row = (dayOfMonth + firstDayOfWeek + 1) / 7
+            column = (dayOfWeek + 6) % 7
+        }
 
         return Pair(row, column)
     }
@@ -220,16 +228,6 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
         for (row in 0 until 5) {
             for (column in 0 until 7) {
                 if (eventsMap.containsKey(Pair(row, column))) {
-//                    val cellView = View(context)
-//                    val layoutParamsCellView = GridLayout.LayoutParams()
-//                    layoutParamsCellView.rowSpec = GridLayout.spec(row, 1f)
-//                    layoutParamsCellView.columnSpec = GridLayout.spec(column, 1f)
-//                    layoutParamsCellView.width = 0
-//                    layoutParamsCellView.height = 0
-//                    layoutParamsCellView.setMargins(cellPadding*10, cellPadding*2, cellPadding*6, cellPadding*3)
-//                    cellView.layoutParams = layoutParamsCellView
-//                    cellView.background = ContextCompat.getDrawable(requireContext(), R.color.transparent)
-//                    calendarOverlayGrid.addView(cellView)
                     val orangeCircle = createCircle(requireContext(), Color.parseColor("#FFA500"))
                     val layoutParams = GridLayout.LayoutParams().apply {
                         rowSpec = GridLayout.spec(row, 1f)
