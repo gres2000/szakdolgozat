@@ -1,11 +1,13 @@
 package com.example.myapplication.mainFragments
 
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
@@ -13,11 +15,14 @@ import androidx.lifecycle.viewModelScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.myapplication.R
+import com.example.myapplication.authentication.RegisterActivity
 import com.example.myapplication.authentication.User
 import com.example.myapplication.calendar.MyCalendar
 import com.example.myapplication.calendar.CustomCalendarAdapter
 import com.example.myapplication.calendar.Event
 import com.example.myapplication.calendar.CalendarDialogFragment
+import com.example.myapplication.chat.ChatActivity
+import com.example.myapplication.databinding.ChatActivityBinding
 import com.example.myapplication.databinding.RightFragmentBinding
 import com.example.myapplication.viewModel.MainViewModel
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -41,8 +46,7 @@ class RightFragment : Fragment(), CalendarDialogFragment.CalendarDialogListener 
     ): View {
         return inflater.inflate(R.layout.right_fragment, container, false)
     }
-
-        override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         viewModel = ViewModelProvider(requireActivity())[MainViewModel::class.java]
 
@@ -68,6 +72,10 @@ class RightFragment : Fragment(), CalendarDialogFragment.CalendarDialogListener 
                 viewModel.saveAllCalendarsToFirestoreDB(requireContext(), viewModel.auth.currentUser!!.email.toString())
             }
         }
+
+
+
+
     }
 
     override fun onDestroyView() {

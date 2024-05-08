@@ -11,6 +11,7 @@ import android.widget.TextView
 import com.example.myapplication.R
 import com.example.myapplication.authentication.LoginActivity
 import com.example.myapplication.authentication.UserPreferences
+import com.example.myapplication.chat.ChatActivity
 import com.example.myapplication.databinding.MidFragmentBinding
 import com.google.firebase.auth.FirebaseAuth
 
@@ -18,6 +19,7 @@ class MidFragment : Fragment() {
     private var _binding: MidFragmentBinding? = null
     private lateinit var logoutButton: Button
     private lateinit var currentUserTextView: TextView
+    private lateinit var openChatButton: Button
 
     private val binding get() = _binding!!
 
@@ -35,6 +37,8 @@ class MidFragment : Fragment() {
 
         logoutButton = view.findViewById(R.id.buttonLogOut)
         currentUserTextView = view.findViewById(R.id.textViewCurrentUser)
+        openChatButton = view.findViewById(R.id.openChatButton)
+
         if (auth.currentUser != null) {
             currentUserTextView.text = auth.currentUser!!.email
         }
@@ -48,6 +52,11 @@ class MidFragment : Fragment() {
             val intent = Intent(requireContext(), LoginActivity::class.java)
             startActivity(intent)
             requireActivity().finish()
+        }
+
+        openChatButton.setOnClickListener{
+            val intent = Intent(requireContext(), ChatActivity::class.java)
+            startActivity(intent)
         }
 
     }

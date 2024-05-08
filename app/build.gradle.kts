@@ -100,5 +100,15 @@ dependencies {
 
     implementation("com.google.code.gson:gson:2.8.8")
 
+    // FirebaseUI for Firebase Realtime Database
+    implementation("com.firebaseui:firebase-ui-database:8.0.2")
+
+    // FirebaseUI for Cloud Firestore
+    implementation("com.firebaseui:firebase-ui-firestore:8.0.2")
+            // FirebaseUI fr Firebase Aut
+    implementation("com.firebaseui:firebase-ui-auth:8.0.2")
+           // FirebaseUI fr Cloud Storag
+    implementation("com.firebaseui:firebase-ui-storage:8.0.2")
+
 
 }

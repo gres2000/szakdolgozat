@@ -35,6 +35,8 @@
     <string name="whole_day_event">Whole day event</string>
     <string name="select_date">Select Date</string>
     <string name="create_new_calendar">Create new calendar</string>
+    <string name="say_something">Say something...</string>
+    <string name="chat">Chat</string>
 
 
 </resources>

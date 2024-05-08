@@ -33,6 +33,12 @@
             android:exported="true"
             android:theme="@style/Theme.MyApplication">
         </activity>
+        <activity
+            android:name=".chat.ChatActivity"
+            android:exported="true"
+            android:theme="@style/Theme.MyApplication">
+        </activity>
+
     </application>
 
 </manifest>

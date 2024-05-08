@@ -9,7 +9,7 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
         android:orientation="horizontal">
 
         <TextView
@@ -24,10 +24,17 @@
 
         <Button
             android:id="@+id/buttonLogOut"
-            android:layout_width="100dp"
+            android:layout_width="110dp"
             android:layout_height="wrap_content"
             android:text="@string/log_out" />
+
     </LinearLayout>
+
+    <Button
+        android:id="@+id/openChatButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/chat" />
 
 
 </LinearLayout>
