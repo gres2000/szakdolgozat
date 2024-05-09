@@ -1,14 +1,20 @@
 package com.example.myapplication.calendar
 
 import android.content.Context
+import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Paint
 import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.ShapeDrawable
+import android.graphics.drawable.shapes.RectShape
+import android.graphics.drawable.shapes.Shape
 import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.CalendarView
+import android.widget.FrameLayout
 import android.widget.GridLayout
 import android.widget.ImageButton
 import android.widget.TextView
@@ -42,7 +48,7 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
     private lateinit var adapter: CustomEventAdapter
     private lateinit var calendarOverlayGrid: GridLayout
     private var thisCalendar: MyCalendar? = null
-    private lateinit var eventsMap: HashMap<Pair<Int, Int>, MutableList<Event>>
+    private lateinit var eventsMap: HashMap<Pair<Int, Int>, Pair<MutableList<Event>, Int>>
     private val binding get() = _binding!!
 
     override fun onCreateView(
@@ -91,14 +97,12 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
 
             var dataList = eventsMap[getGridIndicesForDate(selectedCalendar.time)]
             if (dataList == null) {
-                dataList = mutableListOf()
+                dataList = Pair(mutableListOf(),-1)
             }
             eventsMap.clear()
-            adapter = CustomEventAdapter(requireActivity() as AppCompatActivity, dataList, thisCalendar!!.name)
+            adapter = CustomEventAdapter(requireActivity() as AppCompatActivity, dataList.first, thisCalendar!!.name)
             eventsRecyclerView.adapter = adapter
         }
-
-        //create circle
 
 
         // OnClickListeners
@@ -131,7 +135,7 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
 
             fillEventsMap(tempCalendar)
 
-            val newDataList = if (eventsMap[getGridIndicesForDate(tempCalendar.time)] != null) eventsMap[getGridIndicesForDate(tempCalendar.time)]!!.toList() else listOf()
+            val newDataList = if (eventsMap[getGridIndicesForDate(tempCalendar.time)] != null) eventsMap[getGridIndicesForDate(tempCalendar.time)]!!.first.toList() else listOf()
             adapter.updateData(newDataList)
             fillCalendarCircles()
             eventsMap.clear()
@@ -183,7 +187,7 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
 
     private fun createCircle(context: Context, color: Int): View {
         val circleView = View(context)
-        val circleSize = 1 * 3 / 4 // Adjust the multiplier as needed
+        val circleSize = 1 * 3 / 4
         val strokeWidth = context.resources.getDimensionPixelSize(R.dimen.stroke_width)
 
         val layoutParams = ViewGroup.LayoutParams(circleSize, circleSize)
@@ -198,6 +202,36 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
 
         return circleView
     }
+
+    private fun createRectangle(context: Context, color: Int): View {
+        val rectangleView = View(context)
+        val rectangleWidth = 90 // Adjust the width as needed
+        val rectangleHeight = 90 // Adjust the height as needed
+        val strokeWidth = context.resources.getDimensionPixelSize(R.dimen.stroke_width)
+
+        val layoutParams = ViewGroup.LayoutParams(rectangleWidth, rectangleHeight)
+        rectangleView.layoutParams = layoutParams
+
+        val shapeDrawable = object : ShapeDrawable(object : RectShape() {
+            override fun draw(canvas: Canvas, paint: Paint) {
+                // Override draw method to draw only top and bottom edges
+                val rect = rect()
+                canvas.drawLine(rect.left, rect.top, rect.right, rect.top, paint) // Top edge
+                canvas.drawLine(rect.left, rect.bottom, rect.right, rect.bottom, paint) // Bottom edge
+            }
+        }) {
+            override fun onDraw(shape: Shape, canvas: Canvas, paint: Paint) {
+                paint.color = color
+                paint.style = Paint.Style.STROKE
+                paint.strokeWidth = strokeWidth.toFloat()
+                shape.draw(canvas, paint)
+            }
+        }
+
+        rectangleView.background = shapeDrawable
+
+        return rectangleView
+    }
     private fun fillEventsMap(calendar: Calendar){
         eventsMap = HashMap()
         val eventCalendar = Calendar.getInstance()
@@ -205,14 +239,125 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
         for (event in thisCalendar!!.events) {
             eventCalendar.time = event.startTime
             if (eventCalendar.get(Calendar.MONTH) == selectedCalendar.get(Calendar.MONTH)) {
+                //starting day
                 val startTime = event.startTime
                 val key = getGridIndicesForDate(startTime)
 
                 if (eventsMap.containsKey(key)) {
-                    eventsMap[key]?.add(event)
+                    if (eventsMap[key]!!.second == 0) {
+                        val tempMutableList = eventsMap[key]?.first
+                        tempMutableList!!.add(event)
+                        eventsMap[key] = Pair(tempMutableList, 0)
+                    }
+                    else {
+                        val tempMutableList = eventsMap[key]?.first
+                        tempMutableList!!.add(event)
+                        eventsMap[key] = Pair(tempMutableList, 2)
+                    }
                 } else {
                     val eventList = mutableListOf(event)
-                    eventsMap[key] = eventList
+                    eventsMap[key] = Pair(eventList,0)
+                }
+
+                //between days
+
+                val tempStartingCalendar = Calendar.getInstance()
+                tempStartingCalendar.time = event.startTime
+
+                // Extract year, month, and day from the original date
+                var year = tempStartingCalendar.get(Calendar.YEAR)
+                var month = tempStartingCalendar.get(Calendar.MONTH)
+                var day = tempStartingCalendar.get(Calendar.DAY_OF_MONTH)
+
+                // Create a new Calendar instance and set it to the extracted year, month, and day
+                val newStartingCalendar = Calendar.getInstance()
+                newStartingCalendar.set(year, month, day, 0, 0, 0)
+                newStartingCalendar.set(Calendar.MILLISECOND, 0)
+
+                // Get the new date with hours and minutes set to 0
+                var newStartingTime = newStartingCalendar.time
+
+                val tempEndCalendar = Calendar.getInstance()
+                tempEndCalendar.time = event.endTime
+
+                // Extract year, month, and day from the original date
+                year = tempEndCalendar.get(Calendar.YEAR)
+                month = tempEndCalendar.get(Calendar.MONTH)
+                day = tempEndCalendar.get(Calendar.DAY_OF_MONTH)
+
+                // Create a new Calendar instance and set it to the extracted year, month, and day
+                val newEndCalendar = Calendar.getInstance()
+                newEndCalendar.set(year, month, day, 0, 0, 0)
+                newEndCalendar.set(Calendar.MILLISECOND, 0)
+                var currentDate = Calendar.getInstance()
+                currentDate.time = newStartingTime
+                currentDate.add(Calendar.DAY_OF_MONTH, 1)
+                var newEndTime = newEndCalendar.time
+                while (currentDate.time.before(newEndTime)) {
+                    val throughKey = getGridIndicesForDate(currentDate.time)
+                    if (eventsMap.containsKey(throughKey)) {
+                        if (eventsMap[throughKey]!!.second == 1) {
+                            val tempMutableList = eventsMap[throughKey]?.first
+                            tempMutableList!!.add(event)
+                            eventsMap[throughKey] = Pair(tempMutableList, 1)
+                        }
+                        else {
+                            val tempMutableList = eventsMap[throughKey]?.first
+                            tempMutableList!!.add(event)
+                            eventsMap[throughKey] = Pair(tempMutableList, 2)
+                        }
+                    } else {
+                        val eventList = mutableListOf(event)
+                        eventsMap[throughKey] = Pair(eventList,1)
+                    }
+                    currentDate.add(Calendar.DAY_OF_MONTH, 1)
+                }
+
+                //ending day
+                tempStartingCalendar.time = event.startTime
+
+                // Extract year, month, and day from the original date
+                year = tempStartingCalendar.get(Calendar.YEAR)
+                month = tempStartingCalendar.get(Calendar.MONTH)
+                day = tempStartingCalendar.get(Calendar.DAY_OF_MONTH)
+
+                // Create a new Calendar instance and set it to the extracted year, month, and day
+                newStartingCalendar.set(year, month, day, 0, 0, 0)
+                newStartingCalendar.set(Calendar.MILLISECOND, 0)
+
+                // Get the new date with hours and minutes set to 0
+                newStartingTime = newStartingCalendar.time
+
+                tempEndCalendar.time = event.endTime
+
+                // Extract year, month, and day from the original date
+                year = tempEndCalendar.get(Calendar.YEAR)
+                month = tempEndCalendar.get(Calendar.MONTH)
+                day = tempEndCalendar.get(Calendar.DAY_OF_MONTH)
+
+                // Create a new Calendar instance and set it to the extracted year, month, and day
+                newEndCalendar.set(year, month, day, 0, 0, 0)
+                newEndCalendar.set(Calendar.MILLISECOND, 0)
+
+                // Get the new date with hours and minutes set to 0
+                newEndTime = newEndCalendar.time
+                if (newStartingTime.before(newEndTime)) {
+                    val endKey = getGridIndicesForDate(event.endTime)
+                    if (eventsMap.containsKey(endKey)) {
+                        if (eventsMap[endKey]!!.second == 0) {
+                            val tempMutableList = eventsMap[endKey]?.first
+                            tempMutableList!!.add(event)
+                            eventsMap[endKey] = Pair(tempMutableList, 0)
+                        }
+                        else {
+                            val tempMutableList = eventsMap[endKey]?.first
+                            tempMutableList!!.add(event)
+                            eventsMap[endKey] = Pair(tempMutableList, 2)
+                        }
+                    } else {
+                        val eventList = mutableListOf(event)
+                        eventsMap[endKey] = Pair(eventList,0)
+                    }
                 }
 
             }
@@ -228,15 +373,53 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
         for (row in 0 until 5) {
             for (column in 0 until 7) {
                 if (eventsMap.containsKey(Pair(row, column))) {
-                    val orangeCircle = createCircle(requireContext(), Color.parseColor("#FFA500"))
-                    val layoutParams = GridLayout.LayoutParams().apply {
-                        rowSpec = GridLayout.spec(row, 1f)
-                        columnSpec = GridLayout.spec(column, 1f)
-                        setMargins(cellPadding*10, cellPadding*2, cellPadding*6, cellPadding*3)
-                        width = 90
-                        height = 90
+                    val shapeId = eventsMap[Pair(row, column)]?.second
+                    when(shapeId) {
+                        0 -> {
+                            val orangeCircle = createCircle(requireContext(), Color.parseColor("#FFA500"))
+                            val layoutParams = GridLayout.LayoutParams().apply {
+                                rowSpec = GridLayout.spec(row, 1f)
+                                columnSpec = GridLayout.spec(column, 1f)
+                                setMargins(cellPadding*10, cellPadding*2, cellPadding*6, cellPadding*3)
+                                width = 90
+                                height = 90
+                            }
+                            calendarOverlayGrid.addView(orangeCircle, layoutParams)
+                        }
+                        1 -> {
+                            val orangeRectangle = createRectangle(requireContext(), Color.parseColor("#FFA500"))
+                            val frameLayout = FrameLayout(requireContext())
+                            frameLayout.addView(orangeRectangle)
+
+                            val layoutParams = GridLayout.LayoutParams().apply {
+                                rowSpec = GridLayout.spec(row, 1f)
+                                columnSpec = GridLayout.spec(column, 1f)
+                                setMargins(cellPadding*10, cellPadding*2, cellPadding*6, cellPadding*3)
+                                width = 90
+                                height = 90
+                            }
+
+                            frameLayout.layoutParams = layoutParams
+                            (frameLayout.layoutParams as ViewGroup.MarginLayoutParams).marginStart = -40
+                            (frameLayout.layoutParams as ViewGroup.MarginLayoutParams).marginEnd = -40
+
+                            calendarOverlayGrid.addView(frameLayout)
+                        }
+                        2 -> {
+                            val orangeCircle = createCircle(requireContext(), Color.parseColor("#FFA500"))
+                            val orangeRectangle = createRectangle(requireContext(), Color.parseColor("#FFA500"))
+                            val layoutParams = GridLayout.LayoutParams().apply {
+                                rowSpec = GridLayout.spec(row, 1f)
+                                columnSpec = GridLayout.spec(column, 1f)
+                                setMargins(cellPadding*10, cellPadding*2, cellPadding*6, cellPadding*3)
+                                width = 90
+                                height = 90
+                            }
+                            calendarOverlayGrid.addView(orangeCircle, layoutParams)
+                            calendarOverlayGrid.addView(orangeRectangle, layoutParams)
+                        }
                     }
-                    calendarOverlayGrid.addView(orangeCircle, layoutParams)
+
                 }
                 else {
                     val cellView = View(context)
