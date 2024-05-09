@@ -50,16 +50,28 @@ class RightFragment : Fragment(), CalendarDialogFragment.CalendarDialogListener 
         super.onViewCreated(view, savedInstanceState)
         viewModel = ViewModelProvider(requireActivity())[MainViewModel::class.java]
 
+
+
         calendarsRecyclerView = view.findViewById(R.id.recyclerViewCalendars)
         calendarsRecyclerView.layoutManager = LinearLayoutManager(requireContext())
         addNewCalendar = view.findViewById(R.id.fab_add_calendar)
         saveCalendars = view.findViewById(R.id.fab_save_calendars)
 
         viewModel.viewModelScope.launch {
-//            val calendarList = viewModel.getAllCalendars(requireContext())
             adapter = CustomCalendarAdapter(requireActivity() as AppCompatActivity, viewModel.getAllCalendars(requireContext()) )
             calendarsRecyclerView.adapter = adapter
         }
+
+        viewModel.viewModelScope.launch {
+            viewModel.authenticateUser()
+            viewModel.getAllCalendarsFromFirestoreDB(
+                requireContext()
+            )
+            adapter = CustomCalendarAdapter(requireActivity() as AppCompatActivity, viewModel.getAllCalendars(requireContext()) )
+            calendarsRecyclerView.adapter = adapter
+            calendarsRecyclerView.adapter?.notifyDataSetChanged()
+        }
+
 
         addNewCalendar.setOnClickListener{
 
@@ -69,7 +81,13 @@ class RightFragment : Fragment(), CalendarDialogFragment.CalendarDialogListener 
 
         saveCalendars.setOnClickListener{
             viewModel.viewModelScope.launch {
-                viewModel.saveAllCalendarsToFirestoreDB(requireContext(), viewModel.auth.currentUser!!.email.toString())
+                viewModel.authenticateUser()
+                viewModel.getAllCalendarsFromFirestoreDB(
+                    requireContext()
+                )
+                adapter = CustomCalendarAdapter(requireActivity() as AppCompatActivity, viewModel.getAllCalendars(requireContext()) )
+                calendarsRecyclerView.adapter = adapter
+                calendarsRecyclerView.adapter?.notifyDataSetChanged()
             }
         }
 

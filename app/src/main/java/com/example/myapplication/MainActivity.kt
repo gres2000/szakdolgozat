@@ -34,6 +34,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
         viewModel = ViewModelProvider(this)[MainViewModel::class.java]
 
+
         lifecycleScope.launch {
             viewModel.authenticateUser()
         }

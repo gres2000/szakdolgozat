@@ -182,16 +182,13 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
             column = (dayOfWeek + 6) % 7
         }
 
+
         return Pair(row, column)
     }
 
     private fun createCircle(context: Context, color: Int): View {
         val circleView = View(context)
-        val circleSize = 1 * 3 / 4
         val strokeWidth = context.resources.getDimensionPixelSize(R.dimen.stroke_width)
-
-        val layoutParams = ViewGroup.LayoutParams(circleSize, circleSize)
-        circleView.layoutParams = layoutParams
 
         val shapeDrawable = GradientDrawable()
         shapeDrawable.shape = GradientDrawable.OVAL
@@ -370,7 +367,7 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
         //fill appropriate gridlayout cells with circles and empty views
         val cellPadding = resources.getDimensionPixelSize(R.dimen.one_dp)
 
-        for (row in 0 until 5) {
+        for (row in 0 until 6) {
             for (column in 0 until 7) {
                 if (eventsMap.containsKey(Pair(row, column))) {
                     val shapeId = eventsMap[Pair(row, column)]?.second
@@ -400,8 +397,6 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
                             }
 
                             frameLayout.layoutParams = layoutParams
-                            (frameLayout.layoutParams as ViewGroup.MarginLayoutParams).marginStart = -40
-                            (frameLayout.layoutParams as ViewGroup.MarginLayoutParams).marginEnd = -40
 
                             calendarOverlayGrid.addView(frameLayout)
                         }
@@ -434,8 +429,6 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
                     calendarOverlayGrid.addView(cellView)
 
                 }
-
-
             }
         }
     }

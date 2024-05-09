@@ -12,4 +12,7 @@ data class MyCalendar(
     val owner: User,
     val events: MutableList<Event>,
     var lastUpdated: Date
-)
+) {
+    // Default constructor
+    constructor() : this("", 0, mutableListOf(), User(), mutableListOf(), Date()) // Initialize properties with default values
+}

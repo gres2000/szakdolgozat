@@ -12,4 +12,6 @@ data class Event(
     var endTime: Date,
     var location: String? = null,
     var wholeDayEvent: Boolean
-)
+) {
+    constructor() : this("", null, Date(), Date(), null, false)
+}

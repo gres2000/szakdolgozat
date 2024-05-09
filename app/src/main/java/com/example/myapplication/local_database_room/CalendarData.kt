@@ -9,11 +9,11 @@ import java.util.Date
 data class CalendarData(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val name: String,
-    val sharedPeopleNumber: Int,
+    var sharedPeopleNumber: Int,
     //val sharedPeople: MutableList<UserData>,
     val owner: UserData,
     //val eventList: MutableList<EventData>,
-    val lastUpdated: Date
+    var lastUpdated: Date
 ) {
     // Secondary constructor to allow creation without specifying the ID
     constructor(
