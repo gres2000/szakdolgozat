@@ -80,7 +80,6 @@ class EventDetailFragment : Fragment() {
         minutePickerUntil.maxValue = 59
 
         minutePickerUntil.setFormatter { String.format("%02d", it) }
-        val calendar = Calendar.getInstance()
         updateDateInView(viewModel.newEventStartingDay!!, dateUntilTextView)
         updateDateInView(viewModel.newEventStartingDay!!, dateFromTextView)
         hourPickerFrom.value = LocalDateTime.now().hour
@@ -97,18 +96,21 @@ class EventDetailFragment : Fragment() {
 
         wholeDaySwitch.setOnCheckedChangeListener { buttonView, isChecked ->
             if (isChecked) {
+                wholeDaySwitch.isEnabled = false
                 hourPickerFrom.startAnimation(foldUpAnimation)
                 minutePickerFrom.startAnimation(foldUpAnimation)
                 hourPickerUntil.startAnimation(foldUpAnimation)
                 minutePickerUntil.startAnimation(foldUpAnimation)
 
-                hourPickerFrom.postDelayed({
+                wholeDaySwitch.postDelayed({
                     hourPickerFrom.visibility = View.GONE
                     minutePickerFrom.visibility = View.GONE
                     hourPickerUntil.visibility = View.GONE
                     minutePickerUntil.visibility = View.GONE
+                    wholeDaySwitch.isEnabled = true
                 }, foldUpAnimation.duration)
             } else {
+                wholeDaySwitch.isEnabled = false
                 hourPickerFrom.visibility = View.VISIBLE
                 minutePickerFrom.visibility = View.VISIBLE
                 hourPickerUntil.visibility = View.VISIBLE
@@ -117,6 +119,9 @@ class EventDetailFragment : Fragment() {
                 minutePickerFrom.startAnimation(foldDownAnimation)
                 hourPickerUntil.startAnimation(foldDownAnimation)
                 minutePickerUntil.startAnimation(foldDownAnimation)
+                wholeDaySwitch.postDelayed({
+                    wholeDaySwitch.isEnabled = true
+                }, foldDownAnimation.duration)
             }
         }
 

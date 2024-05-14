@@ -8,6 +8,7 @@ import android.widget.Button
 import android.widget.EditText
 import androidx.fragment.app.DialogFragment
 import com.example.myapplication.R
+import com.example.myapplication.databinding.CalendarDialogFragmentBinding
 import android.view.LayoutInflater as LayoutInflater1
 
 class CalendarDialogFragment : DialogFragment() {
@@ -16,11 +17,17 @@ class CalendarDialogFragment : DialogFragment() {
         fun onNewCalendarCreated(name: String)
     }
 
+    private var _binding: CalendarDialogFragmentBinding? = null
     private lateinit var listener: CalendarDialogListener
     private lateinit var nameEditText: EditText
-
-    override fun onCreateView(inflater: LayoutInflater1, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        return inflater.inflate(R.layout.calendar_dialog_fragment, container, false)
+    private val binding get() = _binding!!
+    override fun onCreateView(
+        inflater: LayoutInflater1,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
+        _binding = CalendarDialogFragmentBinding.inflate(inflater, container, false)
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {

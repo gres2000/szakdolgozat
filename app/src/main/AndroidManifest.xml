@@ -38,6 +38,16 @@
             android:exported="true"
             android:theme="@style/Theme.MyApplication">
         </activity>
+        <activity
+            android:name=".friends.FriendsActivity"
+            android:exported="true"
+            android:theme="@style/Theme.MyApplication">
+        </activity>
+        <activity
+            android:name=".friends.FoundUsersActivity"
+            android:exported="true"
+            android:theme="@style/Theme.MyApplication">
+        </activity>
 
     </application>
 

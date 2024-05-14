@@ -11,6 +11,8 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.myapplication.R
+import com.example.myapplication.databinding.DayDetailFragmentBinding
+import com.example.myapplication.databinding.DayFragmentBinding
 import com.example.myapplication.viewModel.MainViewModel
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.Dispatchers
@@ -18,6 +20,7 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
 class DayFragment : Fragment() {
+    private var _binding: DayFragmentBinding? = null
     var dayFragmentId: Int
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: CustomDayAdapter
@@ -27,6 +30,7 @@ class DayFragment : Fragment() {
     private val dayString: String
     private val daysOfWeak: Array<String> =
         arrayOf("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
+    private val binding get() = _binding!!
     companion object {
         private var instantiationCount = 0
     }
@@ -42,8 +46,9 @@ class DayFragment : Fragment() {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
-        return inflater.inflate(R.layout.day_fragment, container, false)
+    ): View {
+        _binding = DayFragmentBinding.inflate(inflater, container, false)
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -79,5 +84,10 @@ class DayFragment : Fragment() {
             }
         }
 
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 }

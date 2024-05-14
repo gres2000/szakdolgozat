@@ -106,7 +106,7 @@ class CustomCalendarAdapter(private val activity: AppCompatActivity, private val
             val viewModel = ViewModelProvider(activity)[MainViewModel::class.java]
             viewModel.viewModelScope.launch { // Launch a coroutine
                 viewModel.deleteCalendarFromRoom(activity, dataList[position])
-                viewModel.saveAllCalendarsToFirestoreDB(activity, viewModel.loggedInUser!!.emailAddress)
+                viewModel.saveAllCalendarsToFirestoreDB(activity, viewModel.loggedInUser!!.email)
                 dataList.removeAt(position)
                 notifyItemRemoved(position)
             }

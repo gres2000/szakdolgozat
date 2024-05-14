@@ -13,6 +13,7 @@ import com.example.myapplication.authentication.LoginActivity
 import com.example.myapplication.authentication.UserPreferences
 import com.example.myapplication.chat.ChatActivity
 import com.example.myapplication.databinding.MidFragmentBinding
+import com.example.myapplication.friends.FriendsActivity
 import com.google.firebase.auth.FirebaseAuth
 
 class MidFragment : Fragment() {
@@ -20,6 +21,7 @@ class MidFragment : Fragment() {
     private lateinit var logoutButton: Button
     private lateinit var currentUserTextView: TextView
     private lateinit var openChatButton: Button
+    private lateinit var openFriendsButton: Button
 
     private val binding get() = _binding!!
 
@@ -27,7 +29,8 @@ class MidFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        return inflater.inflate(R.layout.mid_fragment, container, false)
+        _binding = MidFragmentBinding.inflate(inflater, container, false)
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -38,6 +41,7 @@ class MidFragment : Fragment() {
         logoutButton = view.findViewById(R.id.buttonLogOut)
         currentUserTextView = view.findViewById(R.id.textViewCurrentUser)
         openChatButton = view.findViewById(R.id.openChatButton)
+        openFriendsButton = view.findViewById(R.id.openFriendsButton)
 
         if (auth.currentUser != null) {
             currentUserTextView.text = auth.currentUser!!.email
@@ -58,6 +62,13 @@ class MidFragment : Fragment() {
             val intent = Intent(requireContext(), ChatActivity::class.java)
             startActivity(intent)
         }
+
+        openFriendsButton.setOnClickListener{
+            val intent = Intent(requireContext(), FriendsActivity::class.java)
+            startActivity(intent)
+        }
+
+
 
     }
 

@@ -28,6 +28,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.myapplication.R
 import com.example.myapplication.databinding.CalendarDialogFragmentBinding
+import com.example.myapplication.databinding.CalendarFragmentBinding
 import com.example.myapplication.viewModel.MainViewModel
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.launch
@@ -36,7 +37,7 @@ import java.util.Date
 
 class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListener, CustomEventAdapter.OnItemRemovedListener {
 
-    private var _binding: CalendarDialogFragmentBinding? = null
+    private var _binding: CalendarFragmentBinding? = null
     private lateinit var titleTextView: TextView
     private lateinit var ownerTextView: TextView
     private lateinit var calendarView: CalendarView
@@ -56,7 +57,8 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        return inflater.inflate(R.layout.calendar_fragment, container, false)
+        _binding = CalendarFragmentBinding.inflate(inflater, container, false)
+        return binding.root
     }
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)

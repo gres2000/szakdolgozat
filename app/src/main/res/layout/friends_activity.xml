@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <SearchView
+            android:id="@+id/searchViewFriends"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:queryHint="Search people..."
+            android:iconifiedByDefault="false"
+            android:layout_margin="8dp"
+            android:imeOptions="actionSearch"
+            android:layout_weight="6"/>
+        <ImageButton
+            android:id="@+id/searchButton"
+            android:layout_width="0dp"
+            android:layout_height="60dp"
+            android:src="@drawable/baseline_search_48"
+            android:contentDescription="@string/search"
+            android:layout_weight="1"
+            android:layout_gravity="center"/>
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/friendRequestNumberTextView"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:text="@string/friend_requests"
+        android:textSize="20sp"
+        android:textColor="@color/black"
+        android:padding="10dp"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:text="@string/friends"
+        android:textSize="20sp"
+        android:textColor="@color/black"
+        android:padding="10dp"/>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/friendRequestsRecyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="8dp"
+        android:scrollbars="vertical" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/friendsRecyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="8dp"
+        android:scrollbars="vertical" />
+
+</LinearLayout>

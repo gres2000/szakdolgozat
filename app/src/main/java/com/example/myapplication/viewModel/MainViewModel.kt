@@ -4,6 +4,7 @@ import android.content.ContentValues.TAG
 import android.content.Context
 import android.os.Build
 import android.util.Log
+import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -17,11 +18,24 @@ import com.example.myapplication.local_database_room.CalendarData
 import com.example.myapplication.local_database_room.EventData
 import com.example.myapplication.local_database_room.UserData
 import com.example.myapplication.tasks.Task
+import com.google.android.gms.tasks.Tasks
 import com.google.firebase.auth.ktx.auth
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.ValueEventListener
+import com.google.firebase.database.ktx.database
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.database.Query
+import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.SetOptions
 import com.google.firebase.ktx.Firebase
 import com.google.gson.Gson
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.time.LocalDate
 import java.time.ZoneId
@@ -118,11 +132,11 @@ class MainViewModel : ViewModel() {
 
         loggedInUser = loggedInDeferred.await()
 
-        val loggedInUserJson = Gson().toJson(UserData(null, loggedInUser!!.username, loggedInUser!!.emailAddress)).toString()
+        val loggedInUserJson = Gson().toJson(UserData(null, loggedInUser!!.username, loggedInUser!!.email)).toString()
 
         val myCalendarList = mutableListOf<MyCalendar>()
 
-        val calendarDataList = calendarDao.getAllCalendarsForUser(loggedInUserJson, loggedInUser!!.emailAddress)
+        val calendarDataList = calendarDao.getAllCalendarsForUser(loggedInUserJson, loggedInUser!!.email)
 
         if (calendarDataList.isNotEmpty()) {
 
@@ -177,7 +191,7 @@ class MainViewModel : ViewModel() {
 
         if (existingCalendar == null) {
             for (user in myCalendar.sharedPeople) {
-                val userData = UserData(myCalendar.name, user.username, user.emailAddress)
+                val userData = UserData(myCalendar.name, user.username, user.email)
                 sharedPeopleDao.insertUser(userData)
             }
 
@@ -200,7 +214,7 @@ class MainViewModel : ViewModel() {
             val newCalendar = CalendarData(
                 name = myCalendar.name,
                 sharedPeopleNumber = myCalendar.sharedPeopleNumber,
-                owner = UserData(null, myCalendar.owner.username, myCalendar.owner.emailAddress),
+                owner = UserData(null, myCalendar.owner.username, myCalendar.owner.email),
                 lastUpdated = myCalendar.lastUpdated
             )
             calendarDao.insertCalendarItem(newCalendar)
@@ -212,7 +226,7 @@ class MainViewModel : ViewModel() {
             }
             calendarDao.updateCalendarItem(existingCalendar)
         }
-        saveAllCalendarsToFirestoreDB(context, loggedInUser!!.emailAddress)
+        saveAllCalendarsToFirestoreDB(context, loggedInUser!!.email)
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -252,7 +266,7 @@ class MainViewModel : ViewModel() {
         }
 
         myCalendar.lastUpdated = Date.from(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant())
-        saveAllCalendarsToFirestoreDB(context, loggedInUser!!.emailAddress)
+        saveAllCalendarsToFirestoreDB(context, loggedInUser!!.email)
     }
 
     suspend fun saveAllCalendarsToFirestoreDB(context: Context, userId: String) {
@@ -261,7 +275,7 @@ class MainViewModel : ViewModel() {
         try {
             val calendars = getAllCalendars(context)
             loggedInUser = loggedInDeferred.await()
-            val loggedInUserEmail = loggedInUser?.emailAddress
+            val loggedInUserEmail = loggedInUser?.email
 
             if (loggedInUserEmail != null) {
 
@@ -292,7 +306,7 @@ class MainViewModel : ViewModel() {
         val calendarsCollection = firestoreDB.collection("calendars")
 
         loggedInUser = loggedInDeferred.await()
-        val userId = loggedInUser!!.emailAddress
+        val userId = loggedInUser!!.email
         val allData = try {
             val userDocument = calendarsCollection.document(userId).get().await()
 
@@ -345,7 +359,7 @@ class MainViewModel : ViewModel() {
         val sharedPeopleDao = roomDB.sharedUsersDao()
 
         for (user in myCalendar.sharedPeople) {
-            val userData = sharedPeopleDao.getUserByEmail(user.emailAddress)
+            val userData = sharedPeopleDao.getUserByEmail(user.email)
             if (userData != null) {
                 sharedPeopleDao.deleteUser(userData)
             }
@@ -385,5 +399,266 @@ class MainViewModel : ViewModel() {
             eventDao.deleteEvent(eventData)
         }
     }
+
+    suspend fun getFriendRequests(callback: (List<FriendRequest>) -> Unit) {
+
+        loggedInUser = loggedInDeferred.await()
+        if (loggedInUser != null) {
+            firestoreDB.collection("friend_requests")
+                .whereEqualTo("receiverId", loggedInUser!!.email)
+                .get()
+                .addOnSuccessListener { result ->
+                    val friendRequests = mutableListOf<FriendRequest>()
+                    for (document in result) {
+                        val receiverId = document.getString("receiverId") ?: ""
+                        val senderId = document.getString("senderId") ?: ""
+                        val status = document.getString("status") ?: ""
+                        val friendRequest = FriendRequest(receiverId, senderId, status)
+                        if(status == "pending") {
+                            friendRequests.add(friendRequest)
+                        }
+                    }
+                    callback(friendRequests)
+                }
+                .addOnFailureListener { _ ->
+                    Log.d(TAG, "failed to retrieve friend requests")
+                }
+        }
+    }
+
+    fun handleFriendRequest(choice: String, friendRequest: FriendRequest, callback: (Boolean) -> Unit) {
+        val friendRequestsCollection = firestoreDB.collection("friend_requests")
+
+
+        friendRequestsCollection
+            .whereEqualTo("senderId", friendRequest.senderId)
+            .whereEqualTo("receiverId", auth.currentUser?.email)
+            .get()
+            .addOnSuccessListener { documents ->
+                if (!documents.isEmpty) {
+                    val document = documents.documents[0]
+                    document.reference.update("status", choice)
+                        .addOnSuccessListener {
+                            callback(true)
+                        }
+                        .addOnFailureListener {
+                            callback(false)
+                        }
+                } else {
+                    callback(false)
+                }
+            }
+            .addOnFailureListener {
+                callback(false)
+            }
+    }
+
+    suspend fun getFriends(callback: (List<User>) -> Unit) {
+
+        loggedInUser = loggedInDeferred.await()
+        if (loggedInUser != null) {
+            firestoreDB.collection("friend_requests")
+                .whereEqualTo("receiverId", loggedInUser!!.email)
+                .get()
+                .addOnSuccessListener { result ->
+                    val acceptedFriends = mutableListOf<FriendRequest>()
+                    val rejectedFriends = mutableListOf<FriendRequest>()
+                    for (document in result) {
+                        val receiverId = document.getString("receiverId") ?: ""
+                        val senderId = document.getString("senderId") ?: ""
+                        val status = document.getString("status") ?: ""
+                        val friendRequest = FriendRequest(receiverId, senderId, status)
+                        if(status == "accepted") {
+                            acceptedFriends.add(friendRequest)
+                        }
+                        else if (status == "rejected") {
+                            rejectedFriends.add(friendRequest)
+                        }
+                    }
+                    CoroutineScope(Dispatchers.Default).launch {
+                        updateOrCreateUserFriendsDocument(acceptedFriends).await()
+                        deleteRejectedFriendRequests(rejectedFriends)
+                        deleteAcceptedFriendRequests(acceptedFriends)
+
+                        fetchUsersFromFriendsList(callback)
+                    }
+
+
+                }
+                .addOnFailureListener { _ ->
+                    Log.d(TAG, "failed to retrieve friend requests")
+                }
+        }
+    }
+
+    suspend fun fetchUsersFromFriendsList(callback: (List<User>) -> Unit) {
+        authenticateUser()
+        loggedInUser = loggedInDeferred.await()
+        firestoreDB.collection("user_friends")
+            .document(loggedInUser!!.email)
+            .get()
+            .addOnSuccessListener { documentSnapshot ->
+                val friendsList = documentSnapshot.toObject(UserFriends::class.java)?.friends ?: emptyList()
+
+
+                val users = mutableListOf<User>()
+                val userRef = firestoreDB.collection("registered_users")
+
+
+                val queries = friendsList.map { friendId ->
+                    userRef.document(friendId).get()
+                }
+
+                Tasks.whenAllSuccess<DocumentSnapshot>(queries)
+                    .addOnSuccessListener { snapshots ->
+                        snapshots.forEach { snapshot ->
+                            val user = snapshot.toObject(User::class.java)
+                            user?.let {
+                                users.add(user)
+                            }
+                        }
+                        callback(users)
+                    }
+                    .addOnFailureListener { exception ->
+                        Log.w(TAG, "Error fetching user data for friends", exception)
+                    }
+            }
+            .addOnFailureListener { exception ->
+                Log.w(TAG, "Error fetching user friends document", exception)
+            }
+    }
+
+    private fun updateOrCreateUserFriendsDocument(acceptedFriends: List<FriendRequest>): Deferred<Unit>  {
+        val currentEmail = loggedInUser!!.email
+        val deferred = CompletableDeferred<Unit>()
+
+        // Update or create the document in Firestore
+        firestoreDB.collection("user_friends")
+            .document(currentEmail)
+            .get()
+            .addOnSuccessListener { documentSnapshot ->
+                val currentUserFriends = documentSnapshot.toObject(UserFriends::class.java)
+                val existingFriends = currentUserFriends?.friends ?: emptyList()
+
+                // Merge existing friends with new friends
+                val updatedFriends = existingFriends.toMutableList()
+                acceptedFriends.forEach { friendRequest ->
+                    if (!existingFriends.contains(friendRequest.senderId)) {
+                        updatedFriends.add(friendRequest.senderId)
+                    }
+                }
+
+                // Update the document with merged friends list
+                val userFriendsMap = mapOf("userId" to currentEmail, "friends" to updatedFriends)
+                firestoreDB.collection("user_friends")
+                    .document(currentEmail)
+                    .set(userFriendsMap)
+                    .addOnSuccessListener {
+                        Log.d(TAG, "User friends document updated successfully.")
+                    }
+                    .addOnFailureListener { e ->
+                        Log.w(TAG, "Error updating user friends document", e)
+                    }
+
+                for (friendRequest in acceptedFriends) {
+                    val friendEmail = friendRequest.senderId
+                    firestoreDB.collection("user_friends")
+                        .document(friendEmail)
+                        .get()
+                        .addOnSuccessListener { documentSnapshot ->
+                            val friendFriends = documentSnapshot.toObject(UserFriends::class.java)
+                            val updatedFriends = friendFriends?.friends?.toMutableList() ?: mutableListOf()
+                            if (!updatedFriends.contains(loggedInUser!!.email)) {
+                                updatedFriends.add(loggedInUser!!.email)
+                                val data = mapOf("friends" to updatedFriends)
+                                firestoreDB.collection("user_friends")
+                                    .document(friendEmail)
+                                    .set(data, SetOptions.merge())
+                                    .addOnSuccessListener {
+                                        Log.d(TAG, "User $friendEmail friends document updated successfully.")
+                                        deferred.complete(Unit)
+                                    }
+                                    .addOnFailureListener { e ->
+                                        Log.w(TAG, "Error updating user $friendEmail friends document", e)
+                                        deferred.completeExceptionally(e)
+                                    }
+                            }
+                        }
+                        .addOnFailureListener { e ->
+                            Log.w(TAG, "Error getting user $friendEmail friends document", e)
+                            deferred.completeExceptionally(e)
+                        }
+                }
+                deferred.complete(Unit)
+            }
+            .addOnFailureListener { e ->
+                Log.w(TAG, "Error fetching user friends document", e)
+                deferred.completeExceptionally(e)
+            }
+        return deferred
+    }
+
+    private fun deleteRejectedFriendRequests(rejectedFriends: List<FriendRequest>) {
+        val batch = firestoreDB.batch()
+
+        // Iterate through the rejected friend requests and delete them
+        rejectedFriends.forEach { friendRequest ->
+            val query = firestoreDB.collection("friend_requests")
+                .whereEqualTo("receiverId", friendRequest.receiverId)
+                .whereEqualTo("senderId", friendRequest.senderId)
+                .whereEqualTo("status", friendRequest.status)
+
+            query.get()
+                .addOnSuccessListener { snapshot ->
+                    snapshot.forEach { document ->
+                        batch.delete(document.reference)
+                    }
+
+                    // Commit the batch delete operation
+                    batch.commit()
+                        .addOnSuccessListener {
+                            Log.d(TAG, "Rejected friend requests deleted successfully.")
+                        }
+                        .addOnFailureListener { e ->
+                            Log.w(TAG, "Error deleting rejected friend requests", e)
+                        }
+                }
+                .addOnFailureListener { e ->
+                    Log.w(TAG, "Error getting rejected friend requests to delete", e)
+                }
+        }
+    }
+
+    private fun deleteAcceptedFriendRequests(acceptedFriends: List<FriendRequest>) {
+        val batch = firestoreDB.batch()
+
+        // Iterate through the rejected friend requests and delete them
+        acceptedFriends.forEach { friendRequest ->
+            val query = firestoreDB.collection("friend_requests")
+                .whereEqualTo("receiverId", friendRequest.receiverId)
+                .whereEqualTo("senderId", friendRequest.senderId)
+                .whereEqualTo("status", friendRequest.status)
+
+            query.get()
+                .addOnSuccessListener { snapshot ->
+                    snapshot.forEach { document ->
+                        batch.delete(document.reference)
+                    }
+
+                    // Commit the batch delete operation
+                    batch.commit()
+                        .addOnSuccessListener {
+                            Log.d(TAG, "Accepted friend requests deleted successfully.")
+                        }
+                        .addOnFailureListener { e ->
+                            Log.w(TAG, "Error deleting accepted friend requests", e)
+                        }
+                }
+                .addOnFailureListener { e ->
+                    Log.w(TAG, "Error getting accepted friend requests to delete", e)
+                }
+        }
+    }
+
 
 }
