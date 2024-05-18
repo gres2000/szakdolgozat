@@ -1,8 +1,6 @@
 package com.example.myapplication.local_database_room
 
 import androidx.room.TypeConverter
-import com.example.myapplication.authentication.User
-import com.example.myapplication.calendar.Event
 import com.google.common.reflect.TypeToken
 import com.google.gson.Gson
 import java.util.Date

@@ -13,6 +13,7 @@ import com.example.myapplication.R
 import com.example.myapplication.chat.ChatActivity.Companion.ANONYMOUS
 import com.example.myapplication.databinding.ImageMessageBinding
 import com.example.myapplication.databinding.MessageBinding
+import com.example.myapplication.viewModel.MainViewModel
 import com.firebase.ui.database.FirebaseRecyclerAdapter
 import com.firebase.ui.database.FirebaseRecyclerOptions
 import com.google.firebase.ktx.Firebase
@@ -48,13 +49,15 @@ class FriendlyMessageAdapter(
             } else {
                 binding.messengerImageView.setImageResource(R.drawable.ic_account_circle_black_36dp)
             }
+
         }
 
         private fun setTextColor(userName: String?, textView: TextView) {
             if (userName != ANONYMOUS && currentUserName == userName && userName != null) {
                 textView.setBackgroundResource(R.drawable.rounded_message_blue)
                 textView.setTextColor(Color.WHITE)
-            } else {
+            }
+            else {
                 textView.setBackgroundResource(R.drawable.rounded_message_gray)
                 textView.setTextColor(Color.BLACK)
             }
@@ -67,15 +70,21 @@ class FriendlyMessageAdapter(
             val view = inflater.inflate(R.layout.message, parent, false)
             val binding = MessageBinding.bind(view)
             MessageViewHolder(binding)
-        } else {
+        }
+        else if (viewType == VIEW_TYPE_IMAGE) {
             val view = inflater.inflate(R.layout.image_message, parent, false)
             val binding = ImageMessageBinding.bind(view)
             ImageMessageViewHolder(binding)
         }
+        else {
+            val view = inflater.inflate(R.layout.message_own, parent, false)
+            val binding = MessageBinding.bind(view)
+            MessageViewHolder(binding)
+        }
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int, model: FriendlyMessage) {
-        if (options.snapshots[position].text != null) {
+        if (options.snapshots[position].text != null || options.snapshots[position].text != "") {
             (holder as MessageViewHolder).bind(model)
         } else {
             (holder as ImageMessageViewHolder).bind(model)
@@ -83,7 +92,16 @@ class FriendlyMessageAdapter(
     }
 
     override fun getItemViewType(position: Int): Int {
-        return if (options.snapshots[position].text != null) VIEW_TYPE_TEXT else VIEW_TYPE_IMAGE
+        return if (options.snapshots[position].text != null) {
+            if (options.snapshots[position].name == MainViewModel.loggedInUser!!.username) {
+                VIEW_TYPE_TEXT_OWN
+            }
+            else {
+                VIEW_TYPE_TEXT
+            }
+        } else {
+            VIEW_TYPE_IMAGE
+        }
     }
 
     private fun loadImageIntoView(view: ImageView, url: String, isCircular: Boolean = true) {
@@ -119,5 +137,6 @@ class FriendlyMessageAdapter(
         const val TAG = "MessageAdapter"
         const val VIEW_TYPE_TEXT = 1
         const val VIEW_TYPE_IMAGE = 2
+        const val VIEW_TYPE_TEXT_OWN = 3
     }
 }

@@ -48,6 +48,11 @@
             android:exported="true"
             android:theme="@style/Theme.MyApplication">
         </activity>
+        <activity
+            android:name=".chat.StartChatActivity"
+            android:exported="true"
+            android:theme="@style/Theme.MyApplication">
+        </activity>
 
     </application>
 

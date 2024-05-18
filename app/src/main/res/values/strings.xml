@@ -46,6 +46,14 @@
     <string name="reject">Reject</string>
     <string name="profile_picture_of_user">Profile picture of user</string>
     <string name="friend_requests">Friend requests:</string>
+    <string name="find_other_people_by_seraching_their_email_addresses_or_usernames">Find other people by seraching their email addresses or usernames</string>
+    <string name="available_chats">Available chats</string>
+    <string name="quit_chat">Are you sure you want to quit this chat?</string>
+    <string name="choose_the_friend_to_start_a_new_chat_with">Choose the friend to start a new chat with</string>
+    <string name="previous">Previous</string>
+    <string name="next">Next</string>
+    <string name="start_chat_with_selected_user">Start chat with selected user?</string>
+    <string name="add_selected_user_to_shared_calendar">Add selected user to shared calendar?</string>
 
 
 </resources>

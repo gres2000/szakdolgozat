@@ -93,8 +93,10 @@
             android:id="@+id/recyclerViewUsers"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight="6"
-            android:orientation="horizontal" />
+            android:layout_weight="20"
+            android:orientation="horizontal"
+            android:layout_marginEnd="80dp"
+            android:layout_marginStart="80dp"/>
 
 
     </LinearLayout>
@@ -106,6 +108,21 @@
         app:layout_constraintBottom_toTopOf="@id/menu_pushup_box"
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_gravity="bottom|end"
+        android:layout_margin="16dp"
+        android:layout_marginEnd="339dp"
+        android:layout_marginBottom="629dp"
+        app:srcCompat="@drawable/ic_baseline_add_24"
+        app:tint="@android:color/black"
+        app:maxImageSize="48dp"
+        android:contentDescription="@string/add_new_task_button_description" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_add_user"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toTopOf="@id/menu_pushup_box"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_gravity="bottom|start"
         android:layout_margin="16dp"
         android:layout_marginEnd="339dp"
         android:layout_marginBottom="629dp"

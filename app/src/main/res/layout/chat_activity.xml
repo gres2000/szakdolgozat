@@ -44,6 +44,19 @@
 
     </LinearLayout>
 
+    <TextView
+        android:id="@+id/chatTitle"
+        android:background="@color/white"
+        android:layout_width="match_parent"
+        android:layout_height="80dp"
+        android:gravity="center_vertical"
+        android:padding="5dp"
+        android:paddingStart="20dp"
+        android:paddingEnd="10dp"
+        android:textSize="40sp"
+        android:textColor="@color/black"
+        tools:text="Username"/>
+
     <ProgressBar
         android:id="@+id/progressBar"
         style="?android:attr/progressBarStyleLarge"
@@ -56,6 +69,7 @@
         android:id="@+id/messageRecyclerView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_below="@id/chatTitle"
         android:layout_above="@+id/linearLayout"
         android:background="@color/cyan"
         android:paddingHorizontal="16dp" />

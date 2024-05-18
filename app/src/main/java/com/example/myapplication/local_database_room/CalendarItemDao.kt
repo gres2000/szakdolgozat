@@ -5,7 +5,6 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Update
-import com.google.gson.JsonArray
 
 @Dao
 interface CalendarItemDao {
@@ -30,6 +29,6 @@ interface CalendarItemDao {
     @Query("SELECT * FROM event WHERE calendarId = :calendarId")
     suspend fun getEventsForCalendar(calendarId: String): List<EventData>
 
-    @Query("SELECT * FROM calendar_items WHERE name = :calendarName")
-    suspend fun getCalendarByName(calendarName: String): CalendarData?
+    @Query("SELECT * FROM calendar_items WHERE id = :calendarId")
+    suspend fun getCalendarById(calendarId: Long): CalendarData?
 }

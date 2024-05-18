@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
+import android.view.inputmethod.InputMethodManager
 import android.widget.Button
 import android.widget.EditText
 import androidx.fragment.app.DialogFragment
@@ -37,6 +38,8 @@ class CalendarDialogFragment : DialogFragment() {
         val confirmButton = view.findViewById<Button>(R.id.saveButtonCalendar)
         val cancelButton = view.findViewById<Button>(R.id.cancelButtonCalendar)
 
+        showKeyboard(nameEditText)
+
         confirmButton.setOnClickListener {
             val name = nameEditText.text.toString()
             if (name.isNotEmpty()) {
@@ -60,4 +63,13 @@ class CalendarDialogFragment : DialogFragment() {
             throw ClassCastException("$parentFragment must implement CalendarDialogListener")
         }
     }
+    private fun showKeyboard(view: View) {
+        //needs delay, otherwise keyboard does not open
+        view.postDelayed({
+            val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+            view.requestFocus()
+            imm.showSoftInput(view, InputMethodManager.RESULT_UNCHANGED_SHOWN)
+        }, 200)
+    }
+
 }

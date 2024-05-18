@@ -8,15 +8,18 @@ import android.widget.SearchView
 import android.widget.TextView
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.viewModelScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.myapplication.R
+import com.example.myapplication.authentication.User
+import com.example.myapplication.common.CustomUsersAdapter
 import com.example.myapplication.databinding.FriendsActivityBinding
 import com.example.myapplication.viewModel.MainViewModel
 import kotlinx.coroutines.launch
 
-class FriendsActivity : AppCompatActivity(), CustomFriendRequestAdapter.OnAcceptButtonClickedListener {
+class FriendsActivity : AppCompatActivity(), CustomFriendRequestAdapter.OnAcceptButtonClickedListener, CustomUsersAdapter.ChatActionListener {
 
     private lateinit var binding: FriendsActivityBinding
     private lateinit var viewModel: MainViewModel
@@ -66,7 +69,7 @@ class FriendsActivity : AppCompatActivity(), CustomFriendRequestAdapter.OnAccept
         friendsRecyclerView.layoutManager = GridLayoutManager(this, 3)
 
         lifecycleScope.launch {
-            viewModel.loggedInUser = viewModel.loggedInDeferred.await()
+            MainViewModel.authenticateUser()
             viewModel.getFriendRequests { friendRequests ->
                 val adapter = CustomFriendRequestAdapter(this@FriendsActivity, this@FriendsActivity, friendRequests.toMutableList())
                 friendRequestsRecyclerView.adapter = adapter
@@ -77,11 +80,12 @@ class FriendsActivity : AppCompatActivity(), CustomFriendRequestAdapter.OnAccept
         }
 
         lifecycleScope.launch {
-            viewModel.loggedInUser = viewModel.loggedInDeferred.await()
+            MainViewModel.authenticateUser()
             viewModel.getFriends { friends ->
-                val adapter = CustomFriendsAdapter(this@FriendsActivity, friends.toMutableList())
+                val adapter = CustomUsersAdapter(this@FriendsActivity, friends.toMutableList(), this@FriendsActivity)
+                adapter.setItemClickedPrompt(getString(R.string.start_chat_with_selected_user))
                 friendsRecyclerView.adapter = adapter
-                (friendsRecyclerView.adapter as CustomFriendsAdapter).notifyDataSetChanged()
+                (friendsRecyclerView.adapter as CustomUsersAdapter).notifyDataSetChanged()
             }
         }
 
@@ -100,11 +104,13 @@ class FriendsActivity : AppCompatActivity(), CustomFriendRequestAdapter.OnAccept
 
     override fun onButtonClicked(position: Int) {
         lifecycleScope.launch {
-            viewModel.loggedInUser = viewModel.loggedInDeferred.await()
+            MainViewModel.authenticateUser()
             viewModel.getFriends { friends ->
-                val adapter = CustomFriendsAdapter(this@FriendsActivity, friends.toMutableList())
+                val adapter = CustomUsersAdapter(this@FriendsActivity, friends.toMutableList(), this@FriendsActivity)
+                adapter.setItemClickedPrompt(getString(R.string.start_chat_with_selected_user))
+                adapter.setItemClickedPrompt(getString(R.string.start_chat_with_selected_user))
                 friendsRecyclerView.adapter = adapter
-                (friendsRecyclerView.adapter as CustomFriendsAdapter).notifyDataSetChanged()
+                (friendsRecyclerView.adapter as CustomUsersAdapter).notifyDataSetChanged()
 
                 val tempString = getString(R.string.friend_requests) + " " + (friendRequestNumberTextView.text.last().digitToInt() - 1)
                 friendRequestNumberTextView.text = tempString
@@ -112,5 +118,9 @@ class FriendsActivity : AppCompatActivity(), CustomFriendRequestAdapter.OnAccept
         }
     }
 
-    // You can override other Activity lifecycle methods as needed
+    override fun onInitiateChat(receiverUser: User) {
+        viewModel.viewModelScope.launch {
+            viewModel.startNewChat(receiverUser)
+        }
+    }
 }

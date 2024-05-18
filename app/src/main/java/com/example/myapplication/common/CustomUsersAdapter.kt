@@ -1,9 +1,10 @@
-package com.example.myapplication.friends
+package com.example.myapplication.common
 
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -13,11 +14,17 @@ import com.example.myapplication.R
 import com.example.myapplication.authentication.User
 import com.example.myapplication.viewModel.MainViewModel
 
-class CustomFriendsAdapter(private val activity: AppCompatActivity, private val dataList: MutableList<User>) : RecyclerView.Adapter<CustomFriendsAdapter.FriendsItemViewHolder>() {
+class CustomUsersAdapter(private val activity: AppCompatActivity, private val dataList: MutableList<User>, private val listener: ChatActionListener?) : RecyclerView.Adapter<CustomUsersAdapter.FriendsItemViewHolder>() {
+    private lateinit var dialogPrompt: String
+
     inner class FriendsItemViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val profilePictureImageView: ImageView = itemView.findViewById(R.id.imageViewProfilePicture)
         val usernameTextView: TextView = itemView.findViewById(R.id.textViewUserName)
         lateinit var viewModel: MainViewModel
+    }
+
+    interface ChatActionListener {
+        fun onInitiateChat(receiverUser: User)
     }
 
 
@@ -32,8 +39,13 @@ class CustomFriendsAdapter(private val activity: AppCompatActivity, private val 
         viewHolder.usernameTextView.text = currentItem.email
         viewHolder.profilePictureImageView.setImageResource(R.drawable.ic_account_circle_black_36dp)
 
-        viewHolder.itemView.setOnClickListener {
-            showInitiateChatDialog(position)
+        if (listener != null) {
+            viewHolder.itemView.setOnClickListener {
+                showInitiateChatDialog(position)
+            }
+        }
+        else {
+            viewHolder.itemView.findViewById<LinearLayout>(R.id.foundUsersLinearLayout).isClickable = false
         }
     }
 
@@ -42,10 +54,9 @@ class CustomFriendsAdapter(private val activity: AppCompatActivity, private val 
 
     private fun showInitiateChatDialog(position: Int) {
         val builder = AlertDialog.Builder(activity)
-        builder.setTitle("Start a chat with selected user?")
+        builder.setTitle(dialogPrompt)
             .setPositiveButton("Yes") { _, _ ->
-                //send friend request
-                initiateChat(dataList[position].email)
+                listener!!.onInitiateChat(dataList[position])
             }
             .setNegativeButton("No") { _, _ ->
             }
@@ -55,5 +66,9 @@ class CustomFriendsAdapter(private val activity: AppCompatActivity, private val 
     private fun initiateChat(receiverUserId: String) {
         //start a chat
 
+    }
+
+    fun setItemClickedPrompt(prompt: String) {
+        dialogPrompt = prompt
     }
 }

@@ -41,5 +41,23 @@
         android:layout_height="wrap_content"
         android:text="@string/friends" />
 
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_send_request"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="16dp"
+        android:layout_marginEnd="339dp"
+        android:layout_marginBottom="629dp"
+        android:contentDescription="@string/add_new_task_button_description" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/suggestedEventsRecyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="8dp"
+        android:scrollbars="vertical" />
+
+
 
 </LinearLayout>

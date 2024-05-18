@@ -3,10 +3,10 @@
     <item
         android:id="@+id/action_previous"
         android:icon="@drawable/arrow_left"
-        android:title="Previous" />
+        android:title="@string/previous" />
     <item
         android:id="@+id/action_next"
         android:icon="@drawable/arrow_right"
-        android:title="Next" />
+        android:title="@string/next" />
 
 </menu>

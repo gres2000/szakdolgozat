@@ -14,14 +14,16 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.recyclerview.widget.RecyclerView
 import com.example.myapplication.R
+import com.example.myapplication.common.MyItemTouchHelperCallback
 import com.example.myapplication.viewModel.MainViewModel
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.Collections
 
-class CustomCalendarAdapter(private val activity: AppCompatActivity, private val dataList: MutableList<MyCalendar>) : RecyclerView.Adapter<CustomCalendarAdapter.CalendarItemViewHolder>() {
+class CustomCalendarAdapter(private val activity: AppCompatActivity, private val dataList: MutableList<MyCalendar>) : RecyclerView.Adapter<CustomCalendarAdapter.CalendarItemViewHolder>(), MyItemTouchHelperCallback.ItemTouchHelperAdapter {
     inner class CalendarItemViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val titleTextView: TextView = itemView.findViewById(R.id.textViewTitleCalendarItem)
         val numberTextView: TextView = itemView.findViewById(R.id.textViewPeopleNumber)
@@ -50,7 +52,7 @@ class CustomCalendarAdapter(private val activity: AppCompatActivity, private val
 
         viewHolder.lastUpdatedTextView.text = formattedDate
         viewHolder.deleteImageButton.setOnClickListener{
-            showDeleteDialog(position)
+            showDeleteDialog(viewHolder.layoutPosition)
         }
 
         viewHolder.itemView.setOnClickListener{
@@ -65,6 +67,7 @@ class CustomCalendarAdapter(private val activity: AppCompatActivity, private val
                 .addToBackStack(null) // Add to back stack to allow navigating back
                 .commit()
         }
+
     }
     @RequiresApi(Build.VERSION_CODES.O)
     fun instantToLocalDate(instant: Instant): LocalDate {
@@ -114,5 +117,11 @@ class CustomCalendarAdapter(private val activity: AppCompatActivity, private val
         }
 
         dialog.show()
+    }
+
+    override fun onItemMove(fromPosition: Int, toPosition: Int): Boolean {
+        Collections.swap(dataList, fromPosition, toPosition)
+        notifyItemMoved(fromPosition, toPosition)
+        return true
     }
 }

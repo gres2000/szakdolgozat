@@ -1,18 +1,17 @@
 package com.example.myapplication.calendar
 
-import android.os.Parcelable
 import com.example.myapplication.authentication.User
-import kotlinx.parcelize.Parcelize
 import java.util.Date
 
 data class MyCalendar(
+    val id: Long,
     val name: String,
-    val sharedPeopleNumber: Int,
+    var sharedPeopleNumber: Int,
     val sharedPeople: MutableList<User>,
     val owner: User,
-    val events: MutableList<Event>,
+    val events: MutableList<MyEvent>,
     var lastUpdated: Date
 ) {
     // Default constructor
-    constructor() : this("", 0, mutableListOf(), User(), mutableListOf(), Date()) // Initialize properties with default values
+    constructor() : this(0,"", 0, mutableListOf(), User(), mutableListOf(), Date()) // Initialize properties with default values
 }

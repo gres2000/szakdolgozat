@@ -1,10 +1,8 @@
 package com.example.myapplication.calendar
 
 import android.app.DatePickerDialog
-import android.content.Context
 import android.os.Build
 import android.os.Bundle
-import android.os.Handler
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -19,16 +17,14 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.example.myapplication.R
 import com.example.myapplication.viewModel.MainViewModel
-import java.sql.Time
 import java.text.SimpleDateFormat
-import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.Calendar
 import java.util.Locale
 
 class EventDetailFragment : Fragment() {
     interface EventDetailListener {
-        fun onNewEventCreated(event: Event)
+        fun onNewEventCreated(event: MyEvent)
     }
     private lateinit var viewModel: MainViewModel
     private lateinit var dateUntilTextView: TextView
@@ -141,7 +137,7 @@ class EventDetailFragment : Fragment() {
             val dateFormat = SimpleDateFormat("yyyy/MM/dd HH:mm", Locale.getDefault())
             val dateFrom = dateFormat.parse("${dateFromTextView.text} ${hourPickerFrom.value}:${minutePickerFrom.value}")!!
             val dateUntil = dateFormat.parse("${dateUntilTextView.text} ${hourPickerUntil.value}:${minutePickerUntil.value}")!!
-            val newEvent = Event(
+            val newEvent = MyEvent(
                 eventTitle.text.toString(),
                 eventDescrption.text.toString(),
                 dateFrom,

@@ -7,6 +7,7 @@ import android.view.Menu
 import android.widget.ProgressBar
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.myapplication.R
 import com.example.myapplication.databinding.ChatActivityBinding
@@ -20,6 +21,8 @@ import com.firebase.ui.database.FirebaseRecyclerOptions
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.storage.StorageReference
 import com.google.firebase.storage.ktx.storage
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 class ChatActivity: AppCompatActivity() {
     private lateinit var viewModel: MainViewModel
@@ -31,7 +34,8 @@ class ChatActivity: AppCompatActivity() {
 
     // Firebase instance variables
     private lateinit var auth: FirebaseAuth
-    private var db = Firebase.database
+    private var db = FirebaseDatabase.getInstance("https://szakdolgozat-7f789-default-rtdb.europe-west1.firebasedatabase.app/")
+    private lateinit var chatRef: DatabaseReference
     private lateinit var adapter: FriendlyMessageAdapter
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,8 +44,13 @@ class ChatActivity: AppCompatActivity() {
         viewModel = ViewModelProvider(this)[MainViewModel::class.java]
         auth = viewModel.auth
 
+        MainViewModel.viewModelScope.launch {
+            MainViewModel.authenticateUser()
+        }
 
-        val messagesRef = db.reference.child(MESSAGES_CHILD)
+        val allChatsRef = db.getReference("chats")
+        chatRef = allChatsRef.child(intent.getStringExtra("chatId")!!)
+        val messagesRef = chatRef.child("messages")
 
         val options = FirebaseRecyclerOptions.Builder<FriendlyMessage>()
             .setQuery(messagesRef, FriendlyMessage::class.java)
@@ -52,7 +61,9 @@ class ChatActivity: AppCompatActivity() {
         manager.stackFromEnd = true
         binding.messageRecyclerView.layoutManager = manager
         binding.messageRecyclerView.adapter = adapter
+        binding.chatTitle.text = intent.getStringExtra("chatName")
 
+        //scroll to bottom
         adapter.registerAdapterDataObserver(
             MyScrollToBottomObserver(binding.messageRecyclerView, adapter, manager)
         )
@@ -66,7 +77,7 @@ class ChatActivity: AppCompatActivity() {
                 getPhotoUrl(),
                 null
             )
-            db.reference.child(MESSAGES_CHILD).push().setValue(friendlyMessage)
+            chatRef.child("messages").push().setValue(friendlyMessage)
             binding.messageEditText.setText("")
         }
 
@@ -99,7 +110,7 @@ class ChatActivity: AppCompatActivity() {
         Log.d(TAG, "Uri: $uri")
         val user = auth.currentUser
         val tempMessage = FriendlyMessage(null, getUserName(), getPhotoUrl(), LOADING_IMAGE_URL)
-        db.reference
+        chatRef
             .child(MESSAGES_CHILD)
             .push()
             .setValue(
@@ -134,7 +145,7 @@ class ChatActivity: AppCompatActivity() {
                     .addOnSuccessListener { uri ->
                         val friendlyMessage =
                             FriendlyMessage(null, getUserName(), getPhotoUrl(), uri.toString())
-                        db.reference
+                        chatRef
                             .child(MESSAGES_CHILD)
                             .child(key!!)
                             .setValue(friendlyMessage)
@@ -155,9 +166,12 @@ class ChatActivity: AppCompatActivity() {
     }
 
     private fun getUserName(): String? {
-        val user = auth.currentUser
-        return if (user != null) {
-            user.email
+//        val user = auth.currentUser
+//        return if (user != null) {
+//            user.email
+//        } else ANONYMOUS
+        return if (MainViewModel.loggedInUser != null) {
+            MainViewModel.loggedInUser!!.username
         } else ANONYMOUS
     }
     companion object {

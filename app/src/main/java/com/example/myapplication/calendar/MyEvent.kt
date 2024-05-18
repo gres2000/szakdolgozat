@@ -1,11 +1,9 @@
 package com.example.myapplication.calendar
 
 
-import android.os.Parcelable
-import kotlinx.parcelize.Parcelize
 import java.util.Date
 
-data class Event(
+data class MyEvent(
     var title: String,
     var description: String? = null,
     var startTime: Date,

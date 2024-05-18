@@ -20,9 +20,8 @@ import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
-class CustomEventAdapter(private val activity: AppCompatActivity, private val dataList: MutableList<Event>, private val calendarId: String) : RecyclerView.Adapter<CustomEventAdapter.EventItemViewHolder>() {
+class CustomEventAdapter(private val activity: AppCompatActivity, private val dataList: MutableList<MyEvent>, private val calendarId: String) : RecyclerView.Adapter<CustomEventAdapter.EventItemViewHolder>() {
     inner class EventItemViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val startingTimeTextView: TextView = itemView.findViewById(R.id.textViewStartingTime)
         val eventTitleTextView: TextView = itemView.findViewById(R.id.textViewEventTitle)
@@ -34,7 +33,7 @@ class CustomEventAdapter(private val activity: AppCompatActivity, private val da
     private var onItemRemovedListener: OnItemRemovedListener? = null
 
     interface OnItemRemovedListener {
-        fun onItemRemoved(event: Event)
+        fun onItemRemoved(event: MyEvent)
     }
     fun setOnItemRemovedListener(listener: OnItemRemovedListener) {
         onItemRemovedListener = listener
@@ -58,7 +57,7 @@ class CustomEventAdapter(private val activity: AppCompatActivity, private val da
         viewHolder.intervalTextView.text = tmpString
 
         viewHolder.deleteEventImageButton.setOnClickListener{
-            showDeleteDialog(position)
+            showDeleteDialog(viewHolder.layoutPosition)
         }
 
         viewHolder.itemView.setOnClickListener{
@@ -82,7 +81,7 @@ class CustomEventAdapter(private val activity: AppCompatActivity, private val da
 
     override fun getItemCount() = dataList.size
 
-    fun updateData(newData: List<Event>) {
+    fun updateData(newData: List<MyEvent>) {
         val originSize = dataList.size
         dataList.clear()
         dataList.addAll(newData)
@@ -123,7 +122,7 @@ class CustomEventAdapter(private val activity: AppCompatActivity, private val da
 
         dialog.show()
     }
-    fun getDataList():List<Event> {
+    fun getDataList():List<MyEvent> {
         return dataList
     }
 }

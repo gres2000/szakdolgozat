@@ -1,23 +1,28 @@
 package com.example.myapplication.mainFragments
 
+import android.content.Context
 import android.os.Build
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.inputmethod.InputMethodManager
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat.getSystemService
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.myapplication.R
 import com.example.myapplication.authentication.User
 import com.example.myapplication.calendar.MyCalendar
 import com.example.myapplication.calendar.CustomCalendarAdapter
-import com.example.myapplication.calendar.Event
+import com.example.myapplication.calendar.MyEvent
 import com.example.myapplication.calendar.CalendarDialogFragment
+import com.example.myapplication.common.MyItemTouchHelperCallback
 import com.example.myapplication.databinding.RightFragmentBinding
 import com.example.myapplication.viewModel.MainViewModel
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -46,9 +51,7 @@ class RightFragment : Fragment(), CalendarDialogFragment.CalendarDialogListener 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         viewModel = ViewModelProvider(requireActivity())[MainViewModel::class.java]
-
-
-
+        
         calendarsRecyclerView = view.findViewById(R.id.recyclerViewCalendars)
         calendarsRecyclerView.layoutManager = LinearLayoutManager(requireContext())
         addNewCalendar = view.findViewById(R.id.fab_add_calendar)
@@ -61,6 +64,8 @@ class RightFragment : Fragment(), CalendarDialogFragment.CalendarDialogListener 
                     viewModel.getAllCalendars(requireContext())
                 )
                 calendarsRecyclerView.adapter = adapter
+                calendarsRecyclerView.adapter?.notifyDataSetChanged()
+                //MyItemTouchHelperCallback.attachDragAndDrop(adapter, calendarsRecyclerView)
             }
         }
 
@@ -78,6 +83,7 @@ class RightFragment : Fragment(), CalendarDialogFragment.CalendarDialogListener 
 
                 calendarsRecyclerView.adapter = adapter
                 calendarsRecyclerView.adapter?.notifyDataSetChanged()
+                //MyItemTouchHelperCallback.attachDragAndDrop(adapter, calendarsRecyclerView)
             }
         }
 
@@ -101,6 +107,7 @@ class RightFragment : Fragment(), CalendarDialogFragment.CalendarDialogListener 
                     )
                     calendarsRecyclerView.adapter = adapter
                     calendarsRecyclerView.adapter?.notifyDataSetChanged()
+                    //MyItemTouchHelperCallback.attachDragAndDrop(adapter, calendarsRecyclerView)
                 }
             }
         }
@@ -126,9 +133,9 @@ class RightFragment : Fragment(), CalendarDialogFragment.CalendarDialogListener 
             ZoneId.systemDefault()).toInstant())
         val userList = mutableListOf<User>()
         val owner = User(viewModel.loggedInUser!!.username, viewModel.loggedInUser!!.email)
-        val eventList: MutableList<Event> = mutableListOf()
+        val eventList: MutableList<MyEvent> = mutableListOf()
 
-        val cal = MyCalendar(name, 0, userList, owner, eventList, date)
+        val cal = MyCalendar(0, name, 0, userList, owner, eventList, date)
         viewModel.viewModelScope.launch {
 
             viewModel.addCalendar(requireContext(), cal)

@@ -1,5 +1,6 @@
 package com.example.myapplication.calendar
 
+import android.app.Dialog
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
@@ -13,43 +14,34 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.CalendarView
 import android.widget.FrameLayout
 import android.widget.GridLayout
-import android.widget.ImageButton
-import android.widget.TextView
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewModelScope
+import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.myapplication.R
-import com.example.myapplication.databinding.CalendarDialogFragmentBinding
+import com.example.myapplication.authentication.User
+import com.example.myapplication.common.CustomUsersAdapter
 import com.example.myapplication.databinding.CalendarFragmentBinding
 import com.example.myapplication.viewModel.MainViewModel
-import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.launch
 import java.util.Calendar
 import java.util.Date
 
-class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListener, CustomEventAdapter.OnItemRemovedListener {
+class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListener, CustomEventAdapter.OnItemRemovedListener, CustomUsersAdapter.ChatActionListener {
 
     private var _binding: CalendarFragmentBinding? = null
-    private lateinit var titleTextView: TextView
-    private lateinit var ownerTextView: TextView
-    private lateinit var calendarView: CalendarView
-    private lateinit var eventsRecyclerView: RecyclerView
-    private lateinit var usersRecyclerView: RecyclerView
     private lateinit var viewModel: MainViewModel
-    private lateinit var backButtonImageButton: ImageButton
-    private lateinit var addNewEvent: FloatingActionButton
     private lateinit var adapter: CustomEventAdapter
-    private lateinit var calendarOverlayGrid: GridLayout
     private var thisCalendar: MyCalendar? = null
-    private lateinit var eventsMap: HashMap<Pair<Int, Int>, Pair<MutableList<Event>, Int>>
+    private lateinit var eventsMap: HashMap<Pair<Int, Int>, Pair<MutableList<MyEvent>, Int>>
     private val binding get() = _binding!!
 
     override fun onCreateView(
@@ -67,25 +59,19 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
         viewModel = ViewModelProvider(requireActivity())[MainViewModel::class.java]
 
         thisCalendar = viewModel.getCalendarToFragment()
-        titleTextView = view.findViewById(R.id.textViewDetailCalendarTitle)
-        ownerTextView = view.findViewById(R.id.textViewDetailCalendarOwner)
-        calendarView = view.findViewById(R.id.calendarViewCalendarDetail)
-        eventsRecyclerView = view.findViewById(R.id.recyclerViewEvents)
-        eventsRecyclerView.layoutManager = LinearLayoutManager(requireContext())
-        usersRecyclerView = view.findViewById(R.id.recyclerViewUsers)
-        backButtonImageButton = view.findViewById(R.id.imageButtonLeftArrow)
-        addNewEvent = view.findViewById(R.id.fab_add_event)
-        eventsRecyclerView = view.findViewById(R.id.recyclerViewEvents)
-        calendarOverlayGrid = view.findViewById(R.id.gridLayoutCalendarOverlay)
-        titleTextView.text = thisCalendar?.name
+        binding.recyclerViewEvents.layoutManager = LinearLayoutManager(requireContext())
+        val horizontalManager = LinearLayoutManager(requireContext())
+        horizontalManager.orientation = LinearLayoutManager.HORIZONTAL
+        binding.recyclerViewUsers.layoutManager = horizontalManager
+        binding.textViewDetailCalendarTitle.text = thisCalendar?.name
 
         val ownerString = getString(R.string.owner_double_dots) + " " + thisCalendar?.owner?.username
-        ownerTextView.text = ownerString
+        binding.textViewDetailCalendarOwner.text = ownerString
 
         viewModel.viewModelScope.launch {
 
             val selectedCalendar = Calendar.getInstance()
-            selectedCalendar.timeInMillis = calendarView.date
+            selectedCalendar.timeInMillis = binding.calendarViewCalendarDetail.date
 
             if (viewModel.newEventStartingDay != null) {
                 val cal = viewModel.newEventStartingDay
@@ -103,19 +89,29 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
             }
             eventsMap.clear()
             adapter = CustomEventAdapter(requireActivity() as AppCompatActivity, dataList.first, thisCalendar!!.name)
-            eventsRecyclerView.adapter = adapter
+            binding.recyclerViewEvents.adapter = adapter
+
+            val usersList = thisCalendar!!.sharedPeople
+            val usersAdapter = CustomUsersAdapter(requireContext() as AppCompatActivity, usersList, null)
+            binding.recyclerViewUsers.adapter = usersAdapter
         }
 
 
         // OnClickListeners
-        backButtonImageButton.setOnClickListener{
+        binding.imageButtonLeftArrow.setOnClickListener{
             requireActivity().onBackPressedDispatcher.onBackPressed()
         }
 
+        binding.fabAddUser.setOnClickListener{
+            lifecycleScope.launch {
+                showChooseFriendDialog()
+            }
+        }
+
         val selectedCalendar = Calendar.getInstance()
-        selectedCalendar.timeInMillis = calendarView.date
+        selectedCalendar.timeInMillis = binding.calendarViewCalendarDetail.date
         viewModel.newEventStartingDay = selectedCalendar
-        addNewEvent.setOnClickListener{
+        binding.fabAddEvent.setOnClickListener{
             viewModel.passCalendarToFragment(thisCalendar!!)
 
             val eventDetailFragment = EventDetailFragment()
@@ -126,9 +122,9 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
             transaction.commit()
         }
 
-        (eventsRecyclerView.adapter as CustomEventAdapter).setOnItemRemovedListener(this)
+        (binding.recyclerViewEvents.adapter as CustomEventAdapter).setOnItemRemovedListener(this)
 
-        calendarView.setOnDateChangeListener { _, year, month, dayOfMonth ->
+        binding.calendarViewCalendarDetail.setOnDateChangeListener { _, year, month, dayOfMonth ->
 
             val tempCalendar = Calendar.getInstance()
             tempCalendar.set(Calendar.YEAR, year)
@@ -153,7 +149,7 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
         _binding = null
     }
 
-    override fun onNewEventCreated(event: Event) {
+    override fun onNewEventCreated(event: MyEvent) {
         viewModel.viewModelScope.launch {
 
             viewModel.addEventToCalendar(requireContext(), event, thisCalendar!!)
@@ -364,7 +360,7 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
     }
 
     private fun fillCalendarCircles() {
-        calendarOverlayGrid.removeAllViews()
+        binding.gridLayoutCalendarOverlay.removeAllViews()
 
         //fill appropriate gridlayout cells with circles and empty views
         val cellPadding = resources.getDimensionPixelSize(R.dimen.one_dp)
@@ -383,7 +379,7 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
                                 width = 90
                                 height = 90
                             }
-                            calendarOverlayGrid.addView(orangeCircle, layoutParams)
+                            binding.gridLayoutCalendarOverlay.addView(orangeCircle, layoutParams)
                         }
                         1 -> {
                             val orangeRectangle = createRectangle(requireContext(), Color.parseColor("#FFA500"))
@@ -400,7 +396,7 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
 
                             frameLayout.layoutParams = layoutParams
 
-                            calendarOverlayGrid.addView(frameLayout)
+                            binding.gridLayoutCalendarOverlay.addView(frameLayout)
                         }
                         2 -> {
                             val orangeCircle = createCircle(requireContext(), Color.parseColor("#FFA500"))
@@ -412,8 +408,8 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
                                 width = 90
                                 height = 90
                             }
-                            calendarOverlayGrid.addView(orangeCircle, layoutParams)
-                            calendarOverlayGrid.addView(orangeRectangle, layoutParams)
+                            binding.gridLayoutCalendarOverlay.addView(orangeCircle, layoutParams)
+                            binding.gridLayoutCalendarOverlay.addView(orangeRectangle, layoutParams)
                         }
                     }
 
@@ -428,14 +424,14 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
                     layoutParamsCellView.setMargins(cellPadding*10, cellPadding*2, cellPadding*6, cellPadding*3)
                     cellView.layoutParams = layoutParamsCellView
                     cellView.background = ContextCompat.getDrawable(requireContext(), R.color.transparent)
-                    calendarOverlayGrid.addView(cellView)
+                    binding.gridLayoutCalendarOverlay.addView(cellView)
 
                 }
             }
         }
     }
 
-    override fun onItemRemoved(event: Event) {
+    override fun onItemRemoved(event: MyEvent) {
         thisCalendar!!.events.remove(event)
         if (viewModel.newEventStartingDay != null) {
             val cal = viewModel.newEventStartingDay
@@ -443,11 +439,37 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
         }
         else {
             val tempCalendar = Calendar.getInstance()
-            tempCalendar.timeInMillis = calendarView.date
+            tempCalendar.timeInMillis = binding.calendarViewCalendarDetail.date
             fillEventsMap(tempCalendar)
         }
         fillCalendarCircles()
-        calendarOverlayGrid.requestLayout()
+        binding.gridLayoutCalendarOverlay.requestLayout()
+    }
+
+    private suspend fun showChooseFriendDialog() {
+        val dialog = Dialog(requireContext())
+        dialog.setContentView(R.layout.choose_friend_dialog)
+
+        // Find views in the dialog layout
+        val chooseFriendRecyclerView = dialog.findViewById<RecyclerView>(R.id.chooseFriendRecyclerView)
+        chooseFriendRecyclerView.layoutManager = GridLayoutManager(requireContext(), 3)
+
+        viewModel.getFriends { friendList ->
+            val adapter = CustomUsersAdapter(requireContext() as AppCompatActivity, friendList.toMutableList(), this)
+            adapter.setItemClickedPrompt(getString(R.string.add_selected_user_to_shared_calendar))
+            chooseFriendRecyclerView.adapter = adapter
+            (chooseFriendRecyclerView.adapter as CustomUsersAdapter).notifyDataSetChanged()
+
+            dialog.setCancelable(true)
+
+            dialog.show()
+        }
+    }
+
+    override fun onInitiateChat(receiverUser: User) {
+        lifecycleScope.launch {
+            MainViewModel.addUserToCalendar(requireContext(), receiverUser, thisCalendar!!)
+        }
     }
 
 }

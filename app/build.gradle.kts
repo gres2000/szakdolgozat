@@ -110,5 +110,10 @@ dependencies {
            // FirebaseUI fr Cloud Storag
     implementation("com.firebaseui:firebase-ui-storage:8.0.2")
 
+    implementation("io.ktor:ktor-client-core:2.3.11")
+    //implementation("io.ktor:ktor-client-json:2.3.11")
+    implementation("io.ktor:ktor-client-logging:2.3.11")
+    implementation("io.ktor:ktor-client-cio:2.3.11")
+
 
 }

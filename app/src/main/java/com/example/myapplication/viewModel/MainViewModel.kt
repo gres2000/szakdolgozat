@@ -10,9 +10,11 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.room.Room
 import com.example.myapplication.authentication.User
-import com.example.myapplication.calendar.Event
+import com.example.myapplication.calendar.MyEvent
 import com.example.myapplication.calendar.MyCalendar
 import com.example.myapplication.calendar.UserFirestoreData
+import com.example.myapplication.chat.ChatData
+import com.example.myapplication.chat.FriendlyMessage
 import com.example.myapplication.local_database_room.AppDatabase
 import com.example.myapplication.local_database_room.CalendarData
 import com.example.myapplication.local_database_room.EventData
@@ -20,12 +22,8 @@ import com.example.myapplication.local_database_room.UserData
 import com.example.myapplication.tasks.Task
 import com.google.android.gms.tasks.Tasks
 import com.google.firebase.auth.ktx.auth
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.ValueEventListener
-import com.google.firebase.database.ktx.database
+import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.database.Query
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.ktx.Firebase
@@ -34,15 +32,16 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
+import java.security.MessageDigest
 import java.time.LocalDate
 import java.time.ZoneId
 import java.util.Calendar
 import java.util.Date
 
-class MainViewModel : ViewModel() {
+object MainViewModel : ViewModel() {
     private val _weeklyTasksList: List<MutableList<Task>> = List(7) { mutableListOf() }
     private val firestoreDB = FirebaseFirestore.getInstance()
     private val calendarsCollection = firestoreDB.collection("calendars")
@@ -54,7 +53,6 @@ class MainViewModel : ViewModel() {
     lateinit var taskStorage: Task
     var auth = Firebase.auth
     var loggedInUser: User? = null
-    val loggedInDeferred = CompletableDeferred<User?>()
     private var _myCalendarToPass: MyCalendar? = null
     private var _isExistingEvent: Boolean = false
     var newEventStartingDay: Calendar? = null
@@ -78,10 +76,43 @@ class MainViewModel : ViewModel() {
             val task1 = Task(0, "Munka", "leírás", "16:02", false)
             val task2 = Task(1, "Edzés", "leírás", "18:02", false)
             val task3 = Task(2, "Séta", "leírás", "20:02", false)
+            val task4 = Task(0, "Munka", "leírás", "16:02", false)
+            val task5 = Task(1, "Edzés", "leírás", "18:02", false)
+            val task6 = Task(2, "Séta", "leírás", "20:02", false)
+            val task7 = Task(0, "Munka", "leírás", "16:02", false)
+            val task8 = Task(1, "Edzés", "leírás", "18:02", false)
+            val task9 = Task(2, "Séta", "leírás", "20:02", false)
+            val task10 = Task(0, "Munka", "leírás", "16:02", false)
+            val task11 = Task(0, "Munka", "leírás", "16:02", false)
+            val task12 = Task(1, "Edzés", "leírás", "18:02", false)
+            val task13 = Task(2, "Séta", "leírás", "20:02", false)
+            val task14 = Task(0, "Munka", "leírás", "16:02", false)
+            val task15 = Task(1, "Edzés", "leírás", "18:02", false)
+            val task16 = Task(2, "Séta", "leírás", "20:02", false)
+            val task17 = Task(0, "Munka", "leírás", "16:02", false)
+            val task18 = Task(1, "Edzés", "leírás", "18:02", false)
+            val task19 = Task(2, "Séta", "leírás", "20:02", false)
             _weeklyTasksList[i].apply {
                 add(task1)
                 add(task2)
                 add(task3)
+                add(task4)
+                add(task5)
+                add(task6)
+                add(task7)
+                add(task8)
+                add(task9)
+                add(task10)
+                add(task11)
+                add(task11)
+                add(task12)
+                add(task13)
+                add(task14)
+                add(task15)
+                add(task16)
+                add(task17)
+                add(task18)
+                add(task19)
             }
         }
     }
@@ -105,17 +136,18 @@ class MainViewModel : ViewModel() {
         _taskReady = !_taskReady
     }
 
-    fun authenticateUser() {
-        val docRef = firestoreDB.collection("registered_users").document(Firebase.auth.currentUser?.email.toString())
-        docRef.get().addOnSuccessListener { documentSnapshot ->
-            val username = documentSnapshot.getString("username") ?: ""
-            val emailAddress = documentSnapshot.getString("email") ?: ""
-            loggedInDeferred.complete(User(username, emailAddress))
-            Log.d("authenticateUser", "successfully fetched user data ")
-        }.addOnFailureListener { exception ->
-            // Log the error
-            Log.e("authenticateUser", "Error fetching user data: ", exception)
-            loggedInDeferred.complete(null)
+    suspend fun authenticateUser() {
+        withContext(Dispatchers.Main) {
+            val docRef = firestoreDB.collection("registered_users").document(Firebase.auth.currentUser?.email.toString())
+            docRef.get().addOnSuccessListener { documentSnapshot ->
+                val username = documentSnapshot.getString("username") ?: ""
+                val emailAddress = documentSnapshot.getString("email") ?: ""
+    //            loggedInDeferred.complete(User(username, emailAddress))
+                loggedInUser = User(username, emailAddress)
+            }.addOnFailureListener { _ ->
+    //            loggedInDeferred.complete(null)
+                loggedInUser = null
+            }
         }
     }
 
@@ -130,9 +162,9 @@ class MainViewModel : ViewModel() {
 
         authenticateUser()
 
-        loggedInUser = loggedInDeferred.await()
+//        loggedInUser = loggedInDeferred.await()
 
-        val loggedInUserJson = Gson().toJson(UserData(null, loggedInUser!!.username, loggedInUser!!.email)).toString()
+        val loggedInUserJson = Gson().toJson(UserData(0, loggedInUser!!.username, loggedInUser!!.email)).toString()
 
         val myCalendarList = mutableListOf<MyCalendar>()
 
@@ -149,9 +181,9 @@ class MainViewModel : ViewModel() {
                     sharedPeopleList.add(User(userData.username, userData.emailAddress))
                 }
 
-                val eventList = mutableListOf<Event>()
+                val eventList = mutableListOf<MyEvent>()
                 for (eventData in eventDataForCalendar) {
-                    eventList.add(Event(
+                    eventList.add(MyEvent(
                         eventData.title,
                         eventData.description,
                         eventData.startTime,
@@ -163,6 +195,7 @@ class MainViewModel : ViewModel() {
 
                 myCalendarList.add(
                     MyCalendar(
+                        id = calendarData.id,
                         name = calendarData.name,
                         sharedPeopleNumber = calendarData.sharedPeopleNumber,
                         sharedPeople = sharedPeopleList,
@@ -187,11 +220,11 @@ class MainViewModel : ViewModel() {
         val sharedPeopleDao = roomDB.sharedUsersDao()
         val eventDao = roomDB.eventItemDao()
 
-        val existingCalendar = calendarDao.getCalendarByName(myCalendar.name)
+        val existingCalendar = calendarDao.getCalendarById(myCalendar.id)
 
         if (existingCalendar == null) {
             for (user in myCalendar.sharedPeople) {
-                val userData = UserData(myCalendar.name, user.username, user.email)
+                val userData = UserData(myCalendar.id, user.username, user.email)
                 sharedPeopleDao.insertUser(userData)
             }
 
@@ -214,7 +247,7 @@ class MainViewModel : ViewModel() {
             val newCalendar = CalendarData(
                 name = myCalendar.name,
                 sharedPeopleNumber = myCalendar.sharedPeopleNumber,
-                owner = UserData(null, myCalendar.owner.username, myCalendar.owner.email),
+                owner = UserData(0, myCalendar.owner.username, myCalendar.owner.email),
                 lastUpdated = myCalendar.lastUpdated
             )
             calendarDao.insertCalendarItem(newCalendar)
@@ -229,8 +262,34 @@ class MainViewModel : ViewModel() {
         saveAllCalendarsToFirestoreDB(context, loggedInUser!!.email)
     }
 
+    suspend fun addUserToCalendar(context: Context, myUser: User, myCalendar: MyCalendar) {
+        val roomDB = Room.databaseBuilder(
+            context,
+            AppDatabase::class.java, "database-name"
+        ).build()
+
+        val calendarDao = roomDB.calendarItemDao()
+        val usersDao = roomDB.sharedUsersDao()
+
+        myCalendar.sharedPeopleNumber++
+        myCalendar.sharedPeople.add(myUser)
+
+        val newUserData = UserData(myCalendar.id, myCalendar.owner.username, myCalendar.owner.email)
+
+        val updatedCalendarData = CalendarData(
+            myCalendar.id,
+            myCalendar.name,
+            myCalendar.sharedPeopleNumber,
+            newUserData,
+            myCalendar.lastUpdated
+        )
+        calendarDao.updateCalendarItem(updatedCalendarData)
+
+        usersDao.insertUser(newUserData)
+    }
+
     @RequiresApi(Build.VERSION_CODES.O)
-    suspend fun addEventToCalendar(context: Context, event: Event, myCalendar: MyCalendar) {
+    suspend fun addEventToCalendar(context: Context, event: MyEvent, myCalendar: MyCalendar) {
         // maybe update events here as well
         val roomDB = Room.databaseBuilder(
             context,
@@ -251,7 +310,7 @@ class MainViewModel : ViewModel() {
 
         eventDao.insertEvent(newEventData)
         val enetList = eventDao.getEventByCalendarName(myCalendar.name)?.toMutableList()?.map { eventData ->
-            Event(
+            MyEvent(
                 eventData.title,
                 eventData.description,
                 eventData.startTime,
@@ -274,7 +333,7 @@ class MainViewModel : ViewModel() {
         val calendarsCollection = firestoreDB.collection("calendars")
         try {
             val calendars = getAllCalendars(context)
-            loggedInUser = loggedInDeferred.await()
+//            loggedInUser = loggedInDeferred.await()
             val loggedInUserEmail = loggedInUser?.email
 
             if (loggedInUserEmail != null) {
@@ -305,7 +364,7 @@ class MainViewModel : ViewModel() {
         val firestoreDB = FirebaseFirestore.getInstance()
         val calendarsCollection = firestoreDB.collection("calendars")
 
-        loggedInUser = loggedInDeferred.await()
+//        loggedInUser = loggedInDeferred.await()
         val userId = loggedInUser!!.email
         val allData = try {
             val userDocument = calendarsCollection.document(userId).get().await()
@@ -334,7 +393,7 @@ class MainViewModel : ViewModel() {
             val calendarsDao = roomDB.calendarItemDao()
             for (tempCalendar in previousCalendars) {
                 if (!allData.contains(tempCalendar)) {
-                    val existingCalendar = calendarsDao.getCalendarByName(tempCalendar.name)
+                    val existingCalendar = calendarsDao.getCalendarById(tempCalendar.id)
                     if (existingCalendar != null) {
                         calendarsDao.deleteCalendarItem(existingCalendar)
                     }
@@ -365,7 +424,7 @@ class MainViewModel : ViewModel() {
             }
         }
 
-        val newCalendar = calendarDao.getCalendarByName(myCalendar.name)
+        val newCalendar = calendarDao.getCalendarById(myCalendar.id)
         if (newCalendar != null) {
             calendarDao.deleteCalendarItem(newCalendar)
         }
@@ -386,7 +445,7 @@ class MainViewModel : ViewModel() {
         }
     }
 
-    suspend fun deleteEventFromRoom(context: Context, event: Event, calendarId: String) {
+    suspend fun deleteEventFromRoom(context: Context, event: MyEvent, calendarId: String) {
         val roomDB = Room.databaseBuilder(
             context,
             AppDatabase::class.java, "database-name"
@@ -401,8 +460,8 @@ class MainViewModel : ViewModel() {
     }
 
     suspend fun getFriendRequests(callback: (List<FriendRequest>) -> Unit) {
-
-        loggedInUser = loggedInDeferred.await()
+        authenticateUser()
+//        loggedInUser = loggedInDeferred.await()
         if (loggedInUser != null) {
             firestoreDB.collection("friend_requests")
                 .whereEqualTo("receiverId", loggedInUser!!.email)
@@ -454,8 +513,8 @@ class MainViewModel : ViewModel() {
     }
 
     suspend fun getFriends(callback: (List<User>) -> Unit) {
-
-        loggedInUser = loggedInDeferred.await()
+        authenticateUser()
+//        loggedInUser = loggedInDeferred.await()
         if (loggedInUser != null) {
             firestoreDB.collection("friend_requests")
                 .whereEqualTo("receiverId", loggedInUser!!.email)
@@ -493,7 +552,6 @@ class MainViewModel : ViewModel() {
 
     suspend fun fetchUsersFromFriendsList(callback: (List<User>) -> Unit) {
         authenticateUser()
-        loggedInUser = loggedInDeferred.await()
         firestoreDB.collection("user_friends")
             .document(loggedInUser!!.email)
             .get()
@@ -659,6 +717,124 @@ class MainViewModel : ViewModel() {
                 }
         }
     }
+
+    private fun generateIdFromEmails(string1: String, string2: String): String {
+        // Sort the two strings alphabetically
+        val sortedStrings = listOf(string1, string2).sorted()
+
+        // Concatenate the sorted strings
+        val combinedString = sortedStrings.joinToString(separator = "")
+
+        // Initialize the SHA-256 hashing algorithm
+        val digest = MessageDigest.getInstance("SHA-256")
+
+        // Perform the hashing
+        val hashedBytes = digest.digest(combinedString.toByteArray())
+
+        // Convert the byte array to a hexadecimal string
+        val stringBuilder = StringBuilder()
+        for (byte in hashedBytes) {
+            stringBuilder.append(String.format("%02x", byte))
+        }
+
+        // Return the generated ID
+        return stringBuilder.toString()
+    }
+
+    private suspend fun checkExistingChat(user1: User, user2: User): Boolean {
+        val chatId = generateIdFromEmails(user1.email, user2.email)
+
+        val database = FirebaseDatabase.getInstance("https://szakdolgozat-7f789-default-rtdb.europe-west1.firebasedatabase.app/")
+        val chatsRef = database.getReference("chats")
+
+        val chatSnapshot = chatsRef.child(chatId).get().await()
+        return chatSnapshot.exists()
+    }
+
+    suspend fun startNewChat(chosenFriend: User): ChatData? {
+        authenticateUser()
+
+        val existingChat = checkExistingChat(loggedInUser!!, chosenFriend)
+        if (existingChat) {
+            return null
+        }
+
+        val newChat = ChatData()
+        val chatId = "-" + generateIdFromEmails(loggedInUser!!.email, chosenFriend.email)
+        newChat.id = chatId
+        newChat.title = chosenFriend.email + "&" + loggedInUser!!.email
+        newChat.users.add(loggedInUser!!)
+        newChat.users.add(chosenFriend)
+        newChat.users.sortWith(compareByDescending { it.email })
+
+        val database = FirebaseDatabase.getInstance("https://szakdolgozat-7f789-default-rtdb.europe-west1.firebasedatabase.app/")
+        val chatsRef = database.getReference("chats")
+        val chatRef = chatsRef.child(chatId)
+
+
+        chatRef.setValue(newChat)
+            .addOnSuccessListener {
+                Log.d(TAG, "New chat created: $chatId")
+            }
+            .addOnFailureListener { e ->
+                Log.e(TAG, "Error saving chat", e)
+            }
+
+        chatRef.child("messages").push().setValue(FriendlyMessage("This is the start of your chat.", "", "", ""))
+
+        return newChat
+    }
+
+    suspend fun quitChat(context: Context, chatData: ChatData) {
+        authenticateUser()
+
+        val database = FirebaseDatabase.getInstance("https://szakdolgozat-7f789-default-rtdb.europe-west1.firebasedatabase.app/")
+        val chatsRef = database.getReference("chats")
+        val usersRef = chatsRef.child(chatData.id).child("users")
+
+        chatData.users.sortWith(compareByDescending { it.email })
+
+        val index = chatData.users.indexOfFirst { it.email == loggedInUser!!.email }
+        chatData.users.removeAt(index)
+        usersRef.setValue(chatData.users).addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                Toast.makeText(context, "Quit chat successfully", Toast.LENGTH_SHORT).show()
+
+                val leaveMessage = FriendlyMessage("# # # # # #\n${loggedInUser!!.email} has left the chat\n# # # # # #", loggedInUser!!.email)
+                val messagesRef = chatsRef.child(chatData.id).child("messages")
+                messagesRef.push().setValue(leaveMessage)
+
+                if (chatData.users.size == 0) {
+                    chatsRef.child(chatData.id).removeValue()
+                }
+            }
+        }
+
+    }
+
+    /*suspend fun getChatsForUser(loggedInUserEmail: String, callback: (List<ChatData>) -> Unit) {
+        val database = FirebaseDatabase.getInstance("https://your-firebase-project-id.firebaseio.com/")
+        val chatsRef = database.getReference("chats")
+
+        val chatDataList = mutableListOf<ChatData>()
+        chatsRef.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(dataSnapshot: DataSnapshot) {
+                dataSnapshot.children.forEach { chatSnapshot ->
+                    val chatData = chatSnapshot.getValue(ChatData::class.java)
+                    if (chatData != null *//*&& loggedInUserEmail in chatData.users.map { it.email }*//*) {
+                        chatDataList.add(chatData)
+                    }
+                }
+                // Call the callback function with the retrieved data
+                callback(chatDataList)
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                // Handle error
+                callback(emptyList())
+            }
+        })
+    }*/
 
 
 }

@@ -58,7 +58,6 @@ class FoundUsersActivity : AppCompatActivity() {
                     }
                     viewModel.viewModelScope.launch {
                         viewModel.authenticateUser()
-                        viewModel.loggedInUser = viewModel.loggedInDeferred.await()
                         viewModel.fetchUsersFromFriendsList { alreadyFriends ->
                             for (data in dataList) {
                                 if (alreadyFriends.contains(data)) {

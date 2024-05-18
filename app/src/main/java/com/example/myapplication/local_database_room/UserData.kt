@@ -7,13 +7,13 @@ import java.util.Date
 @Entity(tableName = "user")
 data class UserData(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val calendarId: String?,
+    val calendarId: Long,
     val username: String,
     val emailAddress: String
 ){
     // Secondary constructor to allow creation without specifying the ID
     constructor(
-        calendarId: String?,
+        calendarId: Long,
         username: String,
         emailAddress: String
     ) : this(
