@@ -1,4 +1,4 @@
-package com.example.myapplication.calendar
+package com.example.myapplication.calendar.calendar_details
 
 import android.app.DatePickerDialog
 import android.os.Build

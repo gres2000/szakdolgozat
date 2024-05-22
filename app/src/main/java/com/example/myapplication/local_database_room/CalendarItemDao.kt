@@ -19,15 +19,15 @@ interface CalendarItemDao {
 
     @Query("SELECT * FROM calendar_items")
     suspend fun getAllCalendars(): List<CalendarData>
-
-    @Query("SELECT * FROM calendar_items WHERE owner = :loggedInUser OR name IN(SELECT calendarId FROM user WHERE emailAddress = :loggedInUserEmail)")
-    suspend fun getAllCalendarsForUser(loggedInUser: String, loggedInUserEmail: String): List<CalendarData>
+//    OR name IN(SELECT calendarId FROM user WHERE emailAddress = :loggedInUserEmail)
+    @Query("SELECT * FROM calendar_items WHERE owner = :loggedInUser ")
+    suspend fun getAllCalendarsForUser(loggedInUser: String): MutableList<CalendarData>
 
     @Query("SELECT * FROM user WHERE calendarId = :calendarId")
     suspend fun getSharedPeopleForCalendar(calendarId: String): List<UserData>
 
     @Query("SELECT * FROM event WHERE calendarId = :calendarId")
-    suspend fun getEventsForCalendar(calendarId: String): List<EventData>
+    suspend fun getEventsForCalendar(calendarId: Long): List<EventData>
 
     @Query("SELECT * FROM calendar_items WHERE id = :calendarId")
     suspend fun getCalendarById(calendarId: Long): CalendarData?

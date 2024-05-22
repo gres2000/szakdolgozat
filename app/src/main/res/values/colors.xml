@@ -15,5 +15,6 @@
     <color name="red">#fc0303</color>
     <color name="gray">#045958</color>
     <color name="orange">#FFA500</color>
+    <color name="light_gray">#BAAFAF</color>
 
 </resources>

@@ -7,6 +7,17 @@
     android:orientation="vertical">
 
 
+    <TextView
+        android:id="@+id/noInternetTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="20sp"
+        android:gravity="center"
+        android:visibility="gone"
+        android:textColor="@android:color/white"
+        android:text="@string/no_internet_connection_some_features_may_not_work_properly"
+        android:background="@color/red"/>
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

@@ -7,16 +7,6 @@ import java.util.Date
 
 
 class Converters {
-    @TypeConverter
-    fun fromJsonEventList(json: String): MutableList<EventData> {
-        val type = object : TypeToken<ArrayList<EventData>>() {}.type
-        return Gson().fromJson(json, type)
-    }
-
-    @TypeConverter
-    fun toJsonEventList(events: MutableList<EventData>): String {
-        return Gson().toJson(events)
-    }
 
     @TypeConverter
     fun fromTimestamp(value: Long?): Date? {

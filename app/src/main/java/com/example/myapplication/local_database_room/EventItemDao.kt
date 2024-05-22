@@ -9,11 +9,12 @@ import java.util.Date
 
 @Dao
 interface EventItemDao {
-    @Query("SELECT * FROM event WHERE calendarId = :calendarId")
-    suspend fun getEventByCalendarName(calendarId: String): List<EventData>?
 
-    @Query("SELECT * FROM event WHERE calendarId = :calendarId AND title = :title AND startTime = :startTime AND endtime = :endTime")
-    suspend fun getSpecificEvent(calendarId: String, title: String, startTime: Date?, endTime: Date?): EventData?
+    @Query("SELECT * FROM event WHERE calendarId = :calendarId")
+    suspend fun getEventByCalendarId(calendarId: Long): List<EventData>?
+
+    @Query("SELECT * FROM event WHERE calendarId = :calendarName AND title = :title AND startTime = :startTime AND endtime = :endTime")
+    suspend fun getSpecificEvent(calendarName: String, title: String, startTime: Date?, endTime: Date?): EventData?
     @Insert
     suspend fun insertEvent(event: EventData): Long
     @Delete

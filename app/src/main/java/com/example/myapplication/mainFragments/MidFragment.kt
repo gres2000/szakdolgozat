@@ -1,6 +1,11 @@
 package com.example.myapplication.mainFragments
 
+import com.example.myapplication.common.InternetConnectivityCallback
+import android.content.Context
 import android.content.Intent
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import androidx.fragment.app.Fragment
@@ -14,19 +19,18 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.myapplication.R
 import com.example.myapplication.authentication.LoginActivity
 import com.example.myapplication.authentication.UserPreferences
-import com.example.myapplication.chat.ChatActivity
 import com.example.myapplication.chat.StartChatActivity
 import com.example.myapplication.databinding.MidFragmentBinding
 import com.example.myapplication.friends.FriendsActivity
 import com.example.myapplication.viewModel.MainViewModel
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import com.google.firebase.auth.FirebaseAuth
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.cio.*
 import io.ktor.client.request.get
 import io.ktor.client.statement.HttpResponse
-import io.ktor.util.InternalAPI
+import kotlinx.coroutines.Dispatchers.Main
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
 class MidFragment : Fragment() {
@@ -37,6 +41,7 @@ class MidFragment : Fragment() {
     private lateinit var openFriendsButton: Button
     private lateinit var suggestedEventsRecyclerView: RecyclerView
     private lateinit var sendButton: FloatingActionButton
+    private lateinit var connectivityCallback: InternetConnectivityCallback
 
     private val binding get() = _binding!!
 
@@ -48,10 +53,25 @@ class MidFragment : Fragment() {
         return binding.root
     }
 
-    @OptIn(InternalAPI::class)
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+
+        //check for internet connection
+        if (!isInternetAvailable(requireContext())) {
+            binding.noInternetTextView.visibility = TextView.VISIBLE
+        }
+        connectivityCallback = InternetConnectivityCallback.registerConnectivityCallback(requireContext()) { isConnected ->
+            lifecycleScope.launch(Main) {
+
+                if (isConnected) {
+                    updateUI(true)
+                } else {
+                    updateUI(false)
+                }
+            }
+
+        }
 
         logoutButton = view.findViewById(R.id.buttonLogOut)
         currentUserTextView = view.findViewById(R.id.textViewCurrentUser)
@@ -101,5 +121,39 @@ class MidFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+
+        InternetConnectivityCallback.unregisterConnectivityCallback(requireContext(), connectivityCallback)
+
+    }
+
+    private fun isInternetAvailable(context: Context): Boolean {
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val network = connectivityManager.activeNetwork ?: return false
+            val activeNetwork = connectivityManager.getNetworkCapabilities(network) ?: return false
+
+            return when {
+                activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> true
+
+                activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> true
+
+                else -> false
+            }
+        } else {
+            @Suppress("DEPRECATION") val networkInfo =
+                connectivityManager.activeNetworkInfo ?: return false
+            @Suppress("DEPRECATION")
+            return networkInfo.isConnected
+        }
+    }
+
+    private fun updateUI(isConnected: Boolean) {
+        if (isConnected) {
+            binding.noInternetTextView.visibility = TextView.GONE
+        }
+        else {
+            binding.noInternetTextView.visibility = TextView.VISIBLE
+        }
     }
 }

@@ -1,34 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/foundUsersLinearLayout"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/foundUsersConstraintLayout"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="16dp"
+    android:layout_marginStart="5dp"
+    android:layout_marginEnd="5dp"
     android:clickable="true"
     android:background="?android:attr/selectableItemBackground">
 
+
+    <ImageButton
+        android:id="@+id/imageButtonDelete"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        app:srcCompat="@drawable/x_mark_48"
+        app:layout_constraintTop_toTopOf="@id/imageViewProfilePicture"
+        app:layout_constraintEnd_toEndOf="@id/imageViewProfilePicture"
+        android:contentDescription="@string/delete_user"
+        android:elevation="2dp"/>
+
     <ImageView
         android:id="@+id/imageViewProfilePicture"
-        android:layout_width="100dp"
-        android:layout_height="100dp"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
         android:scaleType="centerCrop"
         android:src="@drawable/ic_account_circle_black_36dp"
-        android:layout_gravity="center"
         android:contentDescription="@string/user_profile_picture"
-        android:scaleX="0.7"
-        android:scaleY="0.7"
-        android:background="@color/cyan"/>
+        android:background="@color/cyan"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
 
     <TextView
         android:id="@+id/textViewUserName"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
         android:text="@string/test"
         android:textSize="16sp"
         android:textStyle="bold"
         android:gravity="center"
-        android:background="@color/cyan"/>
+        android:background="@color/cyan"
+        app:layout_constraintTop_toBottomOf="@id/imageViewProfilePicture"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
 
-</LinearLayout>
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -2,29 +2,38 @@ package com.example.myapplication.common
 
 import android.view.LayoutInflater
 import android.view.View
+import android.view.View.GONE
 import android.view.ViewGroup
+import android.widget.ImageButton
 import android.widget.ImageView
-import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.RecyclerView
 import com.example.myapplication.R
 import com.example.myapplication.authentication.User
 import com.example.myapplication.viewModel.MainViewModel
 
-class CustomUsersAdapter(private val activity: AppCompatActivity, private val dataList: MutableList<User>, private val listener: ChatActionListener?) : RecyclerView.Adapter<CustomUsersAdapter.FriendsItemViewHolder>() {
+class CustomUsersAdapter(private val activity: AppCompatActivity, private val dataList: MutableList<User>, private val chatActionListener: ChatActionListener?, private val deleteActionListener: DeleteActionListener?, private val deleteButtonVisibility: Boolean) : RecyclerView.Adapter<CustomUsersAdapter.FriendsItemViewHolder>() {
     private lateinit var dialogPrompt: String
 
     inner class FriendsItemViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val profilePictureImageView: ImageView = itemView.findViewById(R.id.imageViewProfilePicture)
         val usernameTextView: TextView = itemView.findViewById(R.id.textViewUserName)
+        val deleteImageButton: ImageButton = itemView.findViewById(R.id.imageButtonDelete)
         lateinit var viewModel: MainViewModel
     }
 
     interface ChatActionListener {
-        fun onInitiateChat(receiverUser: User)
+        fun onUserClickConfirmed(receiverUser: User)
+
+    }
+
+    interface DeleteActionListener {
+
+        fun onDeleteConfirmed(deletedUser: User, position: Int)
     }
 
 
@@ -39,36 +48,62 @@ class CustomUsersAdapter(private val activity: AppCompatActivity, private val da
         viewHolder.usernameTextView.text = currentItem.email
         viewHolder.profilePictureImageView.setImageResource(R.drawable.ic_account_circle_black_36dp)
 
-        if (listener != null) {
+        if (!deleteButtonVisibility) {
+            viewHolder.deleteImageButton.visibility = GONE
+        }
+
+        viewHolder.deleteImageButton.setOnClickListener {
+            showInitiateChatDialog(viewHolder.layoutPosition,
+                activity.getString(R.string.are_you_sure_you_want_to_delete_this_user),
+                DELETE_BUTTON_CLICKED)
+        }
+
+        if (chatActionListener != null) {
             viewHolder.itemView.setOnClickListener {
-                showInitiateChatDialog(position)
+                showInitiateChatDialog(position, dialogPrompt, ITEM_CLICKED)
             }
         }
         else {
-            viewHolder.itemView.findViewById<LinearLayout>(R.id.foundUsersLinearLayout).isClickable = false
+            viewHolder.itemView.findViewById<ConstraintLayout>(R.id.foundUsersConstraintLayout).isClickable = false
         }
     }
 
 
     override fun getItemCount() = dataList.size
 
-    private fun showInitiateChatDialog(position: Int) {
+    private fun showInitiateChatDialog(position: Int, dialogPrompt: String, option: Int) {
         val builder = AlertDialog.Builder(activity)
         builder.setTitle(dialogPrompt)
             .setPositiveButton("Yes") { _, _ ->
-                listener!!.onInitiateChat(dataList[position])
+                if (option == ITEM_CLICKED) {
+                    chatActionListener!!.onUserClickConfirmed(dataList[position])
+                }
+                else if (option == DELETE_BUTTON_CLICKED){
+                    deleteActionListener!!.onDeleteConfirmed(dataList[position], position)
+                }
             }
             .setNegativeButton("No") { _, _ ->
             }
             .show()
     }
 
-    private fun initiateChat(receiverUserId: String) {
-        //start a chat
-
-    }
 
     fun setItemClickedPrompt(prompt: String) {
         dialogPrompt = prompt
     }
+
+    fun addItem(receiverUser: User) {
+        dataList.add(receiverUser)
+    }
+
+    fun removeItem(deletedUser: User) {
+        dataList.remove(deletedUser)
+    }
+
+    companion object {
+        const val ITEM_CLICKED = 0
+        const val DELETE_BUTTON_CLICKED = 1
+    }
+
+
 }

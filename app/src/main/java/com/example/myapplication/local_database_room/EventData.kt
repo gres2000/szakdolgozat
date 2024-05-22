@@ -7,7 +7,7 @@ import java.util.Date
 @Entity(tableName = "event")
 data class EventData(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val calendarId: String?,
+    val calendarId: Long,
     var title: String,
     var description: String? = null,
     var startTime: Date,
@@ -17,7 +17,7 @@ data class EventData(
 ) {
     // Secondary constructor to allow creation without specifying the ID
     constructor(
-        calendarId: String?,
+        calendarId: Long,
         title: String,
         description: String?,
         startTime: Date,

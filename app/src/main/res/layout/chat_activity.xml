@@ -44,10 +44,21 @@
 
     </LinearLayout>
 
+    <ImageButton
+        android:id="@+id/imageButtonReturn"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:background="?android:attr/selectableItemBackground"
+        android:contentDescription="@string/arrow_left_button_description"
+        android:scaleX="2.5"
+        android:scaleY="2.5"
+        android:src="@drawable/button_arrow_left"
+        android:layout_alignParentStart="true" />
+
     <TextView
         android:id="@+id/chatTitle"
         android:background="@color/white"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="80dp"
         android:gravity="center_vertical"
         android:padding="5dp"
@@ -55,6 +66,8 @@
         android:paddingEnd="10dp"
         android:textSize="40sp"
         android:textColor="@color/black"
+        android:layout_toEndOf="@id/imageButtonReturn"
+        android:layout_alignParentEnd="true"
         tools:text="Username"/>
 
     <ProgressBar

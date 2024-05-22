@@ -1,4 +1,4 @@
-package com.example.myapplication.calendar
+package com.example.myapplication.calendar.calendar_details
 
 import com.example.myapplication.authentication.User
 import java.util.Date

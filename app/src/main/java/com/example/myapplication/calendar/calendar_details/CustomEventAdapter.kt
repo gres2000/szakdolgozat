@@ -1,4 +1,4 @@
-package com.example.myapplication.calendar
+package com.example.myapplication.calendar.calendar_details
 
 import android.os.Build
 import android.view.LayoutInflater
@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.ImageButton
 import android.widget.TextView
+import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -21,7 +22,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 
-class CustomEventAdapter(private val activity: AppCompatActivity, private val dataList: MutableList<MyEvent>, private val calendarId: String) : RecyclerView.Adapter<CustomEventAdapter.EventItemViewHolder>() {
+class CustomEventAdapter(private val activity: AppCompatActivity, private val dataList: MutableList<MyEvent>, private val calendar: MyCalendar) : RecyclerView.Adapter<CustomEventAdapter.EventItemViewHolder>() {
     inner class EventItemViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val startingTimeTextView: TextView = itemView.findViewById(R.id.textViewStartingTime)
         val eventTitleTextView: TextView = itemView.findViewById(R.id.textViewEventTitle)
@@ -111,10 +112,20 @@ class CustomEventAdapter(private val activity: AppCompatActivity, private val da
         buttonDelete.setOnClickListener {
             val viewModel = ViewModelProvider(activity)[MainViewModel::class.java]
             viewModel.viewModelScope.launch {
-                viewModel.deleteEventFromRoom(activity, dataList[position], calendarId)
-                onItemRemovedListener?.onItemRemoved(dataList[position])
-                dataList.removeAt(position)
-                notifyItemRemoved(position)
+                if (calendar.owner.email == MainViewModel.loggedInUser!!.email) {
+                    viewModel.deleteEventFromRoom(activity, dataList[position], calendar.name)
+                    onItemRemovedListener?.onItemRemoved(dataList[position])
+                    dataList.removeAt(position)
+                    notifyItemRemoved(position)
+                    MainViewModel.saveAllCalendarsToFirestoreDB(activity, MainViewModel.loggedInUser!!.email)
+                }
+                else {
+                    MainViewModel.deleteEventFromSharedCalendar(dataList[position], calendar.owner.email, calendar.id)
+                    onItemRemovedListener?.onItemRemoved(dataList[position])
+                    dataList.removeAt(position)
+                    notifyItemRemoved(position)
+                }
+
 
             }
             dialog.dismiss()

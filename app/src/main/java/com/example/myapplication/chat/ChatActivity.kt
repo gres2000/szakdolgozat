@@ -1,10 +1,13 @@
 package com.example.myapplication.chat
 
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.Menu
 import android.widget.ProgressBar
+import androidx.activity.OnBackPressedCallback
+import androidx.activity.OnBackPressedDispatcher
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -44,6 +47,15 @@ class ChatActivity: AppCompatActivity() {
         viewModel = ViewModelProvider(this)[MainViewModel::class.java]
         auth = viewModel.auth
 
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                val intent = Intent(this@ChatActivity, StartChatActivity::class.java)
+                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                startActivity(intent)
+                finish()
+            }
+        })
+
         MainViewModel.viewModelScope.launch {
             MainViewModel.authenticateUser()
         }
@@ -69,6 +81,10 @@ class ChatActivity: AppCompatActivity() {
         )
 
         binding.messageEditText.addTextChangedListener(MyButtonObserver(binding.sendButton))
+
+        binding.imageButtonReturn.setOnClickListener {
+            onBackPressedDispatcher.onBackPressed()
+        }
 
         binding.sendButton.setOnClickListener {
             val friendlyMessage = FriendlyMessage(
@@ -100,12 +116,6 @@ class ChatActivity: AppCompatActivity() {
         super.onResume()
         adapter.startListening()
     }
-
-//    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-//        val inflater = menuInflater
-//        inflater.inflate(R.menu.main_menu, menu)
-//        return true
-//    }
     private fun onImageSelected(uri: Uri) {
         Log.d(TAG, "Uri: $uri")
         val user = auth.currentUser

@@ -14,12 +14,13 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.myapplication.R
 import com.example.myapplication.authentication.User
+import com.example.myapplication.chat.ChatActivity
 import com.example.myapplication.common.CustomUsersAdapter
 import com.example.myapplication.databinding.FriendsActivityBinding
 import com.example.myapplication.viewModel.MainViewModel
 import kotlinx.coroutines.launch
 
-class FriendsActivity : AppCompatActivity(), CustomFriendRequestAdapter.OnAcceptButtonClickedListener, CustomUsersAdapter.ChatActionListener {
+class FriendsActivity : AppCompatActivity(), CustomFriendRequestAdapter.OnAcceptButtonClickedListener, CustomUsersAdapter.ChatActionListener, CustomUsersAdapter.DeleteActionListener {
 
     private lateinit var binding: FriendsActivityBinding
     private lateinit var viewModel: MainViewModel
@@ -60,7 +61,7 @@ class FriendsActivity : AppCompatActivity(), CustomFriendRequestAdapter.OnAccept
         searchButtonImageButton = findViewById(R.id.searchButton)
 
         lifecycleScope.launch {
-            viewModel.authenticateUser()
+            MainViewModel.authenticateUser()
         }
         // Initialize your views or perform any other setup here
         searchBarSearchView.setOnQueryTextListener(searchViewQueryListener)
@@ -70,7 +71,7 @@ class FriendsActivity : AppCompatActivity(), CustomFriendRequestAdapter.OnAccept
 
         lifecycleScope.launch {
             MainViewModel.authenticateUser()
-            viewModel.getFriendRequests { friendRequests ->
+            MainViewModel.getFriendRequests { friendRequests ->
                 val adapter = CustomFriendRequestAdapter(this@FriendsActivity, this@FriendsActivity, friendRequests.toMutableList())
                 friendRequestsRecyclerView.adapter = adapter
                 (friendRequestsRecyclerView.adapter as CustomFriendRequestAdapter).notifyDataSetChanged()
@@ -81,8 +82,8 @@ class FriendsActivity : AppCompatActivity(), CustomFriendRequestAdapter.OnAccept
 
         lifecycleScope.launch {
             MainViewModel.authenticateUser()
-            viewModel.getFriends { friends ->
-                val adapter = CustomUsersAdapter(this@FriendsActivity, friends.toMutableList(), this@FriendsActivity)
+            MainViewModel.getFriends { friends ->
+                val adapter = CustomUsersAdapter(this@FriendsActivity, friends.toMutableList(), this@FriendsActivity, this@FriendsActivity, true)
                 adapter.setItemClickedPrompt(getString(R.string.start_chat_with_selected_user))
                 friendsRecyclerView.adapter = adapter
                 (friendsRecyclerView.adapter as CustomUsersAdapter).notifyDataSetChanged()
@@ -106,7 +107,7 @@ class FriendsActivity : AppCompatActivity(), CustomFriendRequestAdapter.OnAccept
         lifecycleScope.launch {
             MainViewModel.authenticateUser()
             viewModel.getFriends { friends ->
-                val adapter = CustomUsersAdapter(this@FriendsActivity, friends.toMutableList(), this@FriendsActivity)
+                val adapter = CustomUsersAdapter(this@FriendsActivity, friends.toMutableList(), this@FriendsActivity, null, true)
                 adapter.setItemClickedPrompt(getString(R.string.start_chat_with_selected_user))
                 adapter.setItemClickedPrompt(getString(R.string.start_chat_with_selected_user))
                 friendsRecyclerView.adapter = adapter
@@ -118,9 +119,35 @@ class FriendsActivity : AppCompatActivity(), CustomFriendRequestAdapter.OnAccept
         }
     }
 
-    override fun onInitiateChat(receiverUser: User) {
-        viewModel.viewModelScope.launch {
-            viewModel.startNewChat(receiverUser)
+    override fun onUserClickConfirmed(receiverUser: User) {
+        MainViewModel.viewModelScope.launch {
+            val newChat = MainViewModel.startNewChat(receiverUser)
+
+            if (newChat != null) {
+                val intent = Intent(this@FriendsActivity, ChatActivity::class.java)
+                intent.putExtra("chatId", newChat.id)
+                intent.putExtra("chatName", receiverUser.email)
+
+                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                startActivity(intent)
+            }
+            else {
+                val intent = Intent(this@FriendsActivity, ChatActivity::class.java)
+                val id = '-' + MainViewModel.generateIdFromEmails(receiverUser.email, MainViewModel.loggedInUser!!.email)
+                intent.putExtra("chatId", id)
+                intent.putExtra("chatName", receiverUser.email)
+
+                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                startActivity(intent)
+            }
+        }
+    }
+
+    override fun onDeleteConfirmed(deletedUser: User, position: Int) {
+        MainViewModel.viewModelScope.launch {
+            MainViewModel.removeUserFromFriends(this@FriendsActivity, deletedUser)
+            (binding.friendsRecyclerView.adapter as CustomUsersAdapter).removeItem(deletedUser)
+            binding.friendsRecyclerView.adapter!!.notifyItemRemoved(position)
         }
     }
 }

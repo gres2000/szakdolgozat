@@ -1,6 +1,12 @@
 package com.example.myapplication
 
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
@@ -9,6 +15,7 @@ import com.example.myapplication.databinding.ActivityMainBinding
 import com.example.myapplication.mainFragments.LeftFragment
 import com.example.myapplication.mainFragments.MidFragment
 import com.example.myapplication.mainFragments.RightFragment
+import com.example.myapplication.overlay_widget.OverlayService
 import com.example.myapplication.tasks.DayDetailFragment
 import com.example.myapplication.viewModel.MainViewModel
 import com.google.android.material.bottomnavigation.BottomNavigationView
@@ -26,6 +33,7 @@ class MainActivity : AppCompatActivity() {
     private val fragmentManager = supportFragmentManager
     private val fragmentMap = mutableMapOf<String, Fragment>()
     private lateinit var viewModel: MainViewModel
+    private lateinit var overlayPermissionLauncher: ActivityResultLauncher<Intent>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,6 +71,43 @@ class MainActivity : AppCompatActivity() {
             .replace(R.id.constraint_container, fragmentMap["home"]!!)
             .commit()
 
+        //overlay widget
+//        overlayPermissionLauncher = registerForActivityResult(
+//            ActivityResultContracts.StartActivityForResult()
+//        ) { result ->
+//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+//                if (Settings.canDrawOverlays(this)) {
+//                    // Permission granted
+//                    createOverlayWidget()
+//                }
+//            }
+//        }
+//
+//        checkOverlayPermission()
+
+    }
+
+    private fun checkOverlayPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (!Settings.canDrawOverlays(this)) {
+                val intent = Intent(
+                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                    Uri.parse("package:$packageName")
+                )
+                overlayPermissionLauncher.launch(intent)
+            } else {
+                // Permission is already granted
+                createOverlayWidget()
+            }
+        } else {
+            // System is less than Marshmallow
+            createOverlayWidget()
+        }
+    }
+
+    private fun createOverlayWidget() {
+        val intent = Intent(this, OverlayService::class.java)
+        startForegroundService(intent)
     }
 
 

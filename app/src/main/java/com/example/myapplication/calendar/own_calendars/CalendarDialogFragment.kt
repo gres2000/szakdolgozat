@@ -1,4 +1,4 @@
-package com.example.myapplication.calendar
+package com.example.myapplication.calendar.own_calendars
 
 import android.content.Context
 import android.os.Bundle

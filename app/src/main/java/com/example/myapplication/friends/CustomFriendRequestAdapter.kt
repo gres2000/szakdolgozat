@@ -11,6 +11,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.RecyclerView
 import com.example.myapplication.R
+import com.example.myapplication.chat.ChatActivity
+import com.example.myapplication.chat.FriendlyMessage
+import com.example.myapplication.chat.FriendlyMessageAdapter
 import com.example.myapplication.viewModel.FriendRequest
 import com.example.myapplication.viewModel.MainViewModel
 
@@ -18,50 +21,70 @@ class CustomFriendRequestAdapter (private val onButtonClickListener: OnAcceptBut
     inner class FriendRequestItemViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val profilePictureImageView: ImageView = itemView.findViewById(R.id.imageViewProfilePictureRequest)
         val usernameTextView: TextView = itemView.findViewById(R.id.textViewSenderNameRequest)
-        val acceptImageButton: ImageButton = itemView.findViewById(R.id.imageButtonAcceptRequest)
-        val rejectImageButton: ImageButton = itemView.findViewById(R.id.imageButtonRejectRequest)
         lateinit var viewModel: MainViewModel
     }
     interface OnAcceptButtonClickedListener {
         fun onButtonClicked(position: Int)
     }
+    override fun getItemViewType(position: Int): Int {
+        return if (dataList[position].receiverId == MainViewModel.loggedInUser!!.email) {
+            0
+        } else {
+            1
+        }
+    }
 
     override fun onCreateViewHolder(view: ViewGroup, viewType: Int): FriendRequestItemViewHolder {
-        val itemView = LayoutInflater.from(view.context).inflate(R.layout.friend_request_item_view, view, false)
-        return FriendRequestItemViewHolder(itemView)
+        return if (viewType == 0) {
+            val itemView = LayoutInflater.from(view.context).inflate(R.layout.friend_request_item_view, view, false)
+            FriendRequestItemViewHolder(itemView)
+        } else {
+            val itemView = LayoutInflater.from(view.context).inflate(R.layout.friend_request_pending_item_view, view, false)
+            FriendRequestItemViewHolder(itemView)
+        }
     }
 
     override fun onBindViewHolder(viewHolder: FriendRequestItemViewHolder, position: Int) {
         viewHolder.viewModel = ViewModelProvider(activity)[MainViewModel::class.java]
         val currentItem = dataList[position]
-        viewHolder.usernameTextView.text = currentItem.senderId
         viewHolder.profilePictureImageView.setImageResource(R.drawable.ic_account_circle_black_36dp)
 
+        if (viewHolder.itemViewType == 0) {
 
-        viewHolder.acceptImageButton.setOnClickListener {
-            viewHolder.viewModel.handleFriendRequest("accepted", currentItem) { success ->
-                if (success) {
-                    Toast.makeText(activity, "Friend request accepted.", Toast.LENGTH_SHORT).show()
-                    dataList.removeAt(position)
-                    notifyItemRemoved(position)
-                    onButtonClickListener.onButtonClicked(position)
-                } else {
-                    Toast.makeText(activity, "Couldn't accept request. Try again later.", Toast.LENGTH_SHORT).show()
+            viewHolder.usernameTextView.text = currentItem.senderId
+            val acceptImageButton: ImageButton = viewHolder.itemView.findViewById(R.id.imageButtonAcceptRequest)
+            val rejectImageButton: ImageButton = viewHolder.itemView.findViewById(R.id.imageButtonRejectRequest)
+
+            acceptImageButton.setOnClickListener {
+                viewHolder.viewModel.handleFriendRequest("accepted", currentItem) { success ->
+                    if (success) {
+                        Toast.makeText(activity, "Friend request accepted.", Toast.LENGTH_SHORT).show()
+                        dataList.removeAt(position)
+                        notifyItemRemoved(position)
+                        onButtonClickListener.onButtonClicked(position)
+                    } else {
+                        Toast.makeText(activity, "Couldn't accept request. Try again later.", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+
+            rejectImageButton.setOnClickListener {
+                viewHolder.viewModel.handleFriendRequest("rejected", currentItem) { success ->
+                    if (success) {
+                        Toast.makeText(activity, "Friend request rejected.", Toast.LENGTH_SHORT).show()
+                        dataList.removeAt(position)
+                        notifyItemRemoved(position)
+                    } else {
+                        Toast.makeText(activity, "Couldn't reject request. Try again later.", Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
         }
+        else {
 
-        viewHolder.rejectImageButton.setOnClickListener {
-            viewHolder.viewModel.handleFriendRequest("rejected", currentItem) { success ->
-                if (success) {
-                    Toast.makeText(activity, "Friend request rejected.", Toast.LENGTH_SHORT).show()
-                    dataList.removeAt(position)
-                    notifyItemRemoved(position)
-                } else {
-                    Toast.makeText(activity, "Couldn't reject request. Try again later.", Toast.LENGTH_SHORT).show()
-                }
-            }
+            viewHolder.usernameTextView.text = currentItem.receiverId
         }
+
 
 
     }

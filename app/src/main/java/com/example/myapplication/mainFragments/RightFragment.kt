@@ -1,44 +1,23 @@
 package com.example.myapplication.mainFragments
 
-import android.content.Context
-import android.os.Build
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.inputmethod.InputMethodManager
-import androidx.annotation.RequiresApi
-import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat.getSystemService
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewModelScope
-import androidx.recyclerview.widget.ItemTouchHelper
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import com.example.myapplication.R
-import com.example.myapplication.authentication.User
-import com.example.myapplication.calendar.MyCalendar
-import com.example.myapplication.calendar.CustomCalendarAdapter
-import com.example.myapplication.calendar.MyEvent
-import com.example.myapplication.calendar.CalendarDialogFragment
-import com.example.myapplication.common.MyItemTouchHelperCallback
+import androidx.viewpager2.widget.ViewPager2
+import com.example.myapplication.calendar.CalendarsViewPagerAdapter
+import com.example.myapplication.calendar.own_calendars.OwnCalendarsRecyclerViewFragment
+import com.example.myapplication.calendar.shared_calendars.SharedCalendarsRecyclerViewFragment
 import com.example.myapplication.databinding.RightFragmentBinding
 import com.example.myapplication.viewModel.MainViewModel
-import com.google.android.material.floatingactionbutton.FloatingActionButton
-import kotlinx.coroutines.launch
-import java.time.LocalDate
-import java.time.ZoneId
-import java.util.Date
+import com.google.android.material.tabs.TabLayoutMediator
 
-class RightFragment : Fragment(), CalendarDialogFragment.CalendarDialogListener {
+class RightFragment : Fragment() {
     private var _binding: RightFragmentBinding? = null
 
-    private lateinit var calendarsRecyclerView: RecyclerView
     private lateinit var viewModel: MainViewModel
-    private lateinit var adapter: CustomCalendarAdapter
-    private lateinit var addNewCalendar: FloatingActionButton
-    private lateinit var saveCalendars: FloatingActionButton
     private val binding get() = _binding!!
 
     override fun onCreateView(
@@ -51,69 +30,21 @@ class RightFragment : Fragment(), CalendarDialogFragment.CalendarDialogListener 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         viewModel = ViewModelProvider(requireActivity())[MainViewModel::class.java]
-        
-        calendarsRecyclerView = view.findViewById(R.id.recyclerViewCalendars)
-        calendarsRecyclerView.layoutManager = LinearLayoutManager(requireContext())
-        addNewCalendar = view.findViewById(R.id.fab_add_calendar)
-        saveCalendars = view.findViewById(R.id.fab_save_calendars)
 
-        viewModel.viewModelScope.launch {
-            if (this@RightFragment.isAdded) {
-                adapter = CustomCalendarAdapter(
-                    requireActivity() as AppCompatActivity,
-                    viewModel.getAllCalendars(requireContext())
-                )
-                calendarsRecyclerView.adapter = adapter
-                calendarsRecyclerView.adapter?.notifyDataSetChanged()
-                //MyItemTouchHelperCallback.attachDragAndDrop(adapter, calendarsRecyclerView)
+        val fragmentList = listOf(OwnCalendarsRecyclerViewFragment(), SharedCalendarsRecyclerViewFragment())
+        val viewPager: ViewPager2 = binding.calendarsViewPager
+        val viewPagerAdapter = CalendarsViewPagerAdapter(requireActivity(), fragmentList)
+        viewPager.adapter = viewPagerAdapter
+
+        val tabLayout = binding.tabLayout
+
+        TabLayoutMediator(tabLayout, viewPager) { tab, position ->
+            tab.text = when (position) {
+                0 -> "Own"
+                1 -> "Shared"
+                else -> "Page $position"
             }
-        }
-
-        viewModel.viewModelScope.launch {
-            viewModel.authenticateUser()
-            viewModel.getAllCalendarsFromFirestoreDB(
-                requireContext()
-            )
-
-            if (this@RightFragment.isAdded) {
-                adapter = CustomCalendarAdapter(
-                    requireActivity() as AppCompatActivity,
-                    viewModel.getAllCalendars(requireContext())
-                )
-
-                calendarsRecyclerView.adapter = adapter
-                calendarsRecyclerView.adapter?.notifyDataSetChanged()
-                //MyItemTouchHelperCallback.attachDragAndDrop(adapter, calendarsRecyclerView)
-            }
-        }
-
-
-        addNewCalendar.setOnClickListener{
-
-            showNewCalendarDialog()
-
-        }
-
-        saveCalendars.setOnClickListener{
-            viewModel.viewModelScope.launch {
-                viewModel.authenticateUser()
-                viewModel.getAllCalendarsFromFirestoreDB(
-                    requireContext()
-                )
-                if (this@RightFragment.isAdded) {
-                    adapter = CustomCalendarAdapter(
-                        requireActivity() as AppCompatActivity,
-                        viewModel.getAllCalendars(requireContext())
-                    )
-                    calendarsRecyclerView.adapter = adapter
-                    calendarsRecyclerView.adapter?.notifyDataSetChanged()
-                    //MyItemTouchHelperCallback.attachDragAndDrop(adapter, calendarsRecyclerView)
-                }
-            }
-        }
-
-
-
+        }.attach()
 
     }
 
@@ -122,25 +53,5 @@ class RightFragment : Fragment(), CalendarDialogFragment.CalendarDialogListener 
         _binding = null
     }
 
-    private fun showNewCalendarDialog() {
-        val dialog = CalendarDialogFragment()
-        dialog.show(childFragmentManager, "NewCalendarDialogFragment")
-    }
 
-    @RequiresApi(Build.VERSION_CODES.O)
-    override fun onNewCalendarCreated(name: String) {
-        val date = Date.from(LocalDate.now().atStartOfDay(
-            ZoneId.systemDefault()).toInstant())
-        val userList = mutableListOf<User>()
-        val owner = User(viewModel.loggedInUser!!.username, viewModel.loggedInUser!!.email)
-        val eventList: MutableList<MyEvent> = mutableListOf()
-
-        val cal = MyCalendar(0, name, 0, userList, owner, eventList, date)
-        viewModel.viewModelScope.launch {
-
-            viewModel.addCalendar(requireContext(), cal)
-
-            adapter.updateData(viewModel.getAllCalendars(requireContext()))
-        }
-    }
 }

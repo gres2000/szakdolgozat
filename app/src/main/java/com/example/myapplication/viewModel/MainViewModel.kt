@@ -8,11 +8,12 @@ import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import androidx.room.Room
 import com.example.myapplication.authentication.User
-import com.example.myapplication.calendar.MyEvent
-import com.example.myapplication.calendar.MyCalendar
-import com.example.myapplication.calendar.UserFirestoreData
+import com.example.myapplication.calendar.calendar_details.MyEvent
+import com.example.myapplication.calendar.calendar_details.MyCalendar
+import com.example.myapplication.calendar.calendar_details.UserFirestoreData
 import com.example.myapplication.chat.ChatData
 import com.example.myapplication.chat.FriendlyMessage
 import com.example.myapplication.local_database_room.AppDatabase
@@ -44,7 +45,6 @@ import java.util.Date
 object MainViewModel : ViewModel() {
     private val _weeklyTasksList: List<MutableList<Task>> = List(7) { mutableListOf() }
     private val firestoreDB = FirebaseFirestore.getInstance()
-    private val calendarsCollection = firestoreDB.collection("calendars")
     private val _someEvent = MutableLiveData<Task>()
     private var _taskReady = false
     private val _dayId = MutableLiveData<Int>()
@@ -56,9 +56,14 @@ object MainViewModel : ViewModel() {
     private var _myCalendarToPass: MyCalendar? = null
     private var _isExistingEvent: Boolean = false
     var newEventStartingDay: Calendar? = null
-    init {
 
+    init {
+        viewModelScope.launch {
+
+            authenticateUser()
+        }
     }
+
     val isExistingEvent
         get() = _isExistingEvent
     val dayId
@@ -71,6 +76,7 @@ object MainViewModel : ViewModel() {
         get() = _isNewTask
     val weeklyTasksList
         get() = _weeklyTasksList
+
     init {
         for (i in 0 until 7) {
             val task1 = Task(0, "Munka", "leírás", "16:02", false)
@@ -116,6 +122,7 @@ object MainViewModel : ViewModel() {
             }
         }
     }
+
     fun toggleExistingEvent() {
         _isExistingEvent = !_isExistingEvent
     }
@@ -138,14 +145,13 @@ object MainViewModel : ViewModel() {
 
     suspend fun authenticateUser() {
         withContext(Dispatchers.Main) {
-            val docRef = firestoreDB.collection("registered_users").document(Firebase.auth.currentUser?.email.toString())
+            val docRef = firestoreDB.collection("registered_users")
+                .document(Firebase.auth.currentUser?.email.toString())
             docRef.get().addOnSuccessListener { documentSnapshot ->
                 val username = documentSnapshot.getString("username") ?: ""
                 val emailAddress = documentSnapshot.getString("email") ?: ""
-    //            loggedInDeferred.complete(User(username, emailAddress))
                 loggedInUser = User(username, emailAddress)
             }.addOnFailureListener { _ ->
-    //            loggedInDeferred.complete(null)
                 loggedInUser = null
             }
         }
@@ -159,22 +165,25 @@ object MainViewModel : ViewModel() {
 
         val calendarDao = roomDB.calendarItemDao()
         val eventDao = roomDB.eventItemDao()
+        val sharedUsersDao = roomDB.sharedUsersDao()
+
 
         authenticateUser()
-
-//        loggedInUser = loggedInDeferred.await()
-
-        val loggedInUserJson = Gson().toJson(UserData(0, loggedInUser!!.username, loggedInUser!!.email)).toString()
+        val loggedInUserJson =
+            Gson().toJson(UserData(0, loggedInUser!!.username, loggedInUser!!.email)).toString()
 
         val myCalendarList = mutableListOf<MyCalendar>()
 
-        val calendarDataList = calendarDao.getAllCalendarsForUser(loggedInUserJson, loggedInUser!!.email)
+        val calendarDataList =
+            calendarDao.getAllCalendarsForUser(loggedInUserJson)
+
 
         if (calendarDataList.isNotEmpty()) {
 
             for (calendarData in calendarDataList) {
-                val sharedPeopleData = calendarDao.getSharedPeopleForCalendar(calendarData.id.toString())
-                val eventDataForCalendar = calendarDao.getEventsForCalendar(calendarData.name)
+                val sharedPeopleData =
+                    calendarDao.getSharedPeopleForCalendar(calendarData.id.toString())
+                val eventDataForCalendar = calendarDao.getEventsForCalendar(calendarData.id)
 
                 val sharedPeopleList = mutableListOf<User>()
                 for (userData in sharedPeopleData) {
@@ -183,13 +192,15 @@ object MainViewModel : ViewModel() {
 
                 val eventList = mutableListOf<MyEvent>()
                 for (eventData in eventDataForCalendar) {
-                    eventList.add(MyEvent(
-                        eventData.title,
-                        eventData.description,
-                        eventData.startTime,
-                        eventData.endTime,
-                        eventData.location,
-                        eventData.wholeDayEvent)
+                    eventList.add(
+                        MyEvent(
+                            eventData.title,
+                            eventData.description,
+                            eventData.startTime,
+                            eventData.endTime,
+                            eventData.location,
+                            eventData.wholeDayEvent
+                        )
                     )
                 }
 
@@ -197,7 +208,7 @@ object MainViewModel : ViewModel() {
                     MyCalendar(
                         id = calendarData.id,
                         name = calendarData.name,
-                        sharedPeopleNumber = calendarData.sharedPeopleNumber,
+                        sharedPeopleNumber = sharedPeopleList.size,
                         sharedPeople = sharedPeopleList,
                         owner = User(calendarData.owner.username, calendarData.owner.emailAddress),
                         events = eventList,
@@ -210,6 +221,7 @@ object MainViewModel : ViewModel() {
 
         return myCalendarList
     }
+
     suspend fun addCalendar(context: Context, myCalendar: MyCalendar) {
         val roomDB = Room.databaseBuilder(
             context,
@@ -221,6 +233,7 @@ object MainViewModel : ViewModel() {
         val eventDao = roomDB.eventItemDao()
 
         val existingCalendar = calendarDao.getCalendarById(myCalendar.id)
+        val existingUsers = sharedPeopleDao.getAllUsers()
 
         if (existingCalendar == null) {
             for (user in myCalendar.sharedPeople) {
@@ -230,7 +243,7 @@ object MainViewModel : ViewModel() {
 
             val eventList = myCalendar.events.map { event ->
                 EventData(
-                    calendarId = myCalendar.name,
+                    calendarId = myCalendar.id,
                     title = event.title,
                     description = event.description,
                     startTime = event.startTime,
@@ -244,12 +257,28 @@ object MainViewModel : ViewModel() {
                 eventDao.insertEvent(event)
             }
 
-            val newCalendar = CalendarData(
-                name = myCalendar.name,
-                sharedPeopleNumber = myCalendar.sharedPeopleNumber,
-                owner = UserData(0, myCalendar.owner.username, myCalendar.owner.email),
-                lastUpdated = myCalendar.lastUpdated
-            )
+
+            var newCalendar: CalendarData
+            val longValue: Long = -1
+            if (myCalendar.id == longValue) {
+                newCalendar = CalendarData(
+                    name = myCalendar.name,
+                    sharedPeopleNumber = myCalendar.sharedPeopleNumber,
+                    owner = UserData(0, myCalendar.owner.username, myCalendar.owner.email),
+                    lastUpdated = myCalendar.lastUpdated
+                )
+            }
+            else {
+                newCalendar = CalendarData(
+                    myCalendar.id,
+                    name = myCalendar.name,
+                    sharedPeopleNumber = myCalendar.sharedPeopleNumber,
+                    owner = UserData(0, myCalendar.owner.username, myCalendar.owner.email),
+                    lastUpdated = myCalendar.lastUpdated
+                )
+            }
+
+
             calendarDao.insertCalendarItem(newCalendar)
         } else {
             // Update existing calendar
@@ -258,8 +287,94 @@ object MainViewModel : ViewModel() {
                 lastUpdated = myCalendar.lastUpdated
             }
             calendarDao.updateCalendarItem(existingCalendar)
+
+            val previousEventDataList = eventDao.getEventByCalendarId(myCalendar.id)
+            val newEventDataList = myCalendar.events.map { event ->
+                EventData(
+                    calendarId = myCalendar.id,
+                    title = event.title,
+                    description = event.description,
+                    startTime = event.startTime,
+                    endTime = event.endTime,
+                    location = event.location,
+                    wholeDayEvent = event.wholeDayEvent
+                )
+            }
+            if (previousEventDataList != null) {
+                for (event in previousEventDataList) {
+                    if (!newEventDataList.contains(event)) {
+                        eventDao.deleteEvent(event)
+                    }
+                }
+            }
+
         }
         saveAllCalendarsToFirestoreDB(context, loggedInUser!!.email)
+    }
+
+    suspend fun removeUserFromCalendar(context: Context, myUser: User, myCalendar: MyCalendar) {
+        val roomDB = Room.databaseBuilder(
+            context,
+            AppDatabase::class.java, "database-name"
+        ).build()
+
+        val usersDao = roomDB.sharedUsersDao()
+        val calendarsDao = roomDB.calendarItemDao()
+
+        myCalendar.sharedPeopleNumber--
+
+        val newCalendarData = CalendarData(
+            myCalendar.name,
+            myCalendar.sharedPeopleNumber,
+            UserData(myCalendar.id, myCalendar.owner.username, myCalendar.owner.email),
+            myCalendar.lastUpdated
+        )
+        calendarsDao.updateCalendarItem(newCalendarData)
+
+
+        usersDao.deleteUserByCalendarId(myCalendar.id, myUser.email)
+
+        saveAllCalendarsToFirestoreDB(context, loggedInUser!!.email)
+        getAllCalendarsFromFirestoreDB(context)
+
+        removeUserFromFirestoreSharedCalendar(myUser, myCalendar)
+    }
+
+    private suspend fun removeUserFromFirestoreSharedCalendar(myUser: User, myCalendar: MyCalendar) {
+        val firestoreDB = FirebaseFirestore.getInstance()
+        val userInCalendarsCollection = firestoreDB.collection("user_in_calendars")
+        try {
+
+            val existingDoc =
+                userInCalendarsCollection.document(myUser.email).get().await()
+
+            if (existingDoc.exists()) {
+                val ownerList = existingDoc.get("owners") as? List<*>
+                val userData = hashMapOf(
+                    "userId" to myCalendar.owner.email,
+                    "calendarId" to myCalendar.id
+                )
+
+                val mutableOwnerList =  ownerList!!.toMutableList()
+
+                mutableOwnerList.remove(userData)
+
+                if (mutableOwnerList.isNotEmpty()) {
+                    userInCalendarsCollection.document(myUser.email)
+                        .update("owners", mutableOwnerList)
+                        .await()
+                }
+                else {
+                    userInCalendarsCollection.document(myUser.email)
+                        .delete()
+                }
+
+
+            }
+        } catch (e: Exception)
+        {
+            Log.e(TAG, "Error saving calendars to Firestore: $e")
+        }
     }
 
     suspend fun addUserToCalendar(context: Context, myUser: User, myCalendar: MyCalendar) {
@@ -268,24 +383,73 @@ object MainViewModel : ViewModel() {
             AppDatabase::class.java, "database-name"
         ).build()
 
-        val calendarDao = roomDB.calendarItemDao()
         val usersDao = roomDB.sharedUsersDao()
+        val calendarsDao = roomDB.calendarItemDao()
 
-        myCalendar.sharedPeopleNumber++
-        myCalendar.sharedPeople.add(myUser)
+        myCalendar.sharedPeopleNumber += 1
 
-        val newUserData = UserData(myCalendar.id, myCalendar.owner.username, myCalendar.owner.email)
-
-        val updatedCalendarData = CalendarData(
-            myCalendar.id,
+        val newCalendarData = CalendarData(
             myCalendar.name,
             myCalendar.sharedPeopleNumber,
-            newUserData,
+            UserData(myCalendar.id, myUser.username, myUser.email),
             myCalendar.lastUpdated
         )
-        calendarDao.updateCalendarItem(updatedCalendarData)
+        calendarsDao.updateCalendarItem(newCalendarData)
+
+        val newUserData = UserData(myCalendar.id, myUser.username, myUser.email)
 
         usersDao.insertUser(newUserData)
+        saveAllCalendarsToFirestoreDB(context, loggedInUser!!.email)
+        getAllCalendarsFromFirestoreDB(context)
+
+        saveSharedUserToFirestoreDB(myUser, myCalendar.owner, myCalendar.id)
+    }
+
+    private suspend fun saveSharedUserToFirestoreDB(myUser: User, owner: User, id: Long) {
+        val firestoreDB = FirebaseFirestore.getInstance()
+        val userInCalendarsCollection = firestoreDB.collection("user_in_calendars")
+        try {
+
+            val existingDoc = userInCalendarsCollection.document(myUser.email).get().await()
+
+
+            if (existingDoc.exists()) {
+                val ownerList = existingDoc.get("owners") as? List<*>
+                val userData = hashMapOf(
+                    "userId" to owner.email,
+                    "calendarId" to id
+                )
+
+                val mutableOwnerList =  ownerList!!.toMutableList()
+
+                mutableOwnerList.add(userData)
+
+                userInCalendarsCollection.document(myUser.email)
+                    .update("owners", mutableOwnerList)
+                    .await()
+            }
+            else{
+                val userData = listOf(
+                    hashMapOf(
+                        "userId" to owner.email,
+                        "calendarId" to id
+                    )
+                )
+
+                val list = hashMapOf(
+                    "owners" to userData
+                )
+                userInCalendarsCollection.document(myUser.email)
+                userInCalendarsCollection.document(myUser.email)
+                    .set(list)
+                    .await()
+            }
+
+
+        } catch (e: Exception)
+        {
+            Log.e(TAG, "Error saving calendars to Firestore: $e")
+        }
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -299,7 +463,7 @@ object MainViewModel : ViewModel() {
         val eventDao = roomDB.eventItemDao()
 
         val newEventData = EventData(
-            myCalendar.name,
+            myCalendar.id,
             event.title,
             event.description,
             event.startTime,
@@ -309,7 +473,7 @@ object MainViewModel : ViewModel() {
         )
 
         eventDao.insertEvent(newEventData)
-        val enetList = eventDao.getEventByCalendarName(myCalendar.name)?.toMutableList()?.map { eventData ->
+        val enetList = eventDao.getEventByCalendarId(myCalendar.id)?.toMutableList()?.map { eventData ->
             MyEvent(
                 eventData.title,
                 eventData.description,
@@ -333,7 +497,6 @@ object MainViewModel : ViewModel() {
         val calendarsCollection = firestoreDB.collection("calendars")
         try {
             val calendars = getAllCalendars(context)
-//            loggedInUser = loggedInDeferred.await()
             val loggedInUserEmail = loggedInUser?.email
 
             if (loggedInUserEmail != null) {
@@ -353,6 +516,8 @@ object MainViewModel : ViewModel() {
                         .await()
                 }
             }
+
+
 
             Log.d(TAG, "Calendars saved to Firestore for user: $loggedInUserEmail")
         } catch (e: Exception) {
@@ -390,6 +555,7 @@ object MainViewModel : ViewModel() {
                 AppDatabase::class.java, "database-name"
             ).build()
 
+            //delete previous calendars from room
             val calendarsDao = roomDB.calendarItemDao()
             for (tempCalendar in previousCalendars) {
                 if (!allData.contains(tempCalendar)) {
@@ -399,14 +565,33 @@ object MainViewModel : ViewModel() {
                     }
                 }
             }
+
+            //delete previous users from room
+            val sharedUsersDao = roomDB.sharedUsersDao()
+            val users = sharedUsersDao.getAllUsers()
+            val convertedUsers = users.map { userData ->
+                User(
+                    userData.username,
+                    userData.emailAddress
+                )
+            }
+            Log.d("USERS", users.toString())
+            for (calendar in allData) {
+                for (user in convertedUsers) {
+                    if (!calendar.sharedPeople.contains(user)) {
+                        val userData = UserData(calendar.id, user.username, user.email, )
+                        sharedUsersDao.deleteUser(userData)
+                    }
+                }
+            }
+
             for (cal in allData) {
                 addCalendar(context, cal)
             }
-
         }
-
-
     }
+
+
 
     suspend fun deleteCalendarFromRoom(context: Context, myCalendar: MyCalendar) {
         val roomDB = Room.databaseBuilder(
@@ -445,7 +630,7 @@ object MainViewModel : ViewModel() {
         }
     }
 
-    suspend fun deleteEventFromRoom(context: Context, event: MyEvent, calendarId: String) {
+    suspend fun deleteEventFromRoom(context: Context, event: MyEvent, calendarName: String) {
         val roomDB = Room.databaseBuilder(
             context,
             AppDatabase::class.java, "database-name"
@@ -453,7 +638,7 @@ object MainViewModel : ViewModel() {
 
         val eventDao = roomDB.eventItemDao()
 
-        val eventData = eventDao.getSpecificEvent(calendarId, event.title, event.startTime, event.endTime)
+        val eventData = eventDao.getSpecificEvent(calendarName, event.title, event.startTime, event.endTime)
         if (eventData != null) {
             eventDao.deleteEvent(eventData)
         }
@@ -461,14 +646,28 @@ object MainViewModel : ViewModel() {
 
     suspend fun getFriendRequests(callback: (List<FriendRequest>) -> Unit) {
         authenticateUser()
-//        loggedInUser = loggedInDeferred.await()
-        if (loggedInUser != null) {
-            firestoreDB.collection("friend_requests")
-                .whereEqualTo("receiverId", loggedInUser!!.email)
-                .get()
-                .addOnSuccessListener { result ->
-                    val friendRequests = mutableListOf<FriendRequest>()
-                    for (document in result) {
+
+        val receiverQuery = firestoreDB.collection("friend_requests")
+            .whereEqualTo("receiverId", loggedInUser!!.email)
+
+        val senderQuery = firestoreDB.collection("friend_requests")
+            .whereEqualTo("senderId", loggedInUser!!.email)
+
+        val friendRequests = mutableListOf<FriendRequest>()
+        receiverQuery.get()
+            .addOnSuccessListener { result ->
+                for (document in result) {
+                    val receiverId = document.getString("receiverId") ?: ""
+                    val senderId = document.getString("senderId") ?: ""
+                    val status = document.getString("status") ?: ""
+                    val friendRequest = FriendRequest(receiverId, senderId, status)
+                    if(status == "pending") {
+                        friendRequests.add(friendRequest)
+                    }
+                }
+
+                senderQuery.get().addOnSuccessListener { result2 ->
+                    for (document in result2) {
                         val receiverId = document.getString("receiverId") ?: ""
                         val senderId = document.getString("senderId") ?: ""
                         val status = document.getString("status") ?: ""
@@ -477,12 +676,16 @@ object MainViewModel : ViewModel() {
                             friendRequests.add(friendRequest)
                         }
                     }
+
                     callback(friendRequests)
                 }
-                .addOnFailureListener { _ ->
-                    Log.d(TAG, "failed to retrieve friend requests")
-                }
-        }
+
+
+            }
+            .addOnFailureListener { _ ->
+                Log.d(TAG, "failed to retrieve friend requests")
+            }
+
     }
 
     fun handleFriendRequest(choice: String, friendRequest: FriendRequest, callback: (Boolean) -> Unit) {
@@ -512,7 +715,7 @@ object MainViewModel : ViewModel() {
             }
     }
 
-    suspend fun getFriends(callback: (List<User>) -> Unit) {
+    suspend fun getFriends(callback: (MutableList<User>) -> Unit) {
         authenticateUser()
 //        loggedInUser = loggedInDeferred.await()
         if (loggedInUser != null) {
@@ -550,7 +753,7 @@ object MainViewModel : ViewModel() {
         }
     }
 
-    suspend fun fetchUsersFromFriendsList(callback: (List<User>) -> Unit) {
+    suspend fun fetchUsersFromFriendsList(callback: (MutableList<User>) -> Unit) {
         authenticateUser()
         firestoreDB.collection("user_friends")
             .document(loggedInUser!!.email)
@@ -607,7 +810,10 @@ object MainViewModel : ViewModel() {
                 }
 
                 // Update the document with merged friends list
-                val userFriendsMap = mapOf("userId" to currentEmail, "friends" to updatedFriends)
+                val userFriendsMap = mapOf(
+                    "userId" to currentEmail,
+                    "friends" to updatedFriends
+                )
                 firestoreDB.collection("user_friends")
                     .document(currentEmail)
                     .set(userFriendsMap)
@@ -718,9 +924,9 @@ object MainViewModel : ViewModel() {
         }
     }
 
-    private fun generateIdFromEmails(string1: String, string2: String): String {
+    fun generateIdFromEmails(receiverUserEmail: String, senderUserEmail: String): String {
         // Sort the two strings alphabetically
-        val sortedStrings = listOf(string1, string2).sorted()
+        val sortedStrings = listOf(receiverUserEmail, senderUserEmail).sorted()
 
         // Concatenate the sorted strings
         val combinedString = sortedStrings.joinToString(separator = "")
@@ -742,7 +948,7 @@ object MainViewModel : ViewModel() {
     }
 
     private suspend fun checkExistingChat(user1: User, user2: User): Boolean {
-        val chatId = generateIdFromEmails(user1.email, user2.email)
+        val chatId = '-' + generateIdFromEmails(user1.email, user2.email)
 
         val database = FirebaseDatabase.getInstance("https://szakdolgozat-7f789-default-rtdb.europe-west1.firebasedatabase.app/")
         val chatsRef = database.getReference("chats")
@@ -812,29 +1018,192 @@ object MainViewModel : ViewModel() {
 
     }
 
-    /*suspend fun getChatsForUser(loggedInUserEmail: String, callback: (List<ChatData>) -> Unit) {
-        val database = FirebaseDatabase.getInstance("https://your-firebase-project-id.firebaseio.com/")
-        val chatsRef = database.getReference("chats")
+    suspend fun getSharedCalendars(requireContext: Context): MutableList<MyCalendar> {
+        val firestoreDB = FirebaseFirestore.getInstance()
+        val calendarsCollection = firestoreDB.collection("calendars")
+        val userInCalendarsCollection = firestoreDB.collection("user_in_calendars")
 
-        val chatDataList = mutableListOf<ChatData>()
-        chatsRef.addListenerForSingleValueEvent(object : ValueEventListener {
-            override fun onDataChange(dataSnapshot: DataSnapshot) {
-                dataSnapshot.children.forEach { chatSnapshot ->
-                    val chatData = chatSnapshot.getValue(ChatData::class.java)
-                    if (chatData != null *//*&& loggedInUserEmail in chatData.users.map { it.email }*//*) {
-                        chatDataList.add(chatData)
+        val userId = loggedInUser!!.email
+        val resultList = mutableListOf<MyCalendar>()
+        try {
+            val userSharedCalendarsDoc = userInCalendarsCollection.document(userId).get().await()
+
+            if (userSharedCalendarsDoc.exists()) {
+                val userCalendars = userSharedCalendarsDoc.get("owners") as? List<*>
+
+
+                for (calendar in userCalendars!!) {
+                    val calendarMap = calendar as? Map<*, *>
+                    val calendarId = calendarMap?.get("calendarId") as? Long
+                    val ownerId = calendarMap?.get("userId") as? String
+
+                    if (ownerId != null) {
+
+                        val allData = try {
+                            val userDocument = calendarsCollection.document(ownerId).get().await()
+
+                            if (userDocument.exists()) {
+                                val calendars = userDocument.toObject(UserFirestoreData::class.java)?.calendars
+                                Log.d(TAG, "Calendars retrieved from Firestore for user: $userId")
+                                calendars
+                            } else {
+                                Log.d(TAG, "No calendars found in Firestore for user: $userId")
+                                null
+                            }
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Error retrieving calendars from Firestore: $e")
+                            null
+                        }
+
+                        if (allData != null) {
+                            for (cal in allData) {
+                                if (cal.sharedPeople.contains(loggedInUser)) {
+                                    resultList.add(cal)
+                                }
+                            }
+                        }
+
                     }
                 }
-                // Call the callback function with the retrieved data
-                callback(chatDataList)
+
+
+
+            }
+        } catch (e: Exception) {
+            // error
+        }
+
+        return resultList
+    }
+
+    suspend fun addEventToSharedCalendar(event: MyEvent, thisCalendar: MyCalendar) {
+        val firestoreDB = FirebaseFirestore.getInstance()
+        val calendarsCollection = firestoreDB.collection("calendars")
+        try {
+            val existingDoc =
+                calendarsCollection.document(thisCalendar.owner.email).get().await()
+
+            val calendarList = existingDoc.toObject(UserFirestoreData::class.java)?.calendars
+            if (calendarList != null) {
+                for (calendar in calendarList) {
+                    if (calendar.id == thisCalendar.id) {
+                        calendar.events.add(event)
+                        thisCalendar.events.add(event)
+                    }
+                }
+
+                calendarsCollection.document(thisCalendar.owner.email).update("calendars", calendarList)
+            }
+        } catch (e: Exception)
+        {
+            Log.e(TAG, "Error adding event shared calendar: $e")
+        }
+    }
+
+    suspend fun deleteSharedUsersFromCalendar(sharedUsers: MutableList<User>, calendar: MyCalendar) {
+        val firestoreDB = FirebaseFirestore.getInstance()
+        val userInCalendarsCollection = firestoreDB.collection("user_in_calendars")
+        try {
+
+            for (myUser in sharedUsers) {
+                val existingDoc = userInCalendarsCollection.document(myUser.email).get().await()
+
+                if (existingDoc.exists()) {
+                    val ownerList = existingDoc.get("owners") as? List<*>
+                    val userData = hashMapOf(
+                        "userId" to calendar.owner.email,
+                        "calendarId" to calendar.id
+                    )
+
+                    val mutableOwnerList =  ownerList!!.toMutableList()
+
+                    mutableOwnerList.remove(userData)
+
+                    if (mutableOwnerList.isNotEmpty()) {
+                        userInCalendarsCollection.document(myUser.email)
+                            .update("owners", mutableOwnerList)
+                            .await()
+                    }
+                    else {
+                        userInCalendarsCollection.document(myUser.email)
+                            .delete()
+                    }
+                }
             }
 
-            override fun onCancelled(error: DatabaseError) {
-                // Handle error
-                callback(emptyList())
-            }
-        })
-    }*/
 
+        } catch (e: Exception)
+        {
+            Log.e(TAG, "Error saving calendars to Firestore: $e")
+        }
+    }
+
+    suspend fun deleteEventFromSharedCalendar(event: MyEvent, userId: String, calendarId: Long) {
+        val firestoreDB = FirebaseFirestore.getInstance()
+        val calendarsCollection = firestoreDB.collection("calendars")
+        try {
+            val existingDoc =
+                calendarsCollection.document(userId).get().await()
+
+            val calendarList = existingDoc.toObject(UserFirestoreData::class.java)?.calendars
+            if (calendarList != null) {
+                for (calendar in calendarList) {
+                    if (calendar.id == calendarId) {
+                        calendar.events.remove(event)
+                    }
+                }
+
+                calendarsCollection.document(userId).update("calendars", calendarList)
+            }
+
+
+
+        } catch (e: Exception)
+        {
+            Log.e(TAG, "Error saving calendars to Firestore: $e")
+        }
+    }
+
+    fun removeUserFromFriends(context: Context, deletedUser: User) {
+        firestoreDB.collection("user_friends")
+            .document(loggedInUser!!.email)
+            .get()
+            .addOnSuccessListener { documentSnapshot ->
+                //current user
+                val currentUserFriends = documentSnapshot.toObject(UserFriends::class.java)
+                val existingFriends = currentUserFriends?.friends ?: emptyList()
+
+                val newFriendsList = existingFriends.toMutableList()
+                newFriendsList.remove(deletedUser.email)
+                firestoreDB.collection("user_friends")
+                    .document(loggedInUser!!.email).update("friends", newFriendsList)
+
+                //other user
+                firestoreDB.collection("user_friends")
+                    .document(deletedUser.email)
+                    .get()
+                    .addOnSuccessListener { OtherDocumentSnapshot ->
+                        val otherUserFriends = OtherDocumentSnapshot.toObject(UserFriends::class.java)
+                        val otherExistingFriends = otherUserFriends?.friends ?: emptyList()
+
+                        val otherNewFriendsList = otherExistingFriends.toMutableList()
+                        otherNewFriendsList.remove(loggedInUser!!.email)
+
+                        firestoreDB.collection("user_friends")
+                            .document(deletedUser.email).update("friends", otherNewFriendsList)
+
+                    }
+                    .addOnFailureListener { _ ->
+                        Toast.makeText(context, "Could not delete user from friends", Toast.LENGTH_SHORT).show()
+                    }
+
+
+
+
+            }
+            .addOnFailureListener { _ ->
+                Toast.makeText(context, "Could not delete user from friends", Toast.LENGTH_SHORT).show()
+            }
+    }
 
 }

@@ -1,4 +1,4 @@
-package com.example.myapplication.calendar
+package com.example.myapplication.calendar.calendar_details
 
 import android.app.Dialog
 import android.content.Context
@@ -16,6 +16,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.GridLayout
+import android.widget.TextView
+import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -35,7 +37,8 @@ import kotlinx.coroutines.launch
 import java.util.Calendar
 import java.util.Date
 
-class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListener, CustomEventAdapter.OnItemRemovedListener, CustomUsersAdapter.ChatActionListener {
+class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListener,
+    CustomEventAdapter.OnItemRemovedListener, CustomUsersAdapter.ChatActionListener, CustomUsersAdapter.DeleteActionListener {
 
     private var _binding: CalendarFragmentBinding? = null
     private lateinit var viewModel: MainViewModel
@@ -60,8 +63,12 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
 
         thisCalendar = viewModel.getCalendarToFragment()
         binding.recyclerViewEvents.layoutManager = LinearLayoutManager(requireContext())
-        val horizontalManager = LinearLayoutManager(requireContext())
-        horizontalManager.orientation = LinearLayoutManager.HORIZONTAL
+
+        val screenWidth = resources.displayMetrics.widthPixels
+        val itemDecoration = UsersRecyclerItemDecoration() // Adjust the scale factor as needed
+        binding.recyclerViewUsers.addItemDecoration(itemDecoration)
+
+        val horizontalManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
         binding.recyclerViewUsers.layoutManager = horizontalManager
         binding.textViewDetailCalendarTitle.text = thisCalendar?.name
 
@@ -88,11 +95,12 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
                 dataList = Pair(mutableListOf(),-1)
             }
             eventsMap.clear()
-            adapter = CustomEventAdapter(requireActivity() as AppCompatActivity, dataList.first, thisCalendar!!.name)
+            adapter = CustomEventAdapter(requireActivity() as AppCompatActivity, dataList.first, thisCalendar!!)
             binding.recyclerViewEvents.adapter = adapter
 
             val usersList = thisCalendar!!.sharedPeople
-            val usersAdapter = CustomUsersAdapter(requireContext() as AppCompatActivity, usersList, null)
+            val deleteButtonVisibility = if (MainViewModel.loggedInUser!!.email == thisCalendar!!.owner.email) true else false
+            val usersAdapter = CustomUsersAdapter(requireContext() as AppCompatActivity, usersList, null, this@CalendarDetailFragment, deleteButtonVisibility)
             binding.recyclerViewUsers.adapter = usersAdapter
         }
 
@@ -152,9 +160,16 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
     override fun onNewEventCreated(event: MyEvent) {
         viewModel.viewModelScope.launch {
 
-            viewModel.addEventToCalendar(requireContext(), event, thisCalendar!!)
+            if (MainViewModel.loggedInUser!!.email == thisCalendar!!.owner.email) {
+                MainViewModel.addEventToCalendar(requireContext(), event, thisCalendar!!)
+            }
+            else {
+                MainViewModel.addEventToSharedCalendar(event, thisCalendar!!)
+
+            }
 
             requireActivity().onBackPressedDispatcher.onBackPressed()
+
         }
     }
     private fun getGridIndicesForDate(date: Date): Pair<Int, Int> {
@@ -449,27 +464,44 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
     private suspend fun showChooseFriendDialog() {
         val dialog = Dialog(requireContext())
         dialog.setContentView(R.layout.choose_friend_dialog)
+        dialog.findViewById<TextView>(R.id.dialog_message).text =
+            getString(R.string.choose_a_friend_to_add_to_this_calendar)
 
         // Find views in the dialog layout
         val chooseFriendRecyclerView = dialog.findViewById<RecyclerView>(R.id.chooseFriendRecyclerView)
         chooseFriendRecyclerView.layoutManager = GridLayoutManager(requireContext(), 3)
 
         viewModel.getFriends { friendList ->
-            val adapter = CustomUsersAdapter(requireContext() as AppCompatActivity, friendList.toMutableList(), this)
+
+
+            for (user in thisCalendar!!.sharedPeople){
+                friendList.remove(user)
+            }
+            val adapter = CustomUsersAdapter(requireContext() as AppCompatActivity, friendList, this, null,false)
             adapter.setItemClickedPrompt(getString(R.string.add_selected_user_to_shared_calendar))
             chooseFriendRecyclerView.adapter = adapter
             (chooseFriendRecyclerView.adapter as CustomUsersAdapter).notifyDataSetChanged()
 
             dialog.setCancelable(true)
 
+
             dialog.show()
         }
     }
 
-    override fun onInitiateChat(receiverUser: User) {
+    override fun onUserClickConfirmed(receiverUser: User) {
         lifecycleScope.launch {
             MainViewModel.addUserToCalendar(requireContext(), receiverUser, thisCalendar!!)
+            (binding.recyclerViewUsers.adapter as CustomUsersAdapter).addItem(receiverUser)
+            binding.recyclerViewUsers.adapter!!.notifyItemInserted(thisCalendar!!.sharedPeopleNumber)
         }
     }
 
+    override fun onDeleteConfirmed(deletedUser: User, position: Int) {
+        lifecycleScope.launch {
+            MainViewModel.removeUserFromCalendar(requireContext(), deletedUser, thisCalendar!!)
+            (binding.recyclerViewUsers.adapter as CustomUsersAdapter).removeItem(deletedUser)
+            binding.recyclerViewUsers.adapter!!.notifyItemRemoved(position)
+        }
+    }
 }

@@ -66,20 +66,22 @@ class FriendlyMessageAdapter(
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val inflater = LayoutInflater.from(parent.context)
-        return if (viewType == VIEW_TYPE_TEXT) {
-            val view = inflater.inflate(R.layout.message, parent, false)
-            val binding = MessageBinding.bind(view)
-            MessageViewHolder(binding)
-        }
-        else if (viewType == VIEW_TYPE_IMAGE) {
-            val view = inflater.inflate(R.layout.image_message, parent, false)
-            val binding = ImageMessageBinding.bind(view)
-            ImageMessageViewHolder(binding)
-        }
-        else {
-            val view = inflater.inflate(R.layout.message_own, parent, false)
-            val binding = MessageBinding.bind(view)
-            MessageViewHolder(binding)
+        return when (viewType) {
+            VIEW_TYPE_TEXT -> {
+                val view = inflater.inflate(R.layout.message, parent, false)
+                val binding = MessageBinding.bind(view)
+                MessageViewHolder(binding)
+            }
+            VIEW_TYPE_IMAGE -> {
+                val view = inflater.inflate(R.layout.image_message, parent, false)
+                val binding = ImageMessageBinding.bind(view)
+                ImageMessageViewHolder(binding)
+            }
+            else -> {
+                val view = inflater.inflate(R.layout.message_own, parent, false)
+                val binding = MessageBinding.bind(view)
+                MessageViewHolder(binding)
+            }
         }
     }
 

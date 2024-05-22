@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="16dp"
+    android:background="@drawable/friend_request_background">
+
+    <ImageView
+        android:id="@+id/imageViewProfilePictureRequest"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:src="@drawable/ic_account_circle_black_36dp"
+        android:scaleType="centerCrop"
+        android:layout_marginEnd="16dp"
+        android:layout_weight="3"
+        android:contentDescription="@string/profile_picture_of_user" />
+
+    <TextView
+        android:id="@+id/textViewSenderNameRequest"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="@string/sender_s_name"
+        android:textSize="18sp"
+        android:textColor="@color/black"
+        android:textStyle="bold"
+        android:layout_gravity="center_vertical"
+        android:layout_marginEnd="16dp"
+        android:layout_weight="9"/>
+
+    <TextView
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="@string/request_pending"
+        android:textSize="18sp"
+        android:textColor="@color/black"
+        android:textStyle="bold"
+        android:layout_gravity="center_vertical"
+        android:gravity="center"
+        android:layout_marginEnd="16dp"
+        android:layout_weight="6"/>
+
+
+</LinearLayout>

@@ -1,4 +1,4 @@
-package com.example.myapplication.calendar
+package com.example.myapplication.calendar.own_calendars
 
 import android.os.Build
 import android.view.LayoutInflater
@@ -14,6 +14,8 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.recyclerview.widget.RecyclerView
 import com.example.myapplication.R
+import com.example.myapplication.calendar.calendar_details.MyCalendar
+import com.example.myapplication.calendar.calendar_details.CalendarDetailFragment
 import com.example.myapplication.common.MyItemTouchHelperCallback
 import com.example.myapplication.viewModel.MainViewModel
 import kotlinx.coroutines.launch
@@ -23,8 +25,8 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Collections
 
-class CustomCalendarAdapter(private val activity: AppCompatActivity, private val dataList: MutableList<MyCalendar>) : RecyclerView.Adapter<CustomCalendarAdapter.CalendarItemViewHolder>(), MyItemTouchHelperCallback.ItemTouchHelperAdapter {
-    inner class CalendarItemViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+class CustomSharedCalendarAdapter(private val activity: AppCompatActivity, private val dataList: MutableList<MyCalendar>) : RecyclerView.Adapter<CustomSharedCalendarAdapter.SharedCalendarItemViewHolder>() {
+    inner class SharedCalendarItemViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val titleTextView: TextView = itemView.findViewById(R.id.textViewTitleCalendarItem)
         val numberTextView: TextView = itemView.findViewById(R.id.textViewPeopleNumber)
         val lastUpdatedTextView: TextView = itemView.findViewById(R.id.textViewLastUpdated)
@@ -33,13 +35,13 @@ class CustomCalendarAdapter(private val activity: AppCompatActivity, private val
         lateinit var viewModel: MainViewModel
     }
 
-    override fun onCreateViewHolder(view: ViewGroup, viewType: Int): CalendarItemViewHolder {
+    override fun onCreateViewHolder(view: ViewGroup, viewType: Int): SharedCalendarItemViewHolder {
         val itemView = LayoutInflater.from(view.context).inflate(R.layout.calendar_item_view, view, false)
-        return CalendarItemViewHolder(itemView)
+        return SharedCalendarItemViewHolder(itemView)
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
-    override fun onBindViewHolder(viewHolder: CalendarItemViewHolder, position: Int) {
+    override fun onBindViewHolder(viewHolder: SharedCalendarItemViewHolder, position: Int) {
         viewHolder.viewModel = ViewModelProvider(activity)[MainViewModel::class.java]
         val currentItem = dataList[position]
         viewHolder.titleTextView.text = currentItem.name
@@ -92,6 +94,8 @@ class CustomCalendarAdapter(private val activity: AppCompatActivity, private val
         val builder = AlertDialog.Builder(activity)
         val inflater = LayoutInflater.from(activity)
         val dialogView = inflater.inflate(R.layout.delete_dialog, null)
+        dialogView.findViewById<TextView>(R.id.dialog_message).text =
+            activity.getString(R.string.are_you_sure_you_want_to_quit_this_group)
         builder.setView(dialogView)
 
         val buttonCancel = dialogView.findViewById<Button>(R.id.button_cancel)
@@ -108,8 +112,7 @@ class CustomCalendarAdapter(private val activity: AppCompatActivity, private val
             // For example, call a method to delete the item from your data source
             val viewModel = ViewModelProvider(activity)[MainViewModel::class.java]
             viewModel.viewModelScope.launch { // Launch a coroutine
-                viewModel.deleteCalendarFromRoom(activity, dataList[position])
-                viewModel.saveAllCalendarsToFirestoreDB(activity, viewModel.loggedInUser!!.email)
+                viewModel.removeUserFromCalendar(activity, MainViewModel.loggedInUser!!, dataList[position])
                 dataList.removeAt(position)
                 notifyItemRemoved(position)
             }
@@ -119,9 +122,4 @@ class CustomCalendarAdapter(private val activity: AppCompatActivity, private val
         dialog.show()
     }
 
-    override fun onItemMove(fromPosition: Int, toPosition: Int): Boolean {
-        Collections.swap(dataList, fromPosition, toPosition)
-        notifyItemMoved(fromPosition, toPosition)
-        return true
-    }
 }
