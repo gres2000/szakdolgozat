@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/dialog_message"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="20sp"
+        android:gravity="center"
+        android:text="@string/export_events_into_which_calendar"
+        android:paddingBottom="16dp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center">
+
+        <ImageButton
+            android:id="@+id/googleCalendarImageButton"
+            android:layout_width="0dp"
+            android:layout_height="200dp"
+            android:layout_weight="1"
+            android:background="?android:attr/selectableItemBackground"
+            android:src="@drawable/google_calendar_icon"
+            android:scaleType="centerInside"
+            android:contentDescription="@string/choose_google_calendar_to_export_events"
+            android:padding="8dp" />
+
+        <ImageButton
+            android:id="@+id/outlookCalendarImageButton"
+            android:layout_width="0dp"
+            android:layout_height="200dp"
+            android:layout_weight="1"
+            android:background="?android:attr/selectableItemBackground"
+            android:src="@drawable/outlook_calendar_icon"
+            android:scaleType="centerInside"
+            android:contentDescription="@string/choose_outlook_calendar_to_export_events"
+            android:padding="8dp" />
+    </LinearLayout>
+
+</LinearLayout>

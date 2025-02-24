@@ -60,6 +60,12 @@
     <string name="choose_a_friend_to_add_to_this_calendar">Choose a friend to add to this calendar</string>
     <string name="no_internet_connection_some_features_may_not_work_properly">No internet connection. Some features may not work properly.</string>
     <string name="are_you_sure_you_want_to_quit_this_group">Are you sure you want to quit this group?</string>
+    <string name="export_events">Export events</string>
+    <string name="start_group_chat">Start group chat</string>
+    <string name="more">More</string>
+    <string name="choose_outlook_calendar_to_export_events">Choose outlook calendar to export events</string>
+    <string name="choose_google_calendar_to_export_events">Choose google calendar to export events</string>
+    <string name="export_events_into_which_calendar">Export events into which calendar?</string>
 
 
 </resources>

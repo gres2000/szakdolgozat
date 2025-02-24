@@ -115,5 +115,7 @@ dependencies {
     implementation("io.ktor:ktor-client-logging:2.3.11")
     implementation("io.ktor:ktor-client-cio:2.3.11")
 
+    //google calendar
+
 
 }
