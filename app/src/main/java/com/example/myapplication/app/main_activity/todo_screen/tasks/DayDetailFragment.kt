@@ -1,4 +1,4 @@
-package com.example.myapplication.app.main_activity.todo_screen.details
+package com.example.myapplication.app.main_activity.todo_screen.tasks
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -10,7 +10,6 @@ import android.widget.TimePicker
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.example.myapplication.R
-import com.example.myapplication.app.main_activity.todo_screen.tasks.TaskData
 import com.example.myapplication.app.view_model.MainViewModel
 
 class DayDetailFragment(private val taskData: TaskData) : Fragment() {

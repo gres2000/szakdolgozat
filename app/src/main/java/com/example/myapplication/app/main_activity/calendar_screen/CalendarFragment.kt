@@ -10,12 +10,12 @@ import androidx.viewpager2.widget.ViewPager2
 import com.example.myapplication.app.main_activity.calendar_screen.calendar.CalendarsViewPagerAdapter
 import com.example.myapplication.app.main_activity.calendar_screen.calendar.own_calendars.OwnCalendarsRecyclerViewFragment
 import com.example.myapplication.app.main_activity.calendar_screen.calendar.shared_calendars.SharedCalendarsRecyclerViewFragment
-import com.example.myapplication.databinding.RightFragmentBinding
 import com.example.myapplication.app.view_model.MainViewModel
+import com.example.myapplication.databinding.CalendarFragmentBinding
 import com.google.android.material.tabs.TabLayoutMediator
 
 class CalendarFragment : Fragment() {
-    private var _binding: RightFragmentBinding? = null
+    private var _binding: CalendarFragmentBinding? = null
 
     private lateinit var viewModel: MainViewModel
     private val binding get() = _binding!!
@@ -24,7 +24,7 @@ class CalendarFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = RightFragmentBinding.inflate(inflater, container, false)
+        _binding = CalendarFragmentBinding.inflate(inflater, container, false)
         return binding.root
     }
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {

@@ -20,9 +20,9 @@ import com.example.myapplication.R
 import com.example.myapplication.app.authentication_activity.LoginActivity
 import com.example.myapplication.app.authentication_activity.UserPreferences
 import com.example.myapplication.app.chat_activity.StartChatActivity
-import com.example.myapplication.databinding.MidFragmentBinding
 import com.example.myapplication.app.friends_activity.FriendsActivity
 import com.example.myapplication.app.view_model.MainViewModel
+import com.example.myapplication.databinding.HomeFragmentBinding
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -33,7 +33,7 @@ import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.launch
 
 class HomeFragment : Fragment() {
-    private var _binding: MidFragmentBinding? = null
+    private var _binding: HomeFragmentBinding? = null
     private lateinit var logoutButton: Button
     private lateinit var currentUserTextView: TextView
     private lateinit var openChatButton: Button
@@ -48,7 +48,7 @@ class HomeFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = MidFragmentBinding.inflate(inflater, container, false)
+        _binding = HomeFragmentBinding.inflate(inflater, container, false)
         return binding.root
     }
 

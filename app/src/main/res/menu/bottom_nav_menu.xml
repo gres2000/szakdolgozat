@@ -3,15 +3,15 @@
 
     <item
         android:id="@+id/destination_tasks"
-        android:title="Tasks"
-        android:icon="@drawable/left_side_icon"/>
+        android:title="@string/tasks"
+        android:icon="@drawable/todo_menu_icon"/>
     <item
         android:id="@+id/destination_home"
-        android:title="Home"
-        android:icon="@drawable/mid_icon"/>
+        android:title="@string/home"
+        android:icon="@drawable/home_menu_icon"/>
     <item
         android:id="@+id/destination_calendar"
-        android:title="Calendar"
+        android:title="@string/calendar"
         android:icon="@drawable/right_side_icon"/>
 
 </menu>

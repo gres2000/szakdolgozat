@@ -9,9 +9,10 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.RecyclerView
 import com.example.myapplication.R
+import com.example.myapplication.app.main_activity.todo_screen.daily.DailyFragment
 import com.example.myapplication.app.view_model.MainViewModel
 
-class CustomDayAdapter(private val containingFragment: DayFragment, val activity: AppCompatActivity, private val dataList: List<TaskData>) : RecyclerView.Adapter<CustomDayAdapter.DayItemViewHolder>() {
+class CustomDayAdapter(private val containingFragment: DailyFragment, val activity: AppCompatActivity, private val dataList: List<TaskData>) : RecyclerView.Adapter<CustomDayAdapter.DayItemViewHolder>() {
     inner class DayItemViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val titleTextView: TextView = itemView.findViewById(R.id.textViewTitle)
         val descriptionTextView: TextView = itemView.findViewById(R.id.textViewDescription)
@@ -39,7 +40,6 @@ class CustomDayAdapter(private val containingFragment: DayFragment, val activity
             //new solution
             viewHolder.viewModel.taskId = viewHolder.viewHolderId
             viewHolder.viewModel.updateEvent(taskData)
-            viewHolder.viewModel.dayId.value = containingFragment.dayFragmentId
         }
         viewHolder.checkBox.setOnCheckedChangeListener { _, isChecked ->
             currentItem.isChecked = isChecked

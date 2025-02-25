@@ -13,7 +13,7 @@ import com.example.myapplication.databinding.ActivityMainBinding
 import com.example.myapplication.app.main_activity.todo_screen.TodoFragment
 import com.example.myapplication.app.main_activity.home_screen.HomeFragment
 import com.example.myapplication.app.main_activity.calendar_screen.CalendarFragment
-import com.example.myapplication.app.main_activity.todo_screen.details.DayDetailFragment
+import com.example.myapplication.app.main_activity.todo_screen.tasks.DayDetailFragment
 import com.example.myapplication.app.view_model.MainViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -21,8 +21,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-
-class MainActivity : AppCompatActivity(){
+class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private val fragmentManager = supportFragmentManager
@@ -52,7 +51,7 @@ class MainActivity : AppCompatActivity(){
             transaction.commit()
         }
 
-        MainViewModel.dayId.observe(this) { eventData ->
+        MainViewModel.dayId.observe(this) { _ ->
             if (viewModel.taskReady) {
                 val transaction = fragmentManager.beginTransaction()
                 transaction.replace(R.id.constraint_container, fragmentMap["tasks"]!!)
@@ -80,7 +79,6 @@ class MainActivity : AppCompatActivity(){
 //        }
 //
 //        checkOverlayPermission()
-
     }
 
 //    private fun checkOverlayPermission() {
@@ -106,10 +104,7 @@ class MainActivity : AppCompatActivity(){
 //        startForegroundService(intent)
 //    }
 
-
-
     private fun setupBottomNavigationView() {
-
 
         binding.bottomNavigationView.setOnItemSelectedListener { menuItem ->
             when (menuItem.itemId) {
@@ -119,12 +114,14 @@ class MainActivity : AppCompatActivity(){
                         .commit()
                     true
                 }
+
                 R.id.destination_home -> {
                     fragmentManager.beginTransaction()
                         .replace(R.id.constraint_container, fragmentMap["home"]!!)
                         .commit()
                     true
                 }
+
                 R.id.destination_calendar -> {
                     fragmentManager.beginTransaction()
                         .replace(R.id.constraint_container, fragmentMap["calendar"]!!)
@@ -132,13 +129,14 @@ class MainActivity : AppCompatActivity(){
 
                     true
                 }
+
                 else -> false
             }
         }
-
     }
+
     private fun setupOnBackPressedHandler() {
-        val middleFragmentId = R.id.destination_home // Replace with your actual middle fragment ID
+        val middleFragmentId = R.id.destination_home
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
@@ -148,11 +146,9 @@ class MainActivity : AppCompatActivity(){
                         .replace(R.id.constraint_container, fragmentMap["home"]!!)
                         .commit()
                     binding.bottomNavigationView.selectedItemId = R.id.destination_home
-                }
-                else if (currentFragmentId == middleFragmentId) {
+                } else if (currentFragmentId == middleFragmentId) {
                     this@MainActivity.finish()
-                }
-                else {
+                } else {
                     isEnabled = false
                     onBackPressedDispatcher.onBackPressed()
                     isEnabled = true
@@ -177,5 +173,4 @@ class MainActivity : AppCompatActivity(){
             }
         }
     }
-
 }

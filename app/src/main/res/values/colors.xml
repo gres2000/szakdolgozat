@@ -3,6 +3,7 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 
+    <color name="cyan_opposite">#0b3259</color>
     <color name="cyan">#34EBD8</color>
     <color name="bottom_nav_item">#8C706D</color>
     <color name="bottom_nav_selected_item">#ff9f21</color>

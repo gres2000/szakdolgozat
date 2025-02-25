@@ -66,6 +66,13 @@
     <string name="choose_outlook_calendar_to_export_events">Choose outlook calendar to export events</string>
     <string name="choose_google_calendar_to_export_events">Choose google calendar to export events</string>
     <string name="export_events_into_which_calendar">Export events into which calendar?</string>
+    <string name="daily">Daily</string>
+    <string name="weekly">Weekly</string>
+    <string name="tasks">Tasks</string>
+    <string name="home">Home</string>
+    <string name="calendar">Calendar</string>
+    <string name="daily_tasks">Daily Tasks</string>
+    <string name="weekly_tasks">Weekly Tasks</string>
 
 
 </resources>

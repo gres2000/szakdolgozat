@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/leftFragment_id"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/cyan">
+
+    <LinearLayout
+        android:id="@+id/switchLayout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="20dp"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:paddingTop="10dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <!-- Daily label -->
+        <TextView
+            android:id="@+id/dailyLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:padding="10dp"
+            android:text="@string/daily"
+            android:textColor="@color/white"
+            android:textSize="20sp" />
+
+        <!-- Switch to toggle between Daily and Weekly -->
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/taskSwitch"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"
+            android:checked="false"
+            android:thumbTextPadding="8dp"
+            android:scaleX="1.8"
+            android:scaleY="1.8"
+            app:showText="false" />
+
+        <!-- Weekly label -->
+        <TextView
+            android:id="@+id/weeklyLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:padding="10dp"
+            android:text="@string/weekly"
+            android:textColor="@color/white"
+            android:textSize="20sp" />
+
+    </LinearLayout>
+
+
+    <!--    <com.google.android.material.tabs.TabLayout-->
+    <!--        android:id="@+id/tabLayout"-->
+    <!--        android:layout_width="match_parent"-->
+    <!--        android:layout_height="wrap_content"-->
+    <!--        app:layout_constraintTop_toTopOf="parent"-->
+    <!--        app:tabBackground="@drawable/tab_selector"-->
+    <!--        app:tabGravity="center"-->
+    <!--        app:tabIndicator="@drawable/tab_indicator"-->
+    <!--        app:tabIndicatorHeight="0dp"-->
+    <!--        app:tabMode="fixed"-->
+    <!--        app:tabSelectedTextColor="@color/white"-->
+    <!--        app:tabTextColor="@color/black" />-->
+
+    <!--    <androidx.viewpager2.widget.ViewPager2-->
+    <!--        android:id="@+id/viewPagerId"-->
+    <!--        android:layout_width="match_parent"-->
+    <!--        android:layout_height="0dp"-->
+    <!--        android:layout_above="@id/tasks_navbar"-->
+    <!--        app:layout_constraintBottom_toTopOf="@id/tasks_navbar"-->
+    <!--        app:layout_constraintTop_toBottomOf="@id/tabLayout"-->
+    <!--        app:layout_constraintVertical_bias="0.0"-->
+    <!--        tools:layout_editor_absoluteX="0dp">-->
+
+    <!--    </androidx.viewpager2.widget.ViewPager2>-->
+
+    <androidx.fragment.app.FragmentContainerView
+        android:id="@+id/todoFragmentContainer"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toTopOf="@id/menu_pushup_box"
+        app:layout_constraintTop_toBottomOf="@id/switchLayout" />
+
+    <!--    <com.google.android.material.bottomnavigation.BottomNavigationView-->
+    <!--        android:id="@+id/tasks_navbar"-->
+    <!--        android:layout_width="match_parent"-->
+    <!--        android:layout_height="45dp"-->
+    <!--        android:layout_alignParentBottom="true"-->
+    <!--        app:itemActiveIndicatorStyle="@color/transparent"-->
+    <!--        app:itemIconTint="@color/black"-->
+    <!--        app:labelVisibilityMode="unlabeled"-->
+    <!--        app:layout_constraintBottom_toBottomOf="parent"-->
+    <!--        app:layout_constraintBottom_toTopOf="@id/menu_pushup_box"-->
+    <!--        app:menu="@menu/tasks_fragment_navbar" />-->
+
+    <Space
+        android:id="@+id/menu_pushup_box"
+        android:layout_width="match_parent"
+        android:layout_height="75dp"
+        app:layout_constraintBottom_toBottomOf="parent" />
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -22,6 +22,8 @@
         tools:layout_editor_absoluteX="-16dp" />
 
     <FrameLayout
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
         android:id="@+id/main_layout"
         android:layout_width="409dp"
         android:layout_height="649dp"
