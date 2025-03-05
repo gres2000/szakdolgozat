@@ -6,7 +6,7 @@
     android:orientation="vertical"
     android:fitsSystemWindows="true"
     android:id="@+id/login_activity"
-    tools:context=".app.authentication_activity.RegisterActivity">
+    tools:context=".authentication_activity.RegisterActivity">
 
     <Space
         android:layout_width="match_parent"

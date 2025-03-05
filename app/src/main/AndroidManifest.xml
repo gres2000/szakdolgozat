@@ -14,13 +14,13 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.MyApplication"
         tools:targetApi="31">
-        <service android:name=".app.overlay_widget.OverlayService"
+        <service android:name=".overlay_widget.OverlayService"
             android:permission="android.permission.BIND_JOB_SERVICE"
             android:exported="true"
             android:foregroundServiceType="specialUse"/>
 
         <activity
-            android:name=".app.authentication_activity.LoginActivity"
+            android:name=".authentication_activity.LoginActivity"
             android:exported="true"
             android:theme="@style/Theme.MyApplication">
             <intent-filter>
@@ -30,32 +30,32 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".app.main_activity.MainActivity"
+            android:name=".main_activity.MainActivity"
             android:exported="true"
             android:theme="@style/Theme.MyApplication">
         </activity>
         <activity
-            android:name=".app.authentication_activity.RegisterActivity"
+            android:name=".authentication_activity.RegisterActivity"
             android:exported="true"
             android:theme="@style/Theme.MyApplication">
         </activity>
         <activity
-            android:name=".app.chat_activity.ChatActivity"
+            android:name=".chat_activity.ChatActivity"
             android:exported="true"
             android:theme="@style/Theme.MyApplication">
         </activity>
         <activity
-            android:name=".app.friends_activity.FriendsActivity"
+            android:name=".friends_activity.FriendsActivity"
             android:exported="true"
             android:theme="@style/Theme.MyApplication">
         </activity>
         <activity
-            android:name=".app.friends_activity.FoundUsersActivity"
+            android:name=".friends_activity.FoundUsersActivity"
             android:exported="true"
             android:theme="@style/Theme.MyApplication">
         </activity>
         <activity
-            android:name=".app.chat_activity.StartChatActivity"
+            android:name=".chat_activity.StartChatActivity"
             android:exported="true"
             android:theme="@style/Theme.MyApplication">
         </activity>

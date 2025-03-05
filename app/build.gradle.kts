@@ -11,11 +11,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.myapplication"
+    namespace = "com.taskraze.myapplication"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.example.myapplication"
+        applicationId = "com.taskraze.myapplication"
         minSdk = 26
         targetSdk = 34
         versionCode = 1
