@@ -62,7 +62,8 @@
         <activity
             android:name=".main_activity.todo_screen.tasks.NewTaskActivity"
             android:exported="true"
-            android:theme="@style/Theme.MyApplication">
+            android:theme="@style/Theme.MyApplication"
+            android:windowSoftInputMode="adjustResize">
         </activity>
 
     </application>

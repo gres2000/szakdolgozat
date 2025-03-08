@@ -22,12 +22,7 @@ class TodoFragment : Fragment() {
 
     private var _binding: TodoFragmentBinding? = null
     private val binding get() = _binding!!
-    lateinit var viewPager: ViewPager2
-    private lateinit var bottomNavigationView: BottomNavigationView
-    private lateinit var pagerAdapter: DayPagerAdapter
-    private lateinit var tabLayout: TabLayout
     private lateinit var switchButton: SwitchMaterial
-    private val daysOfWeak: Array<String> = arrayOf("M", "TU", "W", "TH", "F", "SA", "SU")
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -83,8 +78,4 @@ class TodoFragment : Fragment() {
             .commit()
     }
 
-    override fun onDestroyView() {
-        super.onDestroyView()
-//        viewPager.adapter = null
-    }
 }

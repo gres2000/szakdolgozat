@@ -73,6 +73,13 @@
     <string name="calendar">Calendar</string>
     <string name="daily_tasks">Daily Tasks</string>
     <string name="weekly_tasks">Weekly Tasks</string>
+    <string name="capitalMonday">M</string>
+    <string name="capitalTuesday">TU</string>
+    <string name="capitalWednesday">W</string>
+    <string name="capitalThursday">TH</string>
+    <string name="capitalFriday">F</string>
+    <string name="capitalSaturday">SA</string>
+    <string name="capitalSunday">SU</string>
 
 
 </resources>

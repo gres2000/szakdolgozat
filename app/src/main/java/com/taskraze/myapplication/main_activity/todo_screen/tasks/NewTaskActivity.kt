@@ -2,33 +2,37 @@ package com.taskraze.myapplication.main_activity.todo_screen.tasks
 
 import android.app.Activity
 import android.content.Intent
-import android.os.Build
 import android.os.Bundle
-import android.widget.Button
-import android.widget.EditText
-import android.widget.TimePicker
-import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import com.taskraze.myapplication.R
-import com.taskraze.myapplication.view_model.MainViewModel
+import com.taskraze.myapplication.databinding.NewTaskActivityBinding
 
 class NewTaskActivity : AppCompatActivity() {
-    private val viewModel: MainViewModel by viewModels()
-
+    private var taskId = 0
+    private lateinit var binding: NewTaskActivityBinding
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.day_detail_fragment)
 
-        // Get taskData from Intent
+        binding = NewTaskActivityBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
-        val titleEditText = findViewById<EditText>(R.id.editTextTitle)
-        val descriptionEditText = findViewById<EditText>(R.id.editTextDescription)
-        val timePicker = findViewById<TimePicker>(R.id.timePicker)
-        val cancelButton = findViewById<Button>(R.id.cancelButton)
-        val saveButton = findViewById<Button>(R.id.saveButton)
+        val titleEditText = binding.editTextTitle
+        val descriptionEditText = binding.editTextDescription
+        val timePicker = binding.timePicker
+        val cancelButton = binding.cancelButton
+        val saveButton = binding.saveButton
 
-//        titleEditText.setText(taskData.title)
-//        descriptionEditText.setText(taskData.description)
+        //check if initiated for an update, otherwise it's a new task
+        if (intent.getBooleanExtra("update", false)) {
+            taskId = intent.getIntExtra("taskId", 0)
+            titleEditText.setText(intent.getStringExtra("title"))
+            descriptionEditText.setText(intent.getStringExtra("description"))
+
+            //split time
+            val timeString = intent.getStringExtra("time")
+            val timeParts = timeString?.split(":")
+            timePicker.hour = timeParts?.get(0)?.toInt() ?: 0
+            timePicker.minute = timeParts?.get(1)?.toInt() ?: 0
+        }
 
         cancelButton.setOnClickListener {
             finish()
@@ -36,7 +40,7 @@ class NewTaskActivity : AppCompatActivity() {
 
         saveButton.setOnClickListener {
             val task = TaskData(
-                0,
+                taskId,
                 titleEditText.text.toString(),
                 descriptionEditText.text.toString(),
                 "${timePicker.hour}:${timePicker.minute}",
@@ -44,6 +48,7 @@ class NewTaskActivity : AppCompatActivity() {
             )
             val resultIntent = Intent()
             resultIntent.putExtra("title", task.title)
+            resultIntent.putExtra("taskId", task.taskId)
             resultIntent.putExtra("description", task.description)
             resultIntent.putExtra("time", task.time)
             resultIntent.putExtra("isChecked", task.isChecked)

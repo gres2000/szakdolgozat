@@ -33,7 +33,8 @@ class DailyFragment : Fragment() {
         }
     }
     private var dayId = -1
-    private lateinit var taskLauncher: ActivityResultLauncher<Intent>
+    private lateinit var addNewTaskLauncher: ActivityResultLauncher<Intent>
+    private lateinit var updateTaskLauncher: ActivityResultLauncher<Intent>
     private var _binding: DailyFragmentBinding? = null
 
     private val binding get() = _binding!!
@@ -66,7 +67,8 @@ class DailyFragment : Fragment() {
         recyclerView.adapter = adapter
 
         // register the ActivityResultLauncher
-        registerActivityResultLauncher(dataList, adapter)
+        setupAddNewTaskLauncher(dataList, adapter)
+        setupUpdateTaskLauncher(dataList, adapter)
 
         setupAddButton()
     }
@@ -75,19 +77,20 @@ class DailyFragment : Fragment() {
         val addButton = binding.fabAdd
         addButton.setOnClickListener {
             val intent = Intent(requireContext(), NewTaskActivity::class.java)
-            taskLauncher.launch(intent)
+            intent.putExtra("update", false)
+            addNewTaskLauncher.launch(intent)
         }
     }
 
-    private fun registerActivityResultLauncher(
+    private fun setupAddNewTaskLauncher(
         dataList: MutableList<TaskData>,
         adapter: CustomDayAdapter
     ) {
-        taskLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        addNewTaskLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == Activity.RESULT_OK) {
                 result.data?.let { data ->
                     val newTask = TaskData(
-                        0,
+                        dataList.size,
                         data.getStringExtra("title") ?: "",
                         data.getStringExtra("description") ?: "",
                         data.getStringExtra("time") ?: "",
@@ -95,7 +98,29 @@ class DailyFragment : Fragment() {
                     )
 
                     dataList.add(newTask)
-                    adapter.notifyItemInserted(dataList.size - 1)
+                    adapter.notifyItemInserted(newTask.taskId)
+                }
+            }
+        }
+    }
+
+    private fun setupUpdateTaskLauncher(
+        dataList: MutableList<TaskData>,
+        adapter: CustomDayAdapter
+    ) {
+        updateTaskLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                result.data?.let { data ->
+                    val newTask = TaskData(
+                        data.getIntExtra("taskId", 0),
+                        data.getStringExtra("title") ?: "",
+                        data.getStringExtra("description") ?: "",
+                        data.getStringExtra("time") ?: "",
+                        data.getBooleanExtra("isChecked", false) ?: false
+                    )
+
+                    dataList[newTask.taskId] = newTask
+                    adapter.notifyItemChanged(newTask.taskId)
                 }
             }
         }
@@ -108,5 +133,19 @@ class DailyFragment : Fragment() {
 
     fun setDayId(id: Int) {
         dayId = id
+    }
+
+    fun getDayId(): Int  {
+        return dayId
+    }
+
+    fun startUpdateTask(task: TaskData) {
+        val intent = Intent(requireContext(), NewTaskActivity::class.java)
+        intent.putExtra("update", true)
+        intent.putExtra("taskId", task.taskId)
+        intent.putExtra("title", task.title)
+        intent.putExtra("description", task.description)
+        intent.putExtra("time", task.time)
+        updateTaskLauncher.launch(intent)
     }
 }

@@ -1,14 +1,19 @@
 package com.taskraze.myapplication.main_activity.todo_screen.tasks
 
+import android.app.Activity
+import android.content.Intent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.CheckBox
 import android.widget.TextView
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.RecyclerView
 import com.taskraze.myapplication.R
+import com.taskraze.myapplication.main_activity.MainActivity
 import com.taskraze.myapplication.main_activity.todo_screen.daily.DailyFragment
 import com.taskraze.myapplication.view_model.MainViewModel
 
@@ -36,9 +41,8 @@ class CustomDayAdapter(private val containingFragment: DailyFragment, val activi
         viewHolder.viewModel = ViewModelProvider(activity)[MainViewModel::class.java]
 
         viewHolder.itemView.setOnClickListener {
-            var taskData = TaskData(viewHolder.viewHolderId, viewHolder.titleTextView.text.toString(), viewHolder.descriptionTextView.text.toString(), viewHolder.timeTextView.text.toString(), false)
-            //new solution
-//            viewHolder.viewModel.updateEvent(taskData)
+            val taskData = TaskData(viewHolder.viewHolderId, viewHolder.titleTextView.text.toString(), viewHolder.descriptionTextView.text.toString(), viewHolder.timeTextView.text.toString(), viewHolder.checkBox.isChecked)
+            containingFragment.startUpdateTask(taskData)
         }
         viewHolder.checkBox.setOnCheckedChangeListener { _, isChecked ->
             currentItem.isChecked = isChecked

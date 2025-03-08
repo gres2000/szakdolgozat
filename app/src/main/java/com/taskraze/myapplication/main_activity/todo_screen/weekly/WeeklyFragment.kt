@@ -8,6 +8,7 @@ import androidx.fragment.app.Fragment
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
+import com.taskraze.myapplication.R
 import com.taskraze.myapplication.databinding.WeeklyFragmentBinding
 
 class WeeklyFragment : Fragment() {
@@ -16,9 +17,7 @@ class WeeklyFragment : Fragment() {
     private lateinit var viewPager: ViewPager2
     private lateinit var tabLayout: TabLayout
     private lateinit var pagerAdapter: DayPagerAdapter
-    private val daysOfWeek = arrayOf("M", "TU", "W", "TH", "F", "SA", "SU")
-
-    //    private lateinit var pagerAdapter: DayPagerAdapter
+    private val daysOfWeek: MutableList<String> = mutableListOf()
     private val binding get() = _binding!!
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -30,6 +29,16 @@ class WeeklyFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        val list = listOf(
+            getString(R.string.capitalMonday),
+            getString(R.string.capitalTuesday),
+            getString(R.string.capitalWednesday),
+            getString(R.string.capitalThursday),
+            getString(R.string.capitalFriday),
+            getString(R.string.capitalSaturday),
+            getString(R.string.capitalSunday)
+        )
+        daysOfWeek.addAll(list)
 
         viewPager = binding.viewPager
         tabLayout = binding.tabLayout
