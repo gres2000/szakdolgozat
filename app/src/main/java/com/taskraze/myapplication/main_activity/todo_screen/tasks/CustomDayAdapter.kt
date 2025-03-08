@@ -38,8 +38,7 @@ class CustomDayAdapter(private val containingFragment: DailyFragment, val activi
         viewHolder.itemView.setOnClickListener {
             var taskData = TaskData(viewHolder.viewHolderId, viewHolder.titleTextView.text.toString(), viewHolder.descriptionTextView.text.toString(), viewHolder.timeTextView.text.toString(), false)
             //new solution
-            viewHolder.viewModel.taskId = viewHolder.viewHolderId
-            viewHolder.viewModel.updateEvent(taskData)
+//            viewHolder.viewModel.updateEvent(taskData)
         }
         viewHolder.checkBox.setOnCheckedChangeListener { _, isChecked ->
             currentItem.isChecked = isChecked

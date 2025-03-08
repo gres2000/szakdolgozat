@@ -10,12 +10,13 @@ import androidx.viewpager2.widget.ViewPager2
 import com.taskraze.myapplication.R
 import com.taskraze.myapplication.main_activity.MainActivity
 import com.taskraze.myapplication.main_activity.todo_screen.daily.DailyFragment
-import com.taskraze.myapplication.main_activity.todo_screen.tasks.DayPagerAdapter
+import com.taskraze.myapplication.main_activity.todo_screen.weekly.DayPagerAdapter
 import com.taskraze.myapplication.main_activity.todo_screen.weekly.WeeklyFragment
 import com.taskraze.myapplication.databinding.TodoFragmentBinding
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.switchmaterial.SwitchMaterial
 import com.google.android.material.tabs.TabLayout
+import com.taskraze.myapplication.view_model.MainViewModel
 
 class TodoFragment : Fragment() {
 
@@ -40,38 +41,6 @@ class TodoFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         setupSwitch()
-
-//        viewPager = view.findViewById(R.id.viewPagerId)
-//        bottomNavigationView = view.findViewById(R.id.tasks_navbar)
-//        tabLayout= view.findViewById(R.id.tabLayout)
-//        viewPager.isSaveEnabled = false;
-//
-//
-//        pagerAdapter = DayPagerAdapter(this)
-//        viewPager.adapter = pagerAdapter
-//        viewPager.offscreenPageLimit = pagerAdapter.itemCount - 1 // might need to delete later
-//
-//        TabLayoutMediator(tabLayout, viewPager) { tab, position ->
-//            tab.text = daysOfWeak[position]
-//        }.attach()
-//
-//        bottomNavigationView.setOnItemSelectedListener { menuItem ->
-//            when (menuItem.itemId) {
-//                R.id.action_previous -> {
-//                    if (viewPager.currentItem > 0) {
-//                        viewPager.currentItem -= 1
-//                    }
-//                    true
-//                }
-//                R.id.action_next -> {
-//                    if (viewPager.currentItem < pagerAdapter.itemCount - 1) {
-//                        viewPager.currentItem += 1
-//                    }
-//                    true
-//                }
-//                else -> false
-//            }
-//        }
     }
 
     private fun setupSwitch() {
@@ -81,7 +50,7 @@ class TodoFragment : Fragment() {
         val weeklyEditText = binding.weeklyLabel
 
         // get saved switch state
-        val sharedPref = (requireActivity() as MainActivity).getSharedPreferences("MyPrefs", MODE_PRIVATE)
+        val sharedPref = (requireActivity() as MainActivity).getSharedPreferences(MainViewModel.loggedInUser.email, MODE_PRIVATE)
         switchButton.isChecked = sharedPref.getBoolean("switch_state", false)
 
         switchFragment(switchButton.isChecked)

@@ -59,6 +59,11 @@
             android:exported="true"
             android:theme="@style/Theme.MyApplication">
         </activity>
+        <activity
+            android:name=".main_activity.todo_screen.tasks.NewTaskActivity"
+            android:exported="true"
+            android:theme="@style/Theme.MyApplication">
+        </activity>
 
     </application>
 

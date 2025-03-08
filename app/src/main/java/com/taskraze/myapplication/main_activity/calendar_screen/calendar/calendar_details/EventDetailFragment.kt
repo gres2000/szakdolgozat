@@ -155,7 +155,6 @@ class EventDetailFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        viewModel.setNewTaskFalse()
     }
 
     override fun onCreateAnimation(transit: Int, enter: Boolean, nextAnim: Int): Animation? {

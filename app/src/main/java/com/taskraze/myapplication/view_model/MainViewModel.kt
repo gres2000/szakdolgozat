@@ -46,18 +46,13 @@ import java.util.Calendar
 import java.util.Date
 
 object MainViewModel : ViewModel() {
+    private val _dailyTasksList: MutableList<TaskData> = mutableListOf()
     private val _weeklyTasksList: List<MutableList<TaskData>> = List(7) { mutableListOf() }
     private val firestoreDB = FirebaseFirestore.getInstance()
-    private val _someEvent = MutableLiveData<TaskData>()
-    private var _taskReady = false
-    private val _dayId = MutableLiveData<Int>()
-    var taskId: Int = -1
-    private var _isNewTask = false
     lateinit var taskDataStorage: TaskData
     var auth = Firebase.auth
-    var loggedInUser: User? = null
+    lateinit var loggedInUser: User
     private var _myCalendarToPass: MyCalendar? = null
-    private var _isExistingEvent: Boolean = false
     var newEventStartingDay: Calendar? = null
 
     init {
@@ -67,84 +62,61 @@ object MainViewModel : ViewModel() {
         }
     }
 
-    val isExistingEvent
-        get() = _isExistingEvent
-    val dayId
-        get() = _dayId
-    val taskReady
-        get() = _taskReady
-    val someEvent
-        get() = _someEvent
-    val isNewTask
-        get() = _isNewTask
+    val dailyTasksList
+        get() = _dailyTasksList
+
     val weeklyTasksList
         get() = _weeklyTasksList
 
     init {
         for (i in 0 until 7) {
-            val taskData1 = TaskData(0, "Munka", "leírás", "16:02", false)
-            val taskData2 = TaskData(1, "Edzés", "leírás", "18:02", false)
-            val taskData3 = TaskData(2, "Séta", "leírás", "20:02", false)
-            val taskData4 = TaskData(0, "Munka", "leírás", "16:02", false)
-            val taskData5 = TaskData(1, "Edzés", "leírás", "18:02", false)
-            val taskData6 = TaskData(2, "Séta", "leírás", "20:02", false)
-            val taskData7 = TaskData(0, "Munka", "leírás", "16:02", false)
-            val taskData8 = TaskData(1, "Edzés", "leírás", "18:02", false)
-            val taskData9 = TaskData(2, "Séta", "leírás", "20:02", false)
-            val taskData10 = TaskData(0, "Munka", "leírás", "16:02", false)
-            val taskData11 = TaskData(0, "Munka", "leírás", "16:02", false)
-            val taskData12 = TaskData(1, "Edzés", "leírás", "18:02", false)
-            val taskData13 = TaskData(2, "Séta", "leírás", "20:02", false)
-            val taskData14 = TaskData(0, "Munka", "leírás", "16:02", false)
-            val taskData15 = TaskData(1, "Edzés", "leírás", "18:02", false)
-            val taskData16 = TaskData(2, "Séta", "leírás", "20:02", false)
-            val taskData17 = TaskData(0, "Munka", "leírás", "16:02", false)
-            val taskData18 = TaskData(1, "Edzés", "leírás", "18:02", false)
-            val taskData19 = TaskData(2, "Séta", "leírás", "20:02", false)
-            _weeklyTasksList[i].apply {
-                add(taskData1)
-                add(taskData2)
-                add(taskData3)
-                add(taskData4)
-                add(taskData5)
-                add(taskData6)
-                add(taskData7)
-                add(taskData8)
-                add(taskData9)
-                add(taskData10)
-                add(taskData11)
-                add(taskData11)
-                add(taskData12)
-                add(taskData13)
-                add(taskData14)
-                add(taskData15)
-                add(taskData16)
-                add(taskData17)
-                add(taskData18)
-                add(taskData19)
-            }
+//            val taskData1 = TaskData(0, "Munka", "leírás", "16:02", false)
+//            val taskData2 = TaskData(1, "Edzés", "leírás", "18:02", false)
+//            val taskData3 = TaskData(2, "Séta", "leírás", "20:02", false)
+//            val taskData4 = TaskData(0, "Munka", "leírás", "16:02", false)
+//            val taskData5 = TaskData(1, "Edzés", "leírás", "18:02", false)
+//            val taskData6 = TaskData(2, "Séta", "leírás", "20:02", false)
+//            val taskData7 = TaskData(0, "Munka", "leírás", "16:02", false)
+//            val taskData8 = TaskData(1, "Edzés", "leírás", "18:02", false)
+//            val taskData9 = TaskData(2, "Séta", "leírás", "20:02", false)
+//            val taskData10 = TaskData(0, "Munka", "leírás", "16:02", false)
+//            val taskData11 = TaskData(0, "Munka", "leírás", "16:02", false)
+//            val taskData12 = TaskData(1, "Edzés", "leírás", "18:02", false)
+//            val taskData13 = TaskData(2, "Séta", "leírás", "20:02", false)
+//            val taskData14 = TaskData(0, "Munka", "leírás", "16:02", false)
+//            val taskData15 = TaskData(1, "Edzés", "leírás", "18:02", false)
+//            val taskData16 = TaskData(2, "Séta", "leírás", "20:02", false)
+//            val taskData17 = TaskData(0, "Munka", "leírás", "16:02", false)
+//            val taskData18 = TaskData(1, "Edzés", "leírás", "18:02", false)
+//            val taskData19 = TaskData(2, "Séta", "leírás", "20:02", false)
+//            _weeklyTasksList[i].apply {
+//                add(taskData1)
+//                add(taskData2)
+//                add(taskData3)
+//                add(taskData4)
+//                add(taskData5)
+//                add(taskData6)
+//                add(taskData7)
+//                add(taskData8)
+//                add(taskData9)
+//                add(taskData10)
+//                add(taskData11)
+//                add(taskData11)
+//                add(taskData12)
+//                add(taskData13)
+//                add(taskData14)
+//                add(taskData15)
+//                add(taskData16)
+//                add(taskData17)
+//                add(taskData18)
+//                add(taskData19)
+//            }
         }
     }
 
-    fun toggleExistingEvent() {
-        _isExistingEvent = !_isExistingEvent
-    }
-
-    fun updateEvent(eventData: TaskData) {
-        _someEvent.value = eventData
-    }
-
-    fun toggleNewTask() {
-        _isNewTask = !_isNewTask
-    }
-
-    fun setNewTaskFalse() {
-        _isNewTask = false
-    }
-
-    fun toggleTaskReady() {
-        _taskReady = !_taskReady
-    }
+//    fun updateEvent(eventData: TaskData) {
+//        _newTask.value = eventData
+//    }
 
     suspend fun authenticateUser() {
         withContext(Dispatchers.Main) {
@@ -155,7 +127,7 @@ object MainViewModel : ViewModel() {
                 val emailAddress = documentSnapshot.getString("email") ?: ""
                 loggedInUser = User(username, emailAddress)
             }.addOnFailureListener { _ ->
-                loggedInUser = null
+                loggedInUser = User("empty", "empty")
             }
         }
     }
@@ -173,7 +145,7 @@ object MainViewModel : ViewModel() {
 
         authenticateUser()
         val loggedInUserJson =
-            Gson().toJson(UserData(0, loggedInUser!!.username, loggedInUser!!.email)).toString()
+            Gson().toJson(UserData(0, loggedInUser.username, loggedInUser.email)).toString()
 
         val myCalendarList = mutableListOf<MyCalendar>()
 
@@ -309,7 +281,7 @@ object MainViewModel : ViewModel() {
                 }
             }
         }
-        saveAllCalendarsToFirestoreDB(context, loggedInUser!!.email)
+        saveAllCalendarsToFirestoreDB(context, loggedInUser.email)
     }
 
     suspend fun removeUserFromCalendar(context: Context, myUser: User, myCalendar: MyCalendar) {
@@ -334,7 +306,7 @@ object MainViewModel : ViewModel() {
 
         usersDao.deleteUserByCalendarId(myCalendar.id, myUser.email)
 
-        saveAllCalendarsToFirestoreDB(context, loggedInUser!!.email)
+        saveAllCalendarsToFirestoreDB(context, loggedInUser.email)
         getAllCalendarsFromFirestoreDB(context)
 
         removeUserFromFirestoreSharedCalendar(myUser, myCalendar)
@@ -486,7 +458,7 @@ object MainViewModel : ViewModel() {
         val newUserData = UserData(myCalendar.id, myUser.username, myUser.email)
 
         usersDao.insertUser(newUserData)
-        saveAllCalendarsToFirestoreDB(context, loggedInUser!!.email)
+        saveAllCalendarsToFirestoreDB(context, loggedInUser.email)
         getAllCalendarsFromFirestoreDB(context)
 
         saveSharedUserToFirestoreDB(myUser, myCalendar.owner, myCalendar.id)
@@ -574,7 +546,7 @@ object MainViewModel : ViewModel() {
         }
 
         myCalendar.lastUpdated = Date.from(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant())
-        saveAllCalendarsToFirestoreDB(context, loggedInUser!!.email)
+        saveAllCalendarsToFirestoreDB(context, loggedInUser.email)
     }
 
     suspend fun saveAllCalendarsToFirestoreDB(context: Context, userId: String) {
@@ -615,7 +587,7 @@ object MainViewModel : ViewModel() {
         val calendarsCollection = firestoreDB.collection("calendars")
 
 //        loggedInUser = loggedInDeferred.await()
-        val userId = loggedInUser!!.email
+        val userId = loggedInUser.email
         val allData = try {
             val userDocument = calendarsCollection.document(userId).get().await()
 
@@ -730,10 +702,10 @@ object MainViewModel : ViewModel() {
         authenticateUser()
 
         val receiverQuery = firestoreDB.collection("friend_requests")
-            .whereEqualTo("receiverId", loggedInUser!!.email)
+            .whereEqualTo("receiverId", loggedInUser.email)
 
         val senderQuery = firestoreDB.collection("friend_requests")
-            .whereEqualTo("senderId", loggedInUser!!.email)
+            .whereEqualTo("senderId", loggedInUser.email)
 
         val friendRequestDataList = mutableListOf<FriendRequestData>()
         receiverQuery.get()
@@ -800,7 +772,7 @@ object MainViewModel : ViewModel() {
 //        loggedInUser = loggedInDeferred.await()
         if (loggedInUser != null) {
             firestoreDB.collection("friend_requests")
-                .whereEqualTo("receiverId", loggedInUser!!.email)
+                .whereEqualTo("receiverId", loggedInUser.email)
                 .get()
                 .addOnSuccessListener { result ->
                     val acceptedFriends = mutableListOf<FriendRequestData>()
@@ -834,7 +806,7 @@ object MainViewModel : ViewModel() {
     suspend fun fetchUsersFromFriendsList(callback: (MutableList<User>) -> Unit) {
         authenticateUser()
         firestoreDB.collection("user_friends")
-            .document(loggedInUser!!.email)
+            .document(loggedInUser.email)
             .get()
             .addOnSuccessListener { documentSnapshot ->
                 val friendsList = documentSnapshot.toObject(UserFriendsData::class.java)?.friends ?: emptyList()
@@ -866,7 +838,7 @@ object MainViewModel : ViewModel() {
     }
 
     private fun updateOrCreateUserFriendsDocument(acceptedFriends: List<FriendRequestData>): Deferred<Unit> {
-        val currentEmail = loggedInUser!!.email
+        val currentEmail = loggedInUser.email
         val deferred = CompletableDeferred<Unit>()
 
         // Update or create the document in Firestore
@@ -908,8 +880,8 @@ object MainViewModel : ViewModel() {
                         .addOnSuccessListener { documentSnapshot ->
                             val friendFriends = documentSnapshot.toObject(UserFriendsData::class.java)
                             val updatedFriends = friendFriends?.friends?.toMutableList() ?: mutableListOf()
-                            if (!updatedFriends.contains(loggedInUser!!.email)) {
-                                updatedFriends.add(loggedInUser!!.email)
+                            if (!updatedFriends.contains(loggedInUser.email)) {
+                                updatedFriends.add(loggedInUser.email)
                                 val data = mapOf("friends" to updatedFriends)
                                 firestoreDB.collection("user_friends")
                                     .document(friendEmail)
@@ -1058,16 +1030,16 @@ object MainViewModel : ViewModel() {
     suspend fun startNewChat(chosenFriend: User): ChatData? {
         authenticateUser()
 
-        val existingChat = checkExistingChat(loggedInUser!!, chosenFriend)
+        val existingChat = checkExistingChat(loggedInUser, chosenFriend)
         if (existingChat) {
             return null
         }
 
         val newChat = ChatData()
-        val chatId = "-" + generateIdFromEmails(loggedInUser!!.email, chosenFriend.email)
+        val chatId = "-" + generateIdFromEmails(loggedInUser.email, chosenFriend.email)
         newChat.id = chatId
-        newChat.title = chosenFriend.email + "&" + loggedInUser!!.email
-        newChat.users.add(loggedInUser!!)
+        newChat.title = chosenFriend.email + "&" + loggedInUser.email
+        newChat.users.add(loggedInUser)
         newChat.users.add(chosenFriend)
         newChat.users.sortWith(compareByDescending { it.email })
 
@@ -1100,14 +1072,14 @@ object MainViewModel : ViewModel() {
 
         chatData.users.sortWith(compareByDescending { it.email })
 
-        val index = chatData.users.indexOfFirst { it.email == loggedInUser!!.email }
+        val index = chatData.users.indexOfFirst { it.email == loggedInUser.email }
         chatData.users.removeAt(index)
         usersRef.setValue(chatData.users).addOnCompleteListener { task ->
             if (task.isSuccessful) {
                 Toast.makeText(context, "Quit chat successfully", Toast.LENGTH_SHORT).show()
 
                 val leaveMessage =
-                    FriendlyMessage("# # # # # #\n${loggedInUser!!.email} has left the chat\n# # # # # #", "System")
+                    FriendlyMessage("# # # # # #\n${loggedInUser.email} has left the chat\n# # # # # #", "System")
                 val messagesRef = chatsRef.child(chatData.id).child("messages")
                 messagesRef.push().setValue(leaveMessage)
 
@@ -1123,7 +1095,7 @@ object MainViewModel : ViewModel() {
         val calendarsCollection = firestoreDB.collection("calendars")
         val userInCalendarsCollection = firestoreDB.collection("user_in_calendars")
 
-        val userId = loggedInUser!!.email
+        val userId = loggedInUser.email
         val resultList = mutableListOf<MyCalendar>()
         try {
             val userSharedCalendarsDoc = userInCalendarsCollection.document(userId).get().await()
@@ -1253,7 +1225,7 @@ object MainViewModel : ViewModel() {
 
     fun removeUserFromFriends(context: Context, deletedUser: User) {
         firestoreDB.collection("user_friends")
-            .document(loggedInUser!!.email)
+            .document(loggedInUser.email)
             .get()
             .addOnSuccessListener { documentSnapshot ->
                 //current user
@@ -1263,7 +1235,7 @@ object MainViewModel : ViewModel() {
                 val newFriendsList = existingFriends.toMutableList()
                 newFriendsList.remove(deletedUser.email)
                 firestoreDB.collection("user_friends")
-                    .document(loggedInUser!!.email).update("friends", newFriendsList)
+                    .document(loggedInUser.email).update("friends", newFriendsList)
 
                 //other user
                 firestoreDB.collection("user_friends")
@@ -1274,7 +1246,7 @@ object MainViewModel : ViewModel() {
                         val otherExistingFriends = otherUserFriendsData?.friends ?: emptyList()
 
                         val otherNewFriendsList = otherExistingFriends.toMutableList()
-                        otherNewFriendsList.remove(loggedInUser!!.email)
+                        otherNewFriendsList.remove(loggedInUser.email)
 
                         firestoreDB.collection("user_friends")
                             .document(deletedUser.email).update("friends", otherNewFriendsList)
@@ -1302,7 +1274,7 @@ object MainViewModel : ViewModel() {
         val chatId = generateIdFromOwner(calendar.owner.email, calendar.id.toString())
         newChat.id = chatId
         newChat.title = calendar.name
-        newChat.users.add(loggedInUser!!)
+        newChat.users.add(loggedInUser)
         for (user in calendar.sharedPeople) {
             newChat.users.add(user)
         }

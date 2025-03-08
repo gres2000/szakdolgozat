@@ -13,7 +13,6 @@ import com.taskraze.myapplication.databinding.ActivityMainBinding
 import com.taskraze.myapplication.main_activity.todo_screen.TodoFragment
 import com.taskraze.myapplication.main_activity.home_screen.HomeFragment
 import com.taskraze.myapplication.main_activity.calendar_screen.CalendarFragment
-import com.taskraze.myapplication.main_activity.todo_screen.tasks.DayDetailFragment
 import com.taskraze.myapplication.view_model.MainViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -45,64 +44,29 @@ class MainActivity : AppCompatActivity() {
 
         setupOnBackPressedHandler()
 
-        MainViewModel.someEvent.observe(this) { eventData ->
-            val transaction = fragmentManager.beginTransaction()
-            transaction.replace(R.id.constraint_container, DayDetailFragment(eventData))
-            transaction.commit()
-        }
+//        MainViewModel.newTask.observe(this) { eventData ->
+//            val transaction = fragmentManager.beginTransaction()
+//            transaction.replace(R.id.constraint_container, DayDetailFragment(eventData))
+//            transaction.commit()
+//        }
 
-        MainViewModel.dayId.observe(this) { _ ->
-            if (viewModel.taskReady) {
-                val transaction = fragmentManager.beginTransaction()
-                transaction.replace(R.id.constraint_container, fragmentMap["tasks"]!!)
-                transaction.addToBackStack(null)
-                transaction.commit()
-            }
-        }
+//        MainViewModel.dayId.observe(this) { _ ->
+//            if (viewModel.taskReady) {
+//                val transaction = fragmentManager.beginTransaction()
+//                transaction.replace(R.id.constraint_container, fragmentMap["tasks"]!!)
+//                transaction.addToBackStack(null)
+//                transaction.commit()
+//            }
+//        }
         binding.bottomNavigationView.isSaveEnabled = false
 
         binding.bottomNavigationView.selectedItemId = R.id.destination_home
         fragmentManager.beginTransaction()
             .replace(R.id.constraint_container, fragmentMap["home"]!!)
             .commit()
-
-        //overlay widget
-//        overlayPermissionLauncher = registerForActivityResult(
-//            ActivityResultContracts.StartActivityForResult()
-//        ) { result ->
-//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-//                if (Settings.canDrawOverlays(this)) {
-//                    // Permission granted
-//                    createOverlayWidget()
-//                }
-//            }
-//        }
-//
-//        checkOverlayPermission()
     }
 
-//    private fun checkOverlayPermission() {
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-//            if (!Settings.canDrawOverlays(this)) {
-//                val intent = Intent(
-//                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-//                    Uri.parse("package:$packageName")
-//                )
-//                overlayPermissionLauncher.launch(intent)
-//            } else {
-//                // Permission is already granted
-//                createOverlayWidget()
-//            }
-//        } else {
-//            // System is less than Marshmallow
-//            createOverlayWidget()
-//        }
-//    }
 
-//    private fun createOverlayWidget() {
-//        val intent = Intent(this, OverlayService::class.java)
-//        startForegroundService(intent)
-//    }
 
     private fun setupBottomNavigationView() {
 

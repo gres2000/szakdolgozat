@@ -24,6 +24,7 @@ import com.taskraze.myapplication.friends_activity.FriendsActivity
 import com.taskraze.myapplication.view_model.MainViewModel
 import com.taskraze.myapplication.databinding.HomeFragmentBinding
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.taskraze.myapplication.authentication_activity.User
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.cio.*
@@ -87,7 +88,7 @@ class HomeFragment : Fragment() {
         }
 
         logoutButton.setOnClickListener {
-            MainViewModel.loggedInUser = null
+            MainViewModel.loggedInUser = User("empty", "empty")
             MainViewModel.auth.signOut()
             UserPreferences.logoutUser(requireContext())
             val intent = Intent(requireContext(), LoginActivity::class.java)
