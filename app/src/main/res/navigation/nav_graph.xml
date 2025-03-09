@@ -6,19 +6,19 @@
     app:startDestination="@id/leftFragment_id">
     <fragment
         android:id="@+id/leftFragment_id"
-        android:name="com.taskraze.myapplication.main_activity.todo_screen.TodoFragment"
+        android:name="com.taskraze.myapplication.main.todo.ui.TodoFragment"
         android:label="LeftFragment" />
     <fragment
         android:id="@+id/midFragment_id"
-        android:name="com.taskraze.myapplication.main_activity.home_screen.HomeFragment"
+        android:name="com.taskraze.myapplication.main.home.HomeFragment"
         android:label="MidFragment" />
     <fragment
         android:id="@+id/rightFragment_id"
-        android:name="com.taskraze.myapplication.main_activity.calendar_screen.CalendarFragment"
+        android:name="com.taskraze.myapplication.main.calendar.CalendarFragment"
         android:label="RightFragment" />
     <activity
         android:id="@+id/mainActivity"
-        android:name="com.taskraze.myapplication.main_activity.MainActivity"
+        android:name="com.taskraze.myapplication.main.MainActivity"
         android:label="activity_main"
         tools:layout="@layout/activity_main" />
 </navigation>

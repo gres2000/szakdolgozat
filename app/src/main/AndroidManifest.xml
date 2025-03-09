@@ -20,7 +20,7 @@
             android:foregroundServiceType="specialUse"/>
 
         <activity
-            android:name=".authentication_activity.LoginActivity"
+            android:name=".authentication.ui.LoginActivity"
             android:exported="true"
             android:theme="@style/Theme.MyApplication">
             <intent-filter>
@@ -30,37 +30,37 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".main_activity.MainActivity"
+            android:name=".main.MainActivity"
             android:exported="true"
             android:theme="@style/Theme.MyApplication">
         </activity>
         <activity
-            android:name=".authentication_activity.RegisterActivity"
+            android:name=".authentication.ui.RegisterActivity"
             android:exported="true"
             android:theme="@style/Theme.MyApplication">
         </activity>
         <activity
-            android:name=".chat_activity.ChatActivity"
+            android:name=".chat.ui.ChatActivity"
             android:exported="true"
             android:theme="@style/Theme.MyApplication">
         </activity>
         <activity
-            android:name=".friends_activity.FriendsActivity"
+            android:name=".friends.ui.FriendsActivity"
             android:exported="true"
             android:theme="@style/Theme.MyApplication">
         </activity>
         <activity
-            android:name=".friends_activity.FoundUsersActivity"
+            android:name=".friends.ui.FoundUsersActivity"
             android:exported="true"
             android:theme="@style/Theme.MyApplication">
         </activity>
         <activity
-            android:name=".chat_activity.StartChatActivity"
+            android:name=".chat.ui.StartChatActivity"
             android:exported="true"
             android:theme="@style/Theme.MyApplication">
         </activity>
         <activity
-            android:name=".main_activity.todo_screen.tasks.NewTaskActivity"
+            android:name=".main.todo.ui.tasks.NewTaskActivity"
             android:exported="true"
             android:theme="@style/Theme.MyApplication"
             android:windowSoftInputMode="adjustResize">

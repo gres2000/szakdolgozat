@@ -6,21 +6,20 @@ import android.os.Build
 import android.util.Log
 import android.widget.Toast
 import androidx.annotation.RequiresApi
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.room.Room
-import com.taskraze.myapplication.authentication_activity.User
-import com.taskraze.myapplication.main_activity.calendar_screen.calendar.calendar_details.MyEvent
-import com.taskraze.myapplication.main_activity.calendar_screen.calendar.calendar_details.MyCalendar
-import com.taskraze.myapplication.main_activity.calendar_screen.calendar.calendar_details.UserFirestoreData
-import com.taskraze.myapplication.chat_activity.ChatData
-import com.taskraze.myapplication.chat_activity.FriendlyMessage
-import com.taskraze.myapplication.local_database.AppDatabase
-import com.taskraze.myapplication.local_database.CalendarData
-import com.taskraze.myapplication.local_database.EventData
-import com.taskraze.myapplication.local_database.UserData
-import com.taskraze.myapplication.main_activity.todo_screen.tasks.TaskData
+import com.taskraze.myapplication.room_database.data_classes.User
+import com.taskraze.myapplication.main.calendar.calendar.calendar_details.MyEvent
+import com.taskraze.myapplication.main.calendar.calendar.calendar_details.MyCalendar
+import com.taskraze.myapplication.main.calendar.calendar.calendar_details.UserFirestoreData
+import com.taskraze.myapplication.chat.data_classes.ChatData
+import com.taskraze.myapplication.chat.data_classes.FriendlyMessage
+import com.taskraze.myapplication.room_database.db.AppDatabase
+import com.taskraze.myapplication.room_database.data_classes.CalendarData
+import com.taskraze.myapplication.room_database.data_classes.EventData
+import com.taskraze.myapplication.room_database.data_classes.UserData
+import com.taskraze.myapplication.main.todo.data_classes.TaskData
 import com.google.android.gms.tasks.Tasks
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.database.DataSnapshot
@@ -32,6 +31,8 @@ import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.ktx.Firebase
 import com.google.gson.Gson
+import com.taskraze.myapplication.friends.data_classes.FriendRequestData
+import com.taskraze.myapplication.friends.data_classes.UserFriendsData
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -49,7 +50,6 @@ object MainViewModel : ViewModel() {
     private val _dailyTasksList: MutableList<TaskData> = mutableListOf()
     private val _weeklyTasksList: List<MutableList<TaskData>> = List(7) { mutableListOf() }
     private val firestoreDB = FirebaseFirestore.getInstance()
-    lateinit var taskDataStorage: TaskData
     var auth = Firebase.auth
     lateinit var loggedInUser: User
     private var _myCalendarToPass: MyCalendar? = null
@@ -67,56 +67,6 @@ object MainViewModel : ViewModel() {
 
     val weeklyTasksList
         get() = _weeklyTasksList
-
-    init {
-        for (i in 0 until 7) {
-//            val taskData1 = TaskData(0, "Munka", "leírás", "16:02", false)
-//            val taskData2 = TaskData(1, "Edzés", "leírás", "18:02", false)
-//            val taskData3 = TaskData(2, "Séta", "leírás", "20:02", false)
-//            val taskData4 = TaskData(0, "Munka", "leírás", "16:02", false)
-//            val taskData5 = TaskData(1, "Edzés", "leírás", "18:02", false)
-//            val taskData6 = TaskData(2, "Séta", "leírás", "20:02", false)
-//            val taskData7 = TaskData(0, "Munka", "leírás", "16:02", false)
-//            val taskData8 = TaskData(1, "Edzés", "leírás", "18:02", false)
-//            val taskData9 = TaskData(2, "Séta", "leírás", "20:02", false)
-//            val taskData10 = TaskData(0, "Munka", "leírás", "16:02", false)
-//            val taskData11 = TaskData(0, "Munka", "leírás", "16:02", false)
-//            val taskData12 = TaskData(1, "Edzés", "leírás", "18:02", false)
-//            val taskData13 = TaskData(2, "Séta", "leírás", "20:02", false)
-//            val taskData14 = TaskData(0, "Munka", "leírás", "16:02", false)
-//            val taskData15 = TaskData(1, "Edzés", "leírás", "18:02", false)
-//            val taskData16 = TaskData(2, "Séta", "leírás", "20:02", false)
-//            val taskData17 = TaskData(0, "Munka", "leírás", "16:02", false)
-//            val taskData18 = TaskData(1, "Edzés", "leírás", "18:02", false)
-//            val taskData19 = TaskData(2, "Séta", "leírás", "20:02", false)
-//            _weeklyTasksList[i].apply {
-//                add(taskData1)
-//                add(taskData2)
-//                add(taskData3)
-//                add(taskData4)
-//                add(taskData5)
-//                add(taskData6)
-//                add(taskData7)
-//                add(taskData8)
-//                add(taskData9)
-//                add(taskData10)
-//                add(taskData11)
-//                add(taskData11)
-//                add(taskData12)
-//                add(taskData13)
-//                add(taskData14)
-//                add(taskData15)
-//                add(taskData16)
-//                add(taskData17)
-//                add(taskData18)
-//                add(taskData19)
-//            }
-        }
-    }
-
-//    fun updateEvent(eventData: TaskData) {
-//        _newTask.value = eventData
-//    }
 
     suspend fun authenticateUser() {
         withContext(Dispatchers.Main) {
