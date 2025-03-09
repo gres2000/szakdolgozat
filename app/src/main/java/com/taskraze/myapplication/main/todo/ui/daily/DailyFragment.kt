@@ -10,6 +10,7 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.taskraze.myapplication.main.todo.ui.tasks.CustomDayAdapter
@@ -17,6 +18,7 @@ import com.taskraze.myapplication.main.todo.data_classes.TaskData
 import com.taskraze.myapplication.view_model.MainViewModel
 import com.taskraze.myapplication.databinding.DailyFragmentBinding
 import com.taskraze.myapplication.main.todo.ui.tasks.NewTaskActivity
+import com.taskraze.myapplication.main.todo.viewmodel.TaskViewModel
 
 class DailyFragment : Fragment() {
 
@@ -36,7 +38,12 @@ class DailyFragment : Fragment() {
     private lateinit var addNewTaskLauncher: ActivityResultLauncher<Intent>
     private lateinit var updateTaskLauncher: ActivityResultLauncher<Intent>
     private var _binding: DailyFragmentBinding? = null
+    private lateinit var viewModel: TaskViewModel
 
+    enum class Mode {
+        DAILY,
+        WEEKLY
+    }
     private val binding get() = _binding!!
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -49,29 +56,69 @@ class DailyFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val viewModel = ViewModelProvider(requireActivity())[MainViewModel::class.java]
+        viewModel = ViewModelProvider(requireActivity())[TaskViewModel::class.java]
 
         val recyclerView = binding.dayRecyclerView
         recyclerView.layoutManager = LinearLayoutManager(context)
 
+        // load tasks from local storage
+        viewModel.loadTasks()
+
         // set dataList according to dayId
-        val dataList: Any?
+        var dataList: MutableList<TaskData>
+        val adapter: Any?
+        val mode: Mode
         if (dayId == -1) {
-            dataList = viewModel.dailyTasksList
+            dataList = viewModel.dailyTasksList.value?.toMutableList()!!
+            adapter = CustomDayAdapter(this, requireActivity() as AppCompatActivity, dataList!!)
+            mode = Mode.DAILY
+
+            viewModel.dailyTasksList.observe(viewLifecycleOwner) { newList ->
+                val ind = findNewElementIndex(dataList, newList)
+                if (ind != null && dataList.size != newList.size) {
+                    adapter.insertItem(newList[ind])
+                    adapter.notifyItemInserted(ind)
+                    dataList.add(newList[ind])
+                }
+                else if (ind != null) {
+                    adapter.updateItem(newList[ind])
+                    adapter.notifyItemChanged(ind)
+                }
+            }
         }
         else {
-            dataList = viewModel.weeklyTasksList[dayId]
+            dataList = viewModel.weeklyTasksList.value?.get(dayId)?.toMutableList()!!
+            adapter = CustomDayAdapter(this, requireActivity() as AppCompatActivity, dataList)
+            mode = Mode.WEEKLY
+
+            viewModel.weeklyTasksList.observe(viewLifecycleOwner) { newList ->
+                val ind = findNewElementIndex(dataList, newList[dayId])
+                if (ind != null && dataList.size != newList[dayId].size) {
+                    adapter.insertItem(newList[dayId][ind])
+                    adapter.notifyItemInserted(ind)
+                    dataList.add(newList[dayId][ind])
+                }
+                else if (ind != null) {
+                    adapter.updateItem(newList[dayId][ind])
+                    adapter.notifyItemChanged(ind)
+
+                }
+            }
         }
 
-        val adapter = CustomDayAdapter(this, requireActivity() as AppCompatActivity, dataList)
         recyclerView.adapter = adapter
 
         // register the ActivityResultLauncher
-        setupAddNewTaskLauncher(dataList, adapter)
-        setupUpdateTaskLauncher(dataList, adapter)
+        setupAddNewTaskLauncher(dataList, mode)
+        setupUpdateTaskLauncher(mode)
 
         setupAddButton()
     }
+
+    private fun findNewElementIndex(oldList: List<TaskData>, newList: List<TaskData>): Int? {
+        return newList.indexOfFirst { it !in oldList }.takeIf { it >= 0 }
+    }
+
 
     private fun setupAddButton() {
         val addButton = binding.fabAdd
@@ -83,8 +130,8 @@ class DailyFragment : Fragment() {
     }
 
     private fun setupAddNewTaskLauncher(
-        dataList: MutableList<TaskData>,
-        adapter: CustomDayAdapter
+        dataList: List<TaskData>,
+        mode: Mode
     ) {
         addNewTaskLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == Activity.RESULT_OK) {
@@ -97,16 +144,19 @@ class DailyFragment : Fragment() {
                         data.getBooleanExtra("isChecked", false) ?: false
                     )
 
-                    dataList.add(newTask)
-                    adapter.notifyItemInserted(newTask.taskId)
+                    if (mode == Mode.DAILY) {
+                        viewModel.addDailyTask(newTask)
+                    }
+                    else {
+                        viewModel.addWeeklyTask(newTask, dayId)
+                    }
                 }
             }
         }
     }
 
     private fun setupUpdateTaskLauncher(
-        dataList: MutableList<TaskData>,
-        adapter: CustomDayAdapter
+        mode: Mode
     ) {
         updateTaskLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == Activity.RESULT_OK) {
@@ -119,8 +169,12 @@ class DailyFragment : Fragment() {
                         data.getBooleanExtra("isChecked", false) ?: false
                     )
 
-                    dataList[newTask.taskId] = newTask
-                    adapter.notifyItemChanged(newTask.taskId)
+                    if (mode == Mode.DAILY) {
+                        viewModel.updateDailyTask(newTask)
+                    }
+                    else {
+                        viewModel.updateWeeklyTask(newTask, dayId)
+                    }
                 }
             }
         }

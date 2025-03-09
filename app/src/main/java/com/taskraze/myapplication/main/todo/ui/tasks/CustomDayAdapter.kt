@@ -13,7 +13,7 @@ import com.taskraze.myapplication.main.todo.ui.daily.DailyFragment
 import com.taskraze.myapplication.main.todo.data_classes.TaskData
 import com.taskraze.myapplication.view_model.MainViewModel
 
-class CustomDayAdapter(private val containingFragment: DailyFragment, val activity: AppCompatActivity, private val dataList: List<TaskData>) : RecyclerView.Adapter<CustomDayAdapter.DayItemViewHolder>() {
+class CustomDayAdapter(private val containingFragment: DailyFragment, val activity: AppCompatActivity, data: List<TaskData>) : RecyclerView.Adapter<CustomDayAdapter.DayItemViewHolder>() {
     inner class DayItemViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val titleTextView: TextView = itemView.findViewById(R.id.textViewTitle)
         val descriptionTextView: TextView = itemView.findViewById(R.id.textViewDescription)
@@ -22,6 +22,8 @@ class CustomDayAdapter(private val containingFragment: DailyFragment, val activi
         var viewHolderId: Int = -1
         lateinit var viewModel: MainViewModel
     }
+
+    private val dataList = data.toMutableList()
     override fun onCreateViewHolder(view: ViewGroup, viewType: Int): DayItemViewHolder {
         val itemView = LayoutInflater.from(view.context).inflate(R.layout.day_item_view, view, false)
 
@@ -45,5 +47,23 @@ class CustomDayAdapter(private val containingFragment: DailyFragment, val activi
         }
     }
     override fun getItemCount() = dataList.size
+
+    fun insertItem(newTask: TaskData) {
+        dataList.add(newTask)
+    }
+
+    fun updateItem(task: TaskData) {
+        val index = dataList.indexOfFirst { it.taskId == task.taskId }
+        if (index >= 0) {
+            dataList[index] = task
+        }
+    }
+
+    fun removeItem(taskId: Int) {
+        val index = dataList.indexOfFirst { it.taskId == taskId }
+        if (index >= 0) {
+            dataList.removeAt(index)
+        }
+    }
 
 }

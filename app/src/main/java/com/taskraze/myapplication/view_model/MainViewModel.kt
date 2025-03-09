@@ -47,8 +47,6 @@ import java.util.Calendar
 import java.util.Date
 
 object MainViewModel : ViewModel() {
-    private val _dailyTasksList: MutableList<TaskData> = mutableListOf()
-    private val _weeklyTasksList: List<MutableList<TaskData>> = List(7) { mutableListOf() }
     private val firestoreDB = FirebaseFirestore.getInstance()
     var auth = Firebase.auth
     lateinit var loggedInUser: User
@@ -61,12 +59,6 @@ object MainViewModel : ViewModel() {
             authenticateUser()
         }
     }
-
-    val dailyTasksList
-        get() = _dailyTasksList
-
-    val weeklyTasksList
-        get() = _weeklyTasksList
 
     suspend fun authenticateUser() {
         withContext(Dispatchers.Main) {
