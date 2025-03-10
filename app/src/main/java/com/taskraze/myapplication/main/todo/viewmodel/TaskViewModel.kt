@@ -1,6 +1,7 @@
 package com.taskraze.myapplication.main.todo.viewmodel
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -24,9 +25,12 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun loadTasks() {
+        downloadTasks()
         _dailyTasksList.value = repository.loadDailyTasksLocally()
         val list = repository.loadWeeklyTasksLocally()
         _weeklyTasksList.value = list
+        uploadTasks()
+
     }
 
     fun addDailyTask(task: TaskData) {
@@ -63,6 +67,7 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
         _weeklyTasksList.value = currentList
 
         saveTasks(dailyTasksList.value ?: emptyList(), weeklyTasksList.value ?: emptyList())
+        uploadTasks()
     }
 
     fun updateWeeklyTask(task: TaskData, dayId: Int) {
@@ -85,9 +90,23 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
 
 
         saveTasks(dailyTasksList.value ?: emptyList(), weeklyTasksList.value ?: emptyList())
+        uploadTasks()
     }
 
-    fun uploadTasks(userId: String) {
-        repository.uploadTasksToFirebase(userId, _dailyTasksList.value ?: emptyList(), _weeklyTasksList.value ?: emptyList())
+    private fun uploadTasks() {
+        repository.uploadTasksToFirebase( _dailyTasksList.value ?: emptyList(), _weeklyTasksList.value ?: emptyList())
+    }
+
+    fun downloadTasks() {
+        repository.downloadTasksFromFirebase(
+            onSuccess = { dailyTasks, weeklyTasks ->
+                _dailyTasksList.value = dailyTasks
+                _weeklyTasksList.value = weeklyTasks
+                saveTasks(dailyTasks, weeklyTasks)
+            },
+            onFailure = { e ->
+                Log.e("Firebase", "Error downloading tasks", e)
+            }
+        )
     }
 }

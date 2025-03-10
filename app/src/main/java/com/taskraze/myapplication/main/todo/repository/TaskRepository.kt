@@ -10,9 +10,9 @@ import com.taskraze.myapplication.view_model.MainViewModel
 
 class TaskRepository(private val context: Context) {
 
-    private val userName = MainViewModel.loggedInUser.email
-    private val dailyFileName = userName + "_daily_tasks.json"
-    private val weeklyFileName = userName + "_weekly_tasks.json"
+    private val userId = MainViewModel.loggedInUser.email
+    private val dailyFileName = userId + "_daily_tasks.json"
+    private val weeklyFileName = userId + "_weekly_tasks.json"
     fun saveTasksLocally(dailyTaskList: List<TaskData>, weeklyTaskList: List<List<TaskData>>) {
         // daily save
         val dailyJson = Gson().toJson(dailyTaskList)
@@ -53,11 +53,44 @@ class TaskRepository(private val context: Context) {
         }
     }
 
-    fun uploadTasksToFirebase(userId: String, dailyList: List<TaskData>, weeklyList: List<List<TaskData>>) {
+    fun uploadTasksToFirebase(dailyList: List<TaskData>, weeklyList: List<List<TaskData>>) {
         val db = FirebaseFirestore.getInstance()
-        db.collection("users").document(userId)
-            .set(mapOf("tasks" to dailyList))
-            .addOnSuccessListener { Log.d("Firebase", "Tasks uploaded!") }
-            .addOnFailureListener { e -> Log.e("Firebase", "Error uploading tasks", e) }
+        val dailyDoc = db.collection("todo_tasks").document(userId + "_daily_tasks")
+        dailyDoc.set(mapOf("tasks" to dailyList))
+            .addOnSuccessListener { Log.d("Firebase", "Daily tasks uploaded!") }
+            .addOnFailureListener { e -> Log.e("Firebase", "Error uploading daily tasks", e) }
+
+        val weeklyMap = weeklyList.mapIndexed { index, tasks -> index.toString() to tasks }.toMap()
+        val weeklyDoc = db.collection("todo_tasks").document(userId + "_weekly_tasks")
+        weeklyDoc.set(mapOf("tasks" to weeklyMap))
+            .addOnSuccessListener { Log.d("Firebase", "Weekly tasks uploaded!") }
+            .addOnFailureListener { e -> Log.e("Firebase", "Error uploading weekly tasks", e) }
+    }
+
+    fun downloadTasksFromFirebase(onSuccess: (List<TaskData>, List<List<TaskData>>) -> Unit, onFailure: (Exception) -> Unit) {
+        val db = FirebaseFirestore.getInstance()
+        val dailyDoc = db.collection("todo_tasks").document(userId + "_daily_tasks")
+        val weeklyDoc = db.collection("todo_tasks").document(userId + "_weekly_tasks")
+
+        dailyDoc.get()
+            .addOnSuccessListener { dailySnapshot ->
+                val dailyTasksMap = dailySnapshot.data?.get("tasks") as? List<Map<String, Any>> ?: emptyList()
+                val dailyTasks = dailyTasksMap.map { Gson().fromJson(Gson().toJson(it), TaskData::class.java) }
+
+                weeklyDoc.get()
+                    .addOnSuccessListener { weeklySnapshot ->
+                        val weeklyTasksMap = weeklySnapshot.data?.get("tasks") as? Map<String, List<Map<String, Any>>> ?: emptyMap()
+                        val weeklyTasks = List(7) { dayId ->
+                            weeklyTasksMap[dayId.toString()]?.map { Gson().fromJson(Gson().toJson(it), TaskData::class.java) }?.toMutableList() ?: mutableListOf()
+                        }
+                        onSuccess(dailyTasks, weeklyTasks)
+                    }
+                    .addOnFailureListener { e ->
+                        onFailure(e)
+                    }
+            }
+            .addOnFailureListener { e ->
+                onFailure(e)
+            }
     }
 }
