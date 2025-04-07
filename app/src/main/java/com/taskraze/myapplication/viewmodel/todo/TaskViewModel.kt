@@ -7,6 +7,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.taskraze.myapplication.model.todo.TaskData
 import com.taskraze.myapplication.model.todo.TaskRepository
+import com.taskraze.myapplication.view.todo.daily.DailyFragment
 
 class TaskViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = TaskRepository(application.applicationContext)
@@ -107,4 +108,29 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
             }
         )
     }
+
+    fun removeTask(taskId: Int, mode: DailyFragment.Mode, dayId: Int? = null) {
+        if (mode == DailyFragment.Mode.DAILY) {
+            val currentList = _dailyTasksList.value.orEmpty().toMutableList()
+            val index = currentList.indexOfFirst { it.taskId == taskId }
+            if (index != -1) {
+                currentList.removeAt(index)
+                _dailyTasksList.value = currentList
+            }
+        } else if (mode == DailyFragment.Mode.WEEKLY && dayId != null) {
+            val currentList = _weeklyTasksList.value.orEmpty().toMutableList()
+            val dayList = currentList.getOrNull(dayId)?.toMutableList()
+            if (dayList != null) {
+                val index = dayList.indexOfFirst { it.taskId == taskId }
+                if (index != -1) {
+                    dayList.removeAt(index)
+                    currentList[dayId] = dayList
+                    _weeklyTasksList.value = currentList
+                }
+            }
+        }
+        saveTasks(dailyTasksList.value ?: emptyList(), weeklyTasksList.value ?: emptyList())
+    }
+
+
 }
