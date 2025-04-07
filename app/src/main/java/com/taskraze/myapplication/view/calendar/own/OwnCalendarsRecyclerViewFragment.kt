@@ -18,6 +18,10 @@ import com.taskraze.myapplication.model.calendar.EventData
 import com.taskraze.myapplication.databinding.OwnCalendarsRecyclerViewBinding
 import com.taskraze.myapplication.viewmodel.MainViewModel
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.taskraze.myapplication.model.auth.AuthRepository
+import com.taskraze.myapplication.model.calendar.FirestoreCalendarRepository
+import com.taskraze.myapplication.model.calendar.LocalCalendarRepository
+import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.ZoneId
@@ -28,6 +32,10 @@ class OwnCalendarsRecyclerViewFragment : Fragment(), CalendarDialogFragment.Cale
     private val binding get() = _binding!!
     private lateinit var addNewCalendar: FloatingActionButton
     private lateinit var saveCalendars: FloatingActionButton
+    private val authRepository = AuthRepository()
+    private val localCalendarRepository = LocalCalendarRepository()
+    private val firestoreCalendarRepository = FirestoreCalendarRepository(localCalendarRepository)
+
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -49,7 +57,7 @@ class OwnCalendarsRecyclerViewFragment : Fragment(), CalendarDialogFragment.Cale
             if (this@OwnCalendarsRecyclerViewFragment.isAdded) {
                 val adapter = CustomOwnCalendarAdapter(
                     requireActivity() as AppCompatActivity,
-                    MainViewModel.getAllCalendars(requireContext())
+                    localCalendarRepository.getAllCalendarsLocal(requireContext())
                 )
                 binding.ownCalendarsRecyclerView.adapter = adapter
                 binding.ownCalendarsRecyclerView.adapter?.notifyDataSetChanged()
@@ -58,13 +66,13 @@ class OwnCalendarsRecyclerViewFragment : Fragment(), CalendarDialogFragment.Cale
         }
 
         lifecycleScope.launch {
-            MainViewModel.authenticateUser()
-            MainViewModel.getAllCalendarsFromFirestoreDB(requireContext())
+            // authRepository.fetchUserDetails()
+            firestoreCalendarRepository.getAllCalendarsFromFirestoreDB(requireContext())
 
             if (this@OwnCalendarsRecyclerViewFragment.isAdded) {
                 val adapter = CustomOwnCalendarAdapter(
                     requireActivity() as AppCompatActivity,
-                    MainViewModel.getAllCalendars(requireContext())
+                    localCalendarRepository.getAllCalendarsLocal(requireContext())
                 )
 
                 binding.ownCalendarsRecyclerView.adapter = adapter
@@ -81,14 +89,14 @@ class OwnCalendarsRecyclerViewFragment : Fragment(), CalendarDialogFragment.Cale
 
         saveCalendars.setOnClickListener{
             MainViewModel.viewModelScope.launch {
-                MainViewModel.authenticateUser()
-                MainViewModel.getAllCalendarsFromFirestoreDB(
+                // authRepository.fetchUserDetails()
+                firestoreCalendarRepository.getAllCalendarsFromFirestoreDB(
                     requireContext()
                 )
                 if (this@OwnCalendarsRecyclerViewFragment.isAdded) {
                     val adapter = CustomOwnCalendarAdapter(
                         requireActivity() as AppCompatActivity,
-                        MainViewModel.getAllCalendars(requireContext())
+                        localCalendarRepository.getAllCalendarsLocal(requireContext())
                     )
                     binding.ownCalendarsRecyclerView.adapter = adapter
                     binding.ownCalendarsRecyclerView.adapter?.notifyDataSetChanged()
@@ -109,15 +117,15 @@ class OwnCalendarsRecyclerViewFragment : Fragment(), CalendarDialogFragment.Cale
             LocalDate.now().atStartOfDay(
             ZoneId.systemDefault()).toInstant())
         val userList = mutableListOf<User>()
-        val owner = User(MainViewModel.loggedInUser!!.username, MainViewModel.loggedInUser!!.email)
+        val owner = User(AuthViewModel.loggedInUser!!.username, AuthViewModel.loggedInUser!!.email)
         val eventList: MutableList<EventData> = mutableListOf()
 
         val cal = CalendarData(-1, name, 0, userList, owner, eventList, date)
         MainViewModel.viewModelScope.launch {
 
-            MainViewModel.addCalendar(requireContext(), cal)
+            localCalendarRepository.addOrUpdateCalendarLocal(requireContext(), cal)
 
-            (binding.ownCalendarsRecyclerView.adapter as CustomOwnCalendarAdapter).updateData(MainViewModel.getAllCalendars(requireContext()))
+            (binding.ownCalendarsRecyclerView.adapter as CustomOwnCalendarAdapter).updateData(localCalendarRepository.getAllCalendarsLocal(requireContext()))
         }
     }
 }

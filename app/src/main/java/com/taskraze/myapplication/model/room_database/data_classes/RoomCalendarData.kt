@@ -5,7 +5,7 @@ import androidx.room.PrimaryKey
 import java.util.Date
 
 @Entity(tableName = "calendar_items")
-data class CalendarData(
+data class RoomCalendarData(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val name: String,
     var sharedPeopleNumber: Int,

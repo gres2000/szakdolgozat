@@ -16,7 +16,10 @@ import androidx.recyclerview.widget.RecyclerView
 import com.taskraze.myapplication.R
 import com.taskraze.myapplication.model.calendar.CalendarData
 import com.taskraze.myapplication.model.calendar.EventData
+import com.taskraze.myapplication.model.calendar.FirestoreCalendarRepository
+import com.taskraze.myapplication.model.calendar.LocalCalendarRepository
 import com.taskraze.myapplication.viewmodel.MainViewModel
+import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.time.Instant
@@ -33,6 +36,8 @@ class CustomEventAdapter(private val activity: AppCompatActivity, private val da
         lateinit var viewModel: MainViewModel
     }
     private var onItemRemovedListener: OnItemRemovedListener? = null
+    private val localCalendarRepository = LocalCalendarRepository()
+    private val firestoreCalendarRepository = FirestoreCalendarRepository(localCalendarRepository)
 
     interface OnItemRemovedListener {
         fun onItemRemoved(event: EventData)
@@ -113,12 +118,12 @@ class CustomEventAdapter(private val activity: AppCompatActivity, private val da
         buttonDelete.setOnClickListener {
             val viewModel = ViewModelProvider(activity)[MainViewModel::class.java]
             viewModel.viewModelScope.launch {
-                if (calendar.owner.email == MainViewModel.loggedInUser!!.email) {
+                if (calendar.owner.email == AuthViewModel.loggedInUser!!.email) {
                     viewModel.deleteEventFromRoom(activity, dataList[position], calendar.name)
                     onItemRemovedListener?.onItemRemoved(dataList[position])
                     dataList.removeAt(position)
                     notifyItemRemoved(position)
-                    MainViewModel.saveAllCalendarsToFirestoreDB(activity, MainViewModel.loggedInUser!!.email)
+                    firestoreCalendarRepository.saveAllCalendarsToFirestoreDB(activity, AuthViewModel.loggedInUser!!.email)
                 }
                 else {
                     MainViewModel.deleteEventFromSharedCalendar(dataList[position], calendar.owner.email, calendar.id)

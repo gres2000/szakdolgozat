@@ -15,8 +15,11 @@ import androidx.lifecycle.viewModelScope
 import androidx.recyclerview.widget.RecyclerView
 import com.taskraze.myapplication.R
 import com.taskraze.myapplication.model.calendar.CalendarData
+import com.taskraze.myapplication.model.calendar.FirestoreCalendarRepository
+import com.taskraze.myapplication.model.calendar.LocalCalendarRepository
 import com.taskraze.myapplication.view.calendar.details.CalendarDetailFragment
 import com.taskraze.myapplication.viewmodel.MainViewModel
+import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
@@ -32,6 +35,8 @@ class CustomOwnCalendarAdapter(private val activity: AppCompatActivity, private 
         var viewHolderId: Int = -1
         lateinit var viewModel: MainViewModel
     }
+    private val localCalendarRepository = LocalCalendarRepository()
+    private val firestoreCalendarRepository = FirestoreCalendarRepository(localCalendarRepository)
 
     override fun onCreateViewHolder(view: ViewGroup, viewType: Int): CalendarItemViewHolder {
         val itemView = LayoutInflater.from(view.context).inflate(R.layout.calendar_item_view, view, false)
@@ -45,6 +50,7 @@ class CustomOwnCalendarAdapter(private val activity: AppCompatActivity, private 
         viewHolder.titleTextView.text = currentItem.name
         val tempString = "People: " + currentItem.sharedPeopleNumber.toString()
         viewHolder.numberTextView.text = tempString
+
         //convert instant to date
         val lastUpdatedDate =  Instant.now()
         val localDate = instantToLocalDate(lastUpdatedDate)
@@ -105,13 +111,11 @@ class CustomOwnCalendarAdapter(private val activity: AppCompatActivity, private 
         }
 
         buttonDelete.setOnClickListener {
-            // Perform the delete action here
-            // For example, call a method to delete the item from your data source
             val viewModel = ViewModelProvider(activity)[MainViewModel::class.java]
             viewModel.viewModelScope.launch { // Launch a coroutine
                 viewModel.deleteSharedUsersFromCalendar(dataList[position].sharedPeople, dataList[position])
-                viewModel.deleteCalendarFromRoom(activity, dataList[position])
-                viewModel.saveAllCalendarsToFirestoreDB(activity, viewModel.loggedInUser!!.email)
+                localCalendarRepository.deleteCalendarLocal(activity, dataList[position])
+                firestoreCalendarRepository.saveAllCalendarsToFirestoreDB(activity, AuthViewModel.loggedInUser!!.email)
                 dataList.removeAt(position)
                 notifyItemRemoved(position)
             }

@@ -14,12 +14,18 @@ import com.taskraze.myapplication.calendar.own_calendars.CustomSharedCalendarAda
 import com.taskraze.myapplication.databinding.SharedCalendarsRecyclerViewBinding
 import com.taskraze.myapplication.viewmodel.MainViewModel
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.taskraze.myapplication.model.auth.AuthRepository
+import com.taskraze.myapplication.model.calendar.FirestoreCalendarRepository
+import com.taskraze.myapplication.model.calendar.LocalCalendarRepository
 import kotlinx.coroutines.launch
 
 class SharedCalendarsRecyclerViewFragment : Fragment() {
     private var _binding: SharedCalendarsRecyclerViewBinding? = null
     private val binding get() = _binding!!
     private lateinit var saveCalendars: FloatingActionButton
+    private val authRepository = AuthRepository()
+    private val localCalendarRepository = LocalCalendarRepository()
+    private val firestoreCalendarRepository = FirestoreCalendarRepository(localCalendarRepository)
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -49,8 +55,8 @@ class SharedCalendarsRecyclerViewFragment : Fragment() {
         }
 
         lifecycleScope.launch {
-            MainViewModel.authenticateUser()
-            MainViewModel.getAllCalendarsFromFirestoreDB(requireContext())
+            // authRepository.fetchUserDetails()
+            firestoreCalendarRepository.getAllCalendarsFromFirestoreDB(requireContext())
 
             if (this@SharedCalendarsRecyclerViewFragment.isAdded) {
                 val adapter = CustomSharedCalendarAdapter(
@@ -66,8 +72,8 @@ class SharedCalendarsRecyclerViewFragment : Fragment() {
 
         saveCalendars.setOnClickListener{
             MainViewModel.viewModelScope.launch {
-                MainViewModel.authenticateUser()
-                MainViewModel.getAllCalendarsFromFirestoreDB(
+                // authRepository.fetchUserDetails()
+                firestoreCalendarRepository.getAllCalendarsFromFirestoreDB(
                     requireContext()
                 )
                 if (this@SharedCalendarsRecyclerViewFragment.isAdded) {

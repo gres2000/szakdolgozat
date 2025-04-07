@@ -2,620 +2,58 @@ package com.taskraze.myapplication.viewmodel
 
 import android.content.ContentValues.TAG
 import android.content.Context
-import android.os.Build
 import android.util.Log
 import android.widget.Toast
-import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.room.Room
 import com.taskraze.myapplication.model.room_database.data_classes.User
-import com.taskraze.myapplication.model.calendar.EventData
-import com.taskraze.myapplication.model.calendar.CalendarData
 import com.taskraze.myapplication.model.calendar.UserFirestoreData
 import com.taskraze.myapplication.model.chat.ChatData
 import com.taskraze.myapplication.model.chat.FriendlyMessage
 import com.taskraze.myapplication.model.room_database.db.AppDatabase
-import com.taskraze.myapplication.model.room_database.data_classes.CalendarData
-import com.taskraze.myapplication.model.room_database.data_classes.EventData
-import com.taskraze.myapplication.model.room_database.data_classes.UserData
 import com.google.android.gms.tasks.Tasks
 import com.google.firebase.auth.ktx.auth
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.database.ValueEventListener
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.ktx.Firebase
-import com.google.gson.Gson
+import com.taskraze.myapplication.model.auth.AuthRepository
+import com.taskraze.myapplication.model.calendar.CalendarData
+import com.taskraze.myapplication.model.calendar.EventData
 import com.taskraze.myapplication.model.friends.FriendRequestData
 import com.taskraze.myapplication.model.friends.UserFriendsData
+import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
-import kotlinx.coroutines.withContext
 import java.security.MessageDigest
-import java.time.LocalDate
-import java.time.ZoneId
 import java.util.Calendar
-import java.util.Date
 
 object MainViewModel : ViewModel() {
     private val firestoreDB = FirebaseFirestore.getInstance()
+    //helper variables
     var auth = Firebase.auth
-    lateinit var loggedInUser: User
-    private var _CalendarDataToPass: com.taskraze.myapplication.model.calendar.CalendarData? = null
+    private var _CalendarDataToPass: CalendarData? = null
     var newEventStartingDay: Calendar? = null
+    private val authViewModel = AuthViewModel
+
 
     init {
         viewModelScope.launch {
 
-            authenticateUser()
+            AuthViewModel
         }
     }
-
-    suspend fun authenticateUser() {
-        withContext(Dispatchers.Main) {
-            val docRef = firestoreDB.collection("registered_users")
-                .document(Firebase.auth.currentUser?.email.toString())
-            docRef.get().addOnSuccessListener { documentSnapshot ->
-                val username = documentSnapshot.getString("username") ?: ""
-                val emailAddress = documentSnapshot.getString("email") ?: ""
-                loggedInUser = User(username, emailAddress)
-            }.addOnFailureListener { _ ->
-                loggedInUser = User("empty", "empty")
-            }
-        }
-    }
-
-    suspend fun getAllCalendars(context: Context): MutableList<com.taskraze.myapplication.model.calendar.CalendarData> {
-        val roomDB = Room.databaseBuilder(
-            context,
-            AppDatabase::class.java, "database-name"
-        ).build()
-
-        val calendarDao = roomDB.calendarItemDao()
-        val eventDao = roomDB.eventItemDao()
-        val sharedUsersDao = roomDB.sharedUsersDao()
-
-
-        authenticateUser()
-        val loggedInUserJson =
-            Gson().toJson(UserData(0, loggedInUser.username, loggedInUser.email)).toString()
-
-        val myCalendarList = mutableListOf<com.taskraze.myapplication.model.calendar.CalendarData>()
-
-        val calendarDataList =
-            calendarDao.getAllCalendarsForUser(loggedInUserJson)
-
-
-        if (calendarDataList.isNotEmpty()) {
-
-            for (calendarData in calendarDataList) {
-                val sharedPeopleData =
-                    calendarDao.getSharedPeopleForCalendar(calendarData.id.toString())
-                val eventDataForCalendar = calendarDao.getEventsForCalendar(calendarData.id)
-
-                val sharedPeopleList = mutableListOf<User>()
-                for (userData in sharedPeopleData) {
-                    sharedPeopleList.add(User(userData.username, userData.emailAddress))
-                }
-
-                val eventList = mutableListOf<com.taskraze.myapplication.model.calendar.EventData>()
-                for (eventData in eventDataForCalendar) {
-                    eventList.add(
-                        com.taskraze.myapplication.model.calendar.EventData(
-                            eventData.title,
-                            eventData.description,
-                            eventData.startTime,
-                            eventData.endTime,
-                            eventData.location,
-                            eventData.wholeDayEvent
-                        )
-                    )
-                }
-
-                myCalendarList.add(
-                    com.taskraze.myapplication.model.calendar.CalendarData(
-                        id = calendarData.id,
-                        name = calendarData.name,
-                        sharedPeopleNumber = sharedPeopleList.size,
-                        sharedPeople = sharedPeopleList,
-                        owner = User(calendarData.owner.username, calendarData.owner.emailAddress),
-                        events = eventList,
-                        lastUpdated = calendarData.lastUpdated
-                    )
-                )
-            }
-        }
-
-
-        return myCalendarList
-    }
-
-    suspend fun addCalendar(context: Context, calendarData: com.taskraze.myapplication.model.calendar.CalendarData) {
-        val roomDB = Room.databaseBuilder(
-            context,
-            AppDatabase::class.java, "database-name"
-        ).build()
-
-        val calendarDao = roomDB.calendarItemDao()
-        val sharedPeopleDao = roomDB.sharedUsersDao()
-        val eventDao = roomDB.eventItemDao()
-
-        val existingCalendar = calendarDao.getCalendarById(calendarData.id)
-        val existingUsers = sharedPeopleDao.getAllUsers()
-
-        if (existingCalendar == null) {
-            for (user in calendarData.sharedPeople) {
-                val userData = UserData(calendarData.id, user.username, user.email)
-                sharedPeopleDao.insertUser(userData)
-            }
-
-            val eventList = calendarData.events.map { event ->
-                EventData(
-                    calendarId = calendarData.id,
-                    title = event.title,
-                    description = event.description,
-                    startTime = event.startTime,
-                    endTime = event.endTime,
-                    location = event.location,
-                    wholeDayEvent = event.wholeDayEvent
-                )
-            }.toList()
-
-            for (event in eventList) {
-                eventDao.insertEvent(event)
-            }
-
-            var newCalendar: CalendarData
-            val longValue: Long = -1
-            if (calendarData.id == longValue) {
-                newCalendar = CalendarData(
-                    name = calendarData.name,
-                    sharedPeopleNumber = calendarData.sharedPeopleNumber,
-                    owner = UserData(0, calendarData.owner.username, calendarData.owner.email),
-                    lastUpdated = calendarData.lastUpdated
-                )
-            } else {
-                newCalendar = CalendarData(
-                    calendarData.id,
-                    name = calendarData.name,
-                    sharedPeopleNumber = calendarData.sharedPeopleNumber,
-                    owner = UserData(0, calendarData.owner.username, calendarData.owner.email),
-                    lastUpdated = calendarData.lastUpdated
-                )
-            }
-
-
-            calendarDao.insertCalendarItem(newCalendar)
-        } else {
-            // Update existing calendar
-            existingCalendar.apply {
-                sharedPeopleNumber = calendarData.sharedPeopleNumber
-                lastUpdated = calendarData.lastUpdated
-            }
-            calendarDao.updateCalendarItem(existingCalendar)
-
-            val previousEventDataList = eventDao.getEventByCalendarId(calendarData.id)
-            val newEventDataList = calendarData.events.map { event ->
-                EventData(
-                    calendarId = calendarData.id,
-                    title = event.title,
-                    description = event.description,
-                    startTime = event.startTime,
-                    endTime = event.endTime,
-                    location = event.location,
-                    wholeDayEvent = event.wholeDayEvent
-                )
-            }
-            if (previousEventDataList != null) {
-                for (event in previousEventDataList) {
-                    if (!newEventDataList.contains(event)) {
-                        eventDao.deleteEvent(event)
-                    }
-                }
-            }
-        }
-        saveAllCalendarsToFirestoreDB(context, loggedInUser.email)
-    }
-
-    suspend fun removeUserFromCalendar(context: Context, myUser: User, calendarData: com.taskraze.myapplication.model.calendar.CalendarData) {
-        val roomDB = Room.databaseBuilder(
-            context,
-            AppDatabase::class.java, "database-name"
-        ).build()
-
-        val usersDao = roomDB.sharedUsersDao()
-        val calendarsDao = roomDB.calendarItemDao()
-
-        calendarData.sharedPeopleNumber--
-
-        val newCalendarData = CalendarData(
-            calendarData.name,
-            calendarData.sharedPeopleNumber,
-            UserData(calendarData.id, calendarData.owner.username, calendarData.owner.email),
-            calendarData.lastUpdated
-        )
-        calendarsDao.updateCalendarItem(newCalendarData)
-
-
-        usersDao.deleteUserByCalendarId(calendarData.id, myUser.email)
-
-        saveAllCalendarsToFirestoreDB(context, loggedInUser.email)
-        getAllCalendarsFromFirestoreDB(context)
-
-        removeUserFromFirestoreSharedCalendar(myUser, calendarData)
-        deleteUserFromRealtimeSharedChat(myUser, calendarData)
-    }
-
-    private suspend fun addUserToRealtimeSharedChat(myUser: User, calendarData: com.taskraze.myapplication.model.calendar.CalendarData) {
-        authenticateUser()
-
-        val chatId = generateIdFromOwner(calendarData.owner.email, calendarData.id.toString())
-
-        val database =
-            FirebaseDatabase.getInstance("https://szakdolgozat-7f789-default-rtdb.europe-west1.firebasedatabase.app/")
-        val chatsRef = database.getReference("chats")
-        val existingChatRef = chatsRef.child(chatId)
-
-        //check if chat exists
-        existingChatRef.addListenerForSingleValueEvent(object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                if (snapshot.exists()) {
-                    //chat exists
-                    val usersRef = chatsRef.child(chatId).child("users")
-                    val newUserList = calendarData.sharedPeople.toMutableList()
-                    newUserList.add(calendarData.owner)
-                    newUserList.sortWith(compareByDescending { it.email })
-
-                    usersRef.setValue(newUserList)
-                        .addOnCompleteListener { task ->
-                            if (task.isSuccessful) {
-                                val leaveMessage = FriendlyMessage(
-                                    "# # # # # #\n${myUser.email} has been added to the chat\n# # # # # #",
-                                    "System"
-                                )
-                                val messagesRef = existingChatRef.child("messages")
-                                messagesRef.push().setValue(leaveMessage)
-                            } else {
-                                //error
-                            }
-                        }
-                } else {
-                    // Chat does not exist
-                }
-            }
-
-            override fun onCancelled(error: DatabaseError) {
-                // error
-            }
-        })
-    }
-
-    private suspend fun deleteUserFromRealtimeSharedChat(myUser: User, calendarData: com.taskraze.myapplication.model.calendar.CalendarData) {
-        authenticateUser()
-
-        val chatId = generateIdFromOwner(calendarData.owner.email, calendarData.id.toString())
-
-        val database =
-            FirebaseDatabase.getInstance("https://szakdolgozat-7f789-default-rtdb.europe-west1.firebasedatabase.app/")
-
-        val chatsRef = database.getReference("chats")
-        val existingChatRef = chatsRef.child(chatId)
-
-        //check if chat exists
-        existingChatRef.addListenerForSingleValueEvent(object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                if (snapshot.exists()) {
-                    //chat exists
-                    val chatsRef = database.getReference("chats")
-                    val usersRef = chatsRef.child(chatId).child("users")
-
-                    val newUserList = calendarData.sharedPeople.toMutableList()
-                    newUserList.sortWith(compareByDescending { it.email })
-
-                    newUserList.remove(myUser)
-                    newUserList.add(calendarData.owner)
-                    newUserList.sortWith(compareByDescending { it.email })
-                    usersRef.setValue(newUserList).addOnCompleteListener { task ->
-                        if (task.isSuccessful) {
-                            val leaveMessage = FriendlyMessage(
-                                "# # # # # #\n${myUser.email} has been removed from the chat\n# # # # # #",
-                                "System"
-                            )
-                            val messagesRef = chatsRef.child(chatId).child("messages")
-                            messagesRef.push().setValue(leaveMessage)
-                        }
-                    }
-                } else {
-                    // Chat does not exist
-                }
-            }
-
-            override fun onCancelled(error: DatabaseError) {
-                // error
-            }
-        })
-    }
-
-    private suspend fun removeUserFromFirestoreSharedCalendar(myUser: User, calendarData: com.taskraze.myapplication.model.calendar.CalendarData) {
-        val firestoreDB = FirebaseFirestore.getInstance()
-        val userInCalendarsCollection = firestoreDB.collection("user_in_calendars")
-        try {
-
-            val existingDoc =
-                userInCalendarsCollection.document(myUser.email).get().await()
-
-            if (existingDoc.exists()) {
-                val ownerList = existingDoc.get("owners") as? List<*>
-                val userData = hashMapOf(
-                    "userId" to calendarData.owner.email,
-                    "calendarId" to calendarData.id
-                )
-
-                val mutableOwnerList = ownerList!!.toMutableList()
-
-                mutableOwnerList.remove(userData)
-
-                if (mutableOwnerList.isNotEmpty()) {
-                    userInCalendarsCollection.document(myUser.email)
-                        .update("owners", mutableOwnerList)
-                        .await()
-                } else {
-                    userInCalendarsCollection.document(myUser.email)
-                        .delete()
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error removing user from realtime database: $e")
-        }
-    }
-
-    suspend fun addUserToCalendar(context: Context, myUser: User, calendarData: com.taskraze.myapplication.model.calendar.CalendarData) {
-        val roomDB = Room.databaseBuilder(
-            context,
-            AppDatabase::class.java, "database-name"
-        ).build()
-
-        val usersDao = roomDB.sharedUsersDao()
-        val calendarsDao = roomDB.calendarItemDao()
-
-        calendarData.sharedPeopleNumber += 1
-
-        val newCalendarData = CalendarData(
-            calendarData.name,
-            calendarData.sharedPeopleNumber,
-            UserData(calendarData.id, myUser.username, myUser.email),
-            calendarData.lastUpdated
-        )
-        calendarsDao.updateCalendarItem(newCalendarData)
-
-        val newUserData = UserData(calendarData.id, myUser.username, myUser.email)
-
-        usersDao.insertUser(newUserData)
-        saveAllCalendarsToFirestoreDB(context, loggedInUser.email)
-        getAllCalendarsFromFirestoreDB(context)
-
-        saveSharedUserToFirestoreDB(myUser, calendarData.owner, calendarData.id)
-
-        addUserToRealtimeSharedChat(myUser, calendarData)
-    }
-
-    private suspend fun saveSharedUserToFirestoreDB(myUser: User, owner: User, id: Long) {
-        val firestoreDB = FirebaseFirestore.getInstance()
-        val userInCalendarsCollection = firestoreDB.collection("user_in_calendars")
-        try {
-
-            val existingDoc = userInCalendarsCollection.document(myUser.email).get().await()
-
-
-            if (existingDoc.exists()) {
-                val ownerList = existingDoc.get("owners") as? List<*>
-                val userData = hashMapOf(
-                    "userId" to owner.email,
-                    "calendarId" to id
-                )
-
-                val mutableOwnerList = ownerList!!.toMutableList()
-
-                mutableOwnerList.add(userData)
-
-                userInCalendarsCollection.document(myUser.email)
-                    .update("owners", mutableOwnerList)
-                    .await()
-            } else {
-                val userData = listOf(
-                    hashMapOf(
-                        "userId" to owner.email,
-                        "calendarId" to id
-                    )
-                )
-
-                val list = hashMapOf(
-                    "owners" to userData
-                )
-                userInCalendarsCollection.document(myUser.email)
-                userInCalendarsCollection.document(myUser.email)
-                    .set(list)
-                    .await()
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error saving calendars to Firestore: $e")
-        }
-    }
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    suspend fun addEventToCalendar(context: Context, event: com.taskraze.myapplication.model.calendar.EventData, calendarData: com.taskraze.myapplication.model.calendar.CalendarData) {
-        // maybe update events here as well
-        val roomDB = Room.databaseBuilder(
-            context,
-            AppDatabase::class.java, "database-name"
-        ).build()
-
-        val eventDao = roomDB.eventItemDao()
-
-        val newEventData = EventData(
-            calendarData.id,
-            event.title,
-            event.description,
-            event.startTime,
-            event.endTime,
-            event.location,
-            event.wholeDayEvent
-        )
-
-        eventDao.insertEvent(newEventData)
-        val enetList = eventDao.getEventByCalendarId(calendarData.id)?.toMutableList()?.map { eventData ->
-            com.taskraze.myapplication.model.calendar.EventData(
-                eventData.title,
-                eventData.description,
-                eventData.startTime,
-                eventData.endTime,
-                eventData.location,
-                eventData.wholeDayEvent
-            )
-        }?.toMutableList()
-        if (enetList != null) {
-            calendarData.events.clear()
-            calendarData.events.addAll(enetList)
-        }
-
-        calendarData.lastUpdated = Date.from(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant())
-        saveAllCalendarsToFirestoreDB(context, loggedInUser.email)
-    }
-
-    suspend fun saveAllCalendarsToFirestoreDB(context: Context, userId: String) {
-        val firestoreDB = FirebaseFirestore.getInstance()
-        val calendarsCollection = firestoreDB.collection("calendars")
-        try {
-            val calendars = getAllCalendars(context)
-            val loggedInUserEmail = loggedInUser?.email
-
-            if (loggedInUserEmail != null) {
-
-                val userDocument =
-                    calendarsCollection.document(loggedInUserEmail).get().await()
-
-                if (userDocument.exists()) {
-                    userDocument.reference.update("calendars", calendars).await()
-                } else {
-                    val userData = hashMapOf(
-                        "userId" to userId,
-                        "email" to loggedInUserEmail,
-                        "calendars" to calendars
-                    )
-                    calendarsCollection.document(loggedInUserEmail).set(userData)
-                        .await()
-                }
-            }
-
-
-
-            Log.d(TAG, "Calendars saved to Firestore for user: $loggedInUserEmail")
-        } catch (e: Exception) {
-            Log.e(TAG, "Error saving calendars to Firestore: $e")
-        }
-    }
-
-    suspend fun getAllCalendarsFromFirestoreDB(context: Context) {
-        val firestoreDB = FirebaseFirestore.getInstance()
-        val calendarsCollection = firestoreDB.collection("calendars")
-
-//        loggedInUser = loggedInDeferred.await()
-        val userId = loggedInUser.email
-        val allData = try {
-            val userDocument = calendarsCollection.document(userId).get().await()
-
-            if (userDocument.exists()) {
-                val calendars = userDocument.toObject(UserFirestoreData::class.java)?.calendars
-                Log.d(TAG, "Calendars retrieved from Firestore for user: $userId")
-                calendars
-            } else {
-                Log.d(TAG, "No calendars found in Firestore for user: $userId")
-                null
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error retrieving calendars from Firestore: $e")
-            null
-        }
-
-        if (allData != null) {
-            val previousCalendars = getAllCalendars(context)
-
-            val roomDB = Room.databaseBuilder(
-                context,
-                AppDatabase::class.java, "database-name"
-            ).build()
-
-            //delete previous calendars from room
-            val calendarsDao = roomDB.calendarItemDao()
-            for (tempCalendar in previousCalendars) {
-                if (!allData.contains(tempCalendar)) {
-                    val existingCalendar = calendarsDao.getCalendarById(tempCalendar.id)
-                    if (existingCalendar != null) {
-                        calendarsDao.deleteCalendarItem(existingCalendar)
-                    }
-                }
-            }
-
-            //delete previous users from room
-            val sharedUsersDao = roomDB.sharedUsersDao()
-            val users = sharedUsersDao.getAllUsers()
-            val convertedUsers = users.map { userData ->
-                User(
-                    userData.username,
-                    userData.emailAddress
-                )
-            }
-            Log.d("USERS", users.toString())
-            for (calendar in allData) {
-                for (user in convertedUsers) {
-                    if (!calendar.sharedPeople.contains(user)) {
-                        val userData = UserData(calendar.id, user.username, user.email)
-                        sharedUsersDao.deleteUser(userData)
-                    }
-                }
-            }
-
-            for (cal in allData) {
-                addCalendar(context, cal)
-            }
-        }
-    }
-
-    suspend fun deleteCalendarFromRoom(context: Context, calendarData: com.taskraze.myapplication.model.calendar.CalendarData) {
-        val roomDB = Room.databaseBuilder(
-            context,
-            AppDatabase::class.java, "database-name"
-        ).build()
-
-        val calendarDao = roomDB.calendarItemDao()
-        val sharedPeopleDao = roomDB.sharedUsersDao()
-
-        for (user in calendarData.sharedPeople) {
-            val userData = sharedPeopleDao.getUserByEmail(user.email)
-            if (userData != null) {
-                sharedPeopleDao.deleteUser(userData)
-            }
-        }
-
-        val newCalendar = calendarDao.getCalendarById(calendarData.id)
-        if (newCalendar != null) {
-            calendarDao.deleteCalendarItem(newCalendar)
-        }
-    }
-
-    fun passCalendarToFragment(calendarData: com.taskraze.myapplication.model.calendar.CalendarData) {
+    fun passCalendarToFragment(calendarData: CalendarData) {
         _CalendarDataToPass = calendarData
     }
 
-    fun getCalendarToFragment(): com.taskraze.myapplication.model.calendar.CalendarData? {
+    fun getCalendarToFragment(): CalendarData? {
         val temp = _CalendarDataToPass
         _CalendarDataToPass = null
         if (temp != null) {
@@ -625,7 +63,7 @@ object MainViewModel : ViewModel() {
         }
     }
 
-    suspend fun deleteEventFromRoom(context: Context, event: com.taskraze.myapplication.model.calendar.EventData, calendarName: String) {
+    suspend fun deleteEventFromRoom(context: Context, event: EventData, calendarName: String) {
         val roomDB = Room.databaseBuilder(
             context,
             AppDatabase::class.java, "database-name"
@@ -640,13 +78,13 @@ object MainViewModel : ViewModel() {
     }
 
     suspend fun getFriendRequests(callback: (List<FriendRequestData>) -> Unit) {
-        authenticateUser()
+        // authRepository.fetchUserDetails()
 
         val receiverQuery = firestoreDB.collection("friend_requests")
-            .whereEqualTo("receiverId", loggedInUser.email)
+            .whereEqualTo("receiverId", AuthViewModel.loggedInUser.email)
 
         val senderQuery = firestoreDB.collection("friend_requests")
-            .whereEqualTo("senderId", loggedInUser.email)
+            .whereEqualTo("senderId", AuthViewModel.loggedInUser.email)
 
         val friendRequestDataList = mutableListOf<FriendRequestData>()
         receiverQuery.get()
@@ -709,11 +147,11 @@ object MainViewModel : ViewModel() {
     }
 
     suspend fun getFriends(callback: (MutableList<User>) -> Unit) {
-        authenticateUser()
-//        loggedInUser = loggedInDeferred.await()
-        if (loggedInUser != null) {
+        // authRepository.fetchUserDetails()
+//        AuthViewModel.loggedInUser = loggedInDeferred.await()
+        if (AuthViewModel.loggedInUser != null) {
             firestoreDB.collection("friend_requests")
-                .whereEqualTo("receiverId", loggedInUser.email)
+                .whereEqualTo("receiverId", AuthViewModel.loggedInUser.email)
                 .get()
                 .addOnSuccessListener { result ->
                     val acceptedFriends = mutableListOf<FriendRequestData>()
@@ -745,9 +183,9 @@ object MainViewModel : ViewModel() {
     }
 
     suspend fun fetchUsersFromFriendsList(callback: (MutableList<User>) -> Unit) {
-        authenticateUser()
+        // authRepository.fetchUserDetails()
         firestoreDB.collection("user_friends")
-            .document(loggedInUser.email)
+            .document(AuthViewModel.loggedInUser.email)
             .get()
             .addOnSuccessListener { documentSnapshot ->
                 val friendsList = documentSnapshot.toObject(UserFriendsData::class.java)?.friends ?: emptyList()
@@ -779,7 +217,7 @@ object MainViewModel : ViewModel() {
     }
 
     private fun updateOrCreateUserFriendsDocument(acceptedFriends: List<FriendRequestData>): Deferred<Unit> {
-        val currentEmail = loggedInUser.email
+        val currentEmail = AuthViewModel.loggedInUser.email
         val deferred = CompletableDeferred<Unit>()
 
         // Update or create the document in Firestore
@@ -821,8 +259,8 @@ object MainViewModel : ViewModel() {
                         .addOnSuccessListener { documentSnapshot ->
                             val friendFriends = documentSnapshot.toObject(UserFriendsData::class.java)
                             val updatedFriends = friendFriends?.friends?.toMutableList() ?: mutableListOf()
-                            if (!updatedFriends.contains(loggedInUser.email)) {
-                                updatedFriends.add(loggedInUser.email)
+                            if (!updatedFriends.contains(AuthViewModel.loggedInUser.email)) {
+                                updatedFriends.add(AuthViewModel.loggedInUser.email)
                                 val data = mapOf("friends" to updatedFriends)
                                 firestoreDB.collection("user_friends")
                                     .document(friendEmail)
@@ -957,7 +395,7 @@ object MainViewModel : ViewModel() {
         return chatSnapshot.exists()
     }
 
-    private suspend fun checkExistingChat(calendar: com.taskraze.myapplication.model.calendar.CalendarData): Boolean {
+    private suspend fun checkExistingChat(calendar: CalendarData): Boolean {
         val chatId = generateIdFromOwner(calendar.owner.email, calendar.id.toString())
 
         val database =
@@ -969,18 +407,18 @@ object MainViewModel : ViewModel() {
     }
 
     suspend fun startNewChat(chosenFriend: User): ChatData? {
-        authenticateUser()
+        // authRepository.fetchUserDetails()
 
-        val existingChat = checkExistingChat(loggedInUser, chosenFriend)
+        val existingChat = checkExistingChat(AuthViewModel.loggedInUser, chosenFriend)
         if (existingChat) {
             return null
         }
 
         val newChat = ChatData()
-        val chatId = "-" + generateIdFromEmails(loggedInUser.email, chosenFriend.email)
+        val chatId = "-" + generateIdFromEmails(AuthViewModel.loggedInUser.email, chosenFriend.email)
         newChat.id = chatId
-        newChat.title = chosenFriend.email + "&" + loggedInUser.email
-        newChat.users.add(loggedInUser)
+        newChat.title = chosenFriend.email + "&" + AuthViewModel.loggedInUser.email
+        newChat.users.add(AuthViewModel.loggedInUser)
         newChat.users.add(chosenFriend)
         newChat.users.sortWith(compareByDescending { it.email })
 
@@ -1004,7 +442,7 @@ object MainViewModel : ViewModel() {
     }
 
     suspend fun quitChat(context: Context, chatData: ChatData) {
-        authenticateUser()
+        // authRepository.fetchUserDetails()
 
         val database =
             FirebaseDatabase.getInstance("https://szakdolgozat-7f789-default-rtdb.europe-west1.firebasedatabase.app/")
@@ -1013,14 +451,14 @@ object MainViewModel : ViewModel() {
 
         chatData.users.sortWith(compareByDescending { it.email })
 
-        val index = chatData.users.indexOfFirst { it.email == loggedInUser.email }
+        val index = chatData.users.indexOfFirst { it.email == AuthViewModel.loggedInUser.email }
         chatData.users.removeAt(index)
         usersRef.setValue(chatData.users).addOnCompleteListener { task ->
             if (task.isSuccessful) {
                 Toast.makeText(context, "Quit chat successfully", Toast.LENGTH_SHORT).show()
 
                 val leaveMessage =
-                    FriendlyMessage("# # # # # #\n${loggedInUser.email} has left the chat\n# # # # # #", "System")
+                    FriendlyMessage("# # # # # #\n${AuthViewModel.loggedInUser.email} has left the chat\n# # # # # #", "System")
                 val messagesRef = chatsRef.child(chatData.id).child("messages")
                 messagesRef.push().setValue(leaveMessage)
 
@@ -1031,13 +469,13 @@ object MainViewModel : ViewModel() {
         }
     }
 
-    suspend fun getSharedCalendars(requireContext: Context): MutableList<com.taskraze.myapplication.model.calendar.CalendarData> {
+    suspend fun getSharedCalendars(requireContext: Context): MutableList<CalendarData> {
         val firestoreDB = FirebaseFirestore.getInstance()
         val calendarsCollection = firestoreDB.collection("calendars")
         val userInCalendarsCollection = firestoreDB.collection("user_in_calendars")
 
-        val userId = loggedInUser.email
-        val resultList = mutableListOf<com.taskraze.myapplication.model.calendar.CalendarData>()
+        val userId = AuthViewModel.loggedInUser.email
+        val resultList = mutableListOf<CalendarData>()
         try {
             val userSharedCalendarsDoc = userInCalendarsCollection.document(userId).get().await()
 
@@ -1070,7 +508,7 @@ object MainViewModel : ViewModel() {
 
                         if (allData != null) {
                             for (cal in allData) {
-                                if (cal.sharedPeople.contains(loggedInUser)) {
+                                if (cal.sharedPeople.contains(AuthViewModel.loggedInUser)) {
                                     resultList.add(cal)
                                 }
                             }
@@ -1085,7 +523,7 @@ object MainViewModel : ViewModel() {
         return resultList
     }
 
-    suspend fun addEventToSharedCalendar(event: com.taskraze.myapplication.model.calendar.EventData, thisCalendar: com.taskraze.myapplication.model.calendar.CalendarData) {
+    suspend fun addEventToSharedCalendar(event: EventData, thisCalendar: CalendarData) {
         val firestoreDB = FirebaseFirestore.getInstance()
         val calendarsCollection = firestoreDB.collection("calendars")
         try {
@@ -1108,7 +546,7 @@ object MainViewModel : ViewModel() {
         }
     }
 
-    suspend fun deleteSharedUsersFromCalendar(sharedUsers: MutableList<User>, calendar: com.taskraze.myapplication.model.calendar.CalendarData) {
+    suspend fun deleteSharedUsersFromCalendar(sharedUsers: MutableList<User>, calendar: CalendarData) {
         val firestoreDB = FirebaseFirestore.getInstance()
         val userInCalendarsCollection = firestoreDB.collection("user_in_calendars")
         try {
@@ -1142,7 +580,7 @@ object MainViewModel : ViewModel() {
         }
     }
 
-    suspend fun deleteEventFromSharedCalendar(event: com.taskraze.myapplication.model.calendar.EventData, userId: String, calendarId: Long) {
+    suspend fun deleteEventFromSharedCalendar(event: EventData, userId: String, calendarId: Long) {
         val firestoreDB = FirebaseFirestore.getInstance()
         val calendarsCollection = firestoreDB.collection("calendars")
         try {
@@ -1166,7 +604,7 @@ object MainViewModel : ViewModel() {
 
     fun removeUserFromFriends(context: Context, deletedUser: User) {
         firestoreDB.collection("user_friends")
-            .document(loggedInUser.email)
+            .document(AuthViewModel.loggedInUser.email)
             .get()
             .addOnSuccessListener { documentSnapshot ->
                 //current user
@@ -1176,7 +614,7 @@ object MainViewModel : ViewModel() {
                 val newFriendsList = existingFriends.toMutableList()
                 newFriendsList.remove(deletedUser.email)
                 firestoreDB.collection("user_friends")
-                    .document(loggedInUser.email).update("friends", newFriendsList)
+                    .document(AuthViewModel.loggedInUser.email).update("friends", newFriendsList)
 
                 //other user
                 firestoreDB.collection("user_friends")
@@ -1187,7 +625,7 @@ object MainViewModel : ViewModel() {
                         val otherExistingFriends = otherUserFriendsData?.friends ?: emptyList()
 
                         val otherNewFriendsList = otherExistingFriends.toMutableList()
-                        otherNewFriendsList.remove(loggedInUser.email)
+                        otherNewFriendsList.remove(AuthViewModel.loggedInUser.email)
 
                         firestoreDB.collection("user_friends")
                             .document(deletedUser.email).update("friends", otherNewFriendsList)
@@ -1203,8 +641,8 @@ object MainViewModel : ViewModel() {
             }
     }
 
-    suspend fun startGroupChat(calendar: com.taskraze.myapplication.model.calendar.CalendarData): ChatData? {
-        authenticateUser()
+    suspend fun startGroupChat(calendar: CalendarData): ChatData? {
+        // authRepository.fetchUserDetails()
 
         val existingChat = checkExistingChat(calendar)
         if (existingChat) {
@@ -1215,7 +653,7 @@ object MainViewModel : ViewModel() {
         val chatId = generateIdFromOwner(calendar.owner.email, calendar.id.toString())
         newChat.id = chatId
         newChat.title = calendar.name
-        newChat.users.add(loggedInUser)
+        newChat.users.add(AuthViewModel.loggedInUser)
         for (user in calendar.sharedPeople) {
             newChat.users.add(user)
         }

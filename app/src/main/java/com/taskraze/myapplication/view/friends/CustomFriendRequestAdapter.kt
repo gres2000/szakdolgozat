@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.taskraze.myapplication.R
 import com.taskraze.myapplication.model.friends.FriendRequestData
 import com.taskraze.myapplication.viewmodel.MainViewModel
+import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
 
 class CustomFriendRequestAdapter (private val onButtonClickListener: OnAcceptButtonClickedListener, private val activity: AppCompatActivity, private val dataList: MutableList<FriendRequestData>) : RecyclerView.Adapter<CustomFriendRequestAdapter.FriendRequestItemViewHolder>() {
     inner class FriendRequestItemViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
@@ -24,7 +25,7 @@ class CustomFriendRequestAdapter (private val onButtonClickListener: OnAcceptBut
         fun onButtonClicked(position: Int)
     }
     override fun getItemViewType(position: Int): Int {
-        return if (dataList[position].receiverId == MainViewModel.loggedInUser!!.email) {
+        return if (dataList[position].receiverId == AuthViewModel.loggedInUser!!.email) {
             0
         } else {
             1

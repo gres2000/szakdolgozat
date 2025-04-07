@@ -1,4 +1,4 @@
-package com.taskraze.myapplication.view.authentication
+package com.taskraze.myapplication.view.auth
 
 import android.content.ContentValues.TAG
 import android.content.Intent

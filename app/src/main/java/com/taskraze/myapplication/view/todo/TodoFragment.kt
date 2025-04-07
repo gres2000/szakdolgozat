@@ -13,6 +13,7 @@ import com.taskraze.myapplication.view.todo.weekly.WeeklyFragment
 import com.taskraze.myapplication.databinding.TodoFragmentBinding
 import com.google.android.material.switchmaterial.SwitchMaterial
 import com.taskraze.myapplication.viewmodel.MainViewModel
+import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
 
 class TodoFragment : Fragment() {
 
@@ -41,7 +42,7 @@ class TodoFragment : Fragment() {
         val weeklyEditText = binding.weeklyLabel
 
         // get saved switch state
-        val sharedPref = (requireActivity() as MainActivity).getSharedPreferences(MainViewModel.loggedInUser.email, MODE_PRIVATE)
+        val sharedPref = (requireActivity() as MainActivity).getSharedPreferences(AuthViewModel.loggedInUser.email, MODE_PRIVATE)
         switchButton.isChecked = sharedPref.getBoolean("switch_state", false)
 
         switchFragment(switchButton.isChecked)

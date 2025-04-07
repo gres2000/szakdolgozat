@@ -16,7 +16,7 @@ import android.widget.TextView
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import com.taskraze.myapplication.R
-import com.taskraze.myapplication.view.authentication.LoginActivity
+import com.taskraze.myapplication.view.auth.LoginActivity
 import com.taskraze.myapplication.common.UserPreferences
 import com.taskraze.myapplication.view.chat.StartChatActivity
 import com.taskraze.myapplication.view.friends.FriendsActivity
@@ -25,6 +25,7 @@ import com.taskraze.myapplication.databinding.HomeFragmentBinding
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.taskraze.myapplication.model.home.InternetConnectivityCallback
 import com.taskraze.myapplication.model.room_database.data_classes.User
+import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.cio.*
@@ -88,7 +89,7 @@ class HomeFragment : Fragment() {
         }
 
         logoutButton.setOnClickListener {
-            MainViewModel.loggedInUser = User("empty", "empty")
+            AuthViewModel.loggedInUser = User("empty", "empty")
             MainViewModel.auth.signOut()
             UserPreferences.logoutUser(requireContext())
             val intent = Intent(requireContext(), LoginActivity::class.java)

@@ -19,7 +19,9 @@ import com.firebase.ui.database.FirebaseRecyclerOptions
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.storage.StorageReference
 import com.google.firebase.storage.ktx.storage
+import com.taskraze.myapplication.model.auth.AuthRepository
 import com.taskraze.myapplication.model.chat.FriendlyMessage
+import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
 import kotlinx.coroutines.launch
 
 class ChatActivity: AppCompatActivity() {
@@ -29,6 +31,7 @@ class ChatActivity: AppCompatActivity() {
     private val openDocument = registerForActivityResult(MyOpenDocumentContract()) { uri ->
         uri?.let { onImageSelected(it) }
     }
+    private val authRepository = AuthRepository()
 
     // Firebase instance variables
     private lateinit var auth: FirebaseAuth
@@ -52,7 +55,7 @@ class ChatActivity: AppCompatActivity() {
         })
 
         MainViewModel.viewModelScope.launch {
-            MainViewModel.authenticateUser()
+            // authRepository.fetchUserDetails()
         }
 
         val allChatsRef = db.getReference("chats")
@@ -175,8 +178,8 @@ class ChatActivity: AppCompatActivity() {
 //        return if (user != null) {
 //            user.email
 //        } else ANONYMOUS
-        return if (MainViewModel.loggedInUser != null) {
-            MainViewModel.loggedInUser!!.username
+        return if (AuthViewModel.loggedInUser != null) {
+            AuthViewModel.loggedInUser!!.username
         } else ANONYMOUS
     }
     companion object {

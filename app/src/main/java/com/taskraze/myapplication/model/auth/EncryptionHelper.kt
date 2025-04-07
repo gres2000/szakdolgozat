@@ -1,4 +1,4 @@
-package com.taskraze.myapplication.model.authentication
+package com.taskraze.myapplication.model.auth
 
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties

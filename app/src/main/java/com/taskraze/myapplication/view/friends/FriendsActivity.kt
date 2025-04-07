@@ -17,11 +17,14 @@ import com.taskraze.myapplication.model.room_database.data_classes.User
 import com.taskraze.myapplication.view.chat.ChatActivity
 import com.taskraze.myapplication.common.CustomUsersAdapter
 import com.taskraze.myapplication.databinding.FriendsActivityBinding
+import com.taskraze.myapplication.model.auth.AuthRepository
 import com.taskraze.myapplication.viewmodel.MainViewModel
+import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
 import kotlinx.coroutines.launch
 
 class FriendsActivity : AppCompatActivity(), CustomFriendRequestAdapter.OnAcceptButtonClickedListener, CustomUsersAdapter.ChatActionListener, CustomUsersAdapter.DeleteActionListener {
 
+    private val authRepository = AuthRepository()
     private lateinit var binding: FriendsActivityBinding
     private lateinit var viewModel: MainViewModel
     private lateinit var searchBarSearchView: SearchView
@@ -61,7 +64,7 @@ class FriendsActivity : AppCompatActivity(), CustomFriendRequestAdapter.OnAccept
         searchButtonImageButton = findViewById(R.id.searchButton)
 
         lifecycleScope.launch {
-            MainViewModel.authenticateUser()
+            // authRepository.fetchUserDetails()
         }
         // Initialize your views or perform any other setup here
         searchBarSearchView.setOnQueryTextListener(searchViewQueryListener)
@@ -70,7 +73,7 @@ class FriendsActivity : AppCompatActivity(), CustomFriendRequestAdapter.OnAccept
         friendsRecyclerView.layoutManager = GridLayoutManager(this, 3)
 
         lifecycleScope.launch {
-            MainViewModel.authenticateUser()
+            // authRepository.fetchUserDetails()
             MainViewModel.getFriendRequests { friendRequests ->
                 val adapter = CustomFriendRequestAdapter(this@FriendsActivity, this@FriendsActivity, friendRequests.toMutableList())
                 friendRequestsRecyclerView.adapter = adapter
@@ -81,7 +84,7 @@ class FriendsActivity : AppCompatActivity(), CustomFriendRequestAdapter.OnAccept
         }
 
         lifecycleScope.launch {
-            MainViewModel.authenticateUser()
+            // authRepository.fetchUserDetails()
             MainViewModel.getFriends { friends ->
                 val adapter = CustomUsersAdapter(this@FriendsActivity, friends.toMutableList(), this@FriendsActivity, this@FriendsActivity, true)
                 adapter.setItemClickedPrompt(getString(R.string.start_chat_with_selected_user))
@@ -105,7 +108,7 @@ class FriendsActivity : AppCompatActivity(), CustomFriendRequestAdapter.OnAccept
 
     override fun onButtonClicked(position: Int) {
         lifecycleScope.launch {
-            MainViewModel.authenticateUser()
+            // authRepository.fetchUserDetails()
             viewModel.getFriends { friends ->
                 val adapter = CustomUsersAdapter(this@FriendsActivity, friends.toMutableList(), this@FriendsActivity, null, true)
                 adapter.setItemClickedPrompt(getString(R.string.start_chat_with_selected_user))
@@ -133,7 +136,7 @@ class FriendsActivity : AppCompatActivity(), CustomFriendRequestAdapter.OnAccept
             }
             else {
                 val intent = Intent(this@FriendsActivity, ChatActivity::class.java)
-                val id = '-' + MainViewModel.generateIdFromEmails(receiverUser.email, MainViewModel.loggedInUser!!.email)
+                val id = '-' + MainViewModel.generateIdFromEmails(receiverUser.email, AuthViewModel.loggedInUser!!.email)
                 intent.putExtra("chatId", id)
                 intent.putExtra("chatName", receiverUser.email)
 

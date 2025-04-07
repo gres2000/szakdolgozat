@@ -42,7 +42,9 @@ import com.taskraze.myapplication.common.CustomUsersAdapter
 import com.taskraze.myapplication.databinding.CalendarDetailFragmentBinding
 import com.taskraze.myapplication.model.calendar.CalendarData
 import com.taskraze.myapplication.model.calendar.EventData
+import com.taskraze.myapplication.model.calendar.LocalCalendarRepository
 import com.taskraze.myapplication.viewmodel.MainViewModel
+import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
 import kotlinx.coroutines.launch
 import java.util.Calendar
 import java.util.Date
@@ -56,6 +58,7 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
     private lateinit var adapter: CustomEventAdapter
     private var thisCalendar: CalendarData? = null
     private lateinit var eventsMap: HashMap<Pair<Int, Int>, Pair<MutableList<EventData>, Int>>
+    private val localCalendarRepository = LocalCalendarRepository()
     private val binding get() = _binding!!
 
     override fun onCreateView(
@@ -116,7 +119,7 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
             binding.recyclerViewEvents.adapter = adapter
 
             val usersList = thisCalendar!!.sharedPeople
-            val deleteButtonVisibility = if (MainViewModel.loggedInUser!!.email == thisCalendar!!.owner.email) true else false
+            val deleteButtonVisibility = if (AuthViewModel.loggedInUser!!.email == thisCalendar!!.owner.email) true else false
             val usersAdapter = CustomUsersAdapter(requireContext() as AppCompatActivity, usersList, null, this@CalendarDetailFragment, deleteButtonVisibility)
             binding.recyclerViewUsers.adapter = usersAdapter
         }
@@ -177,8 +180,8 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
     override fun onNewEventCreated(event: EventData) {
         viewModel.viewModelScope.launch {
 
-            if (MainViewModel.loggedInUser!!.email == thisCalendar!!.owner.email) {
-                MainViewModel.addEventToCalendar(requireContext(), event, thisCalendar!!)
+            if (AuthViewModel.loggedInUser!!.email == thisCalendar!!.owner.email) {
+                localCalendarRepository.addEventToCalendar(requireContext(), event, thisCalendar!!)
             }
             else {
                 MainViewModel.addEventToSharedCalendar(event, thisCalendar!!)
@@ -507,7 +510,7 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
 
     override fun onUserClickConfirmed(receiverUser: User) {
         MainViewModel.viewModelScope.launch {
-            MainViewModel.addUserToCalendar(requireContext(), receiverUser, thisCalendar!!)
+            localCalendarRepository.addUserToCalendar(requireContext(), receiverUser, thisCalendar!!)
             (binding.recyclerViewUsers.adapter as CustomUsersAdapter).addItem(receiverUser)
             binding.recyclerViewUsers.adapter!!.notifyItemInserted(thisCalendar!!.sharedPeopleNumber)
         }
@@ -515,7 +518,7 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
 
     override fun onDeleteConfirmed(deletedUser: User, position: Int) {
         MainViewModel.viewModelScope.launch {
-            MainViewModel.removeUserFromCalendar(requireContext(), deletedUser, thisCalendar!!)
+            localCalendarRepository.removeUserFromCalendar(requireContext(), deletedUser, thisCalendar!!)
             (binding.recyclerViewUsers.adapter as CustomUsersAdapter).removeItem(deletedUser)
             binding.recyclerViewUsers.adapter!!.notifyItemRemoved(position)
         }

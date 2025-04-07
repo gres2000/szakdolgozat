@@ -20,7 +20,7 @@
             android:foregroundServiceType="specialUse"/>
 
         <activity
-            android:name=".view.authentication.LoginActivity"
+            android:name=".view.auth.LoginActivity"
             android:exported="true"
             android:theme="@style/Theme.MyApplication">
             <intent-filter>
@@ -35,7 +35,7 @@
             android:theme="@style/Theme.MyApplication">
         </activity>
         <activity
-            android:name=".view.authentication.RegisterActivity"
+            android:name=".view.auth.RegisterActivity"
             android:exported="true"
             android:theme="@style/Theme.MyApplication">
         </activity>

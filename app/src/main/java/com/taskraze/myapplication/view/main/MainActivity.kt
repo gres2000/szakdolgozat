@@ -10,6 +10,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import com.taskraze.myapplication.R
 import com.taskraze.myapplication.databinding.ActivityMainBinding
+import com.taskraze.myapplication.model.auth.AuthRepository
 import com.taskraze.myapplication.view.todo.TodoFragment
 import com.taskraze.myapplication.view.home.HomeFragment
 import com.taskraze.myapplication.view.calendar.CalendarFragment
@@ -22,6 +23,7 @@ import kotlinx.coroutines.withContext
 
 class MainActivity : AppCompatActivity() {
 
+    private val authRepository = AuthRepository()
     private lateinit var binding: ActivityMainBinding
     private val fragmentManager = supportFragmentManager
     private val fragmentMap = mutableMapOf<String, Fragment>()
@@ -37,7 +39,7 @@ class MainActivity : AppCompatActivity() {
 
 
         lifecycleScope.launch {
-            viewModel.authenticateUser()
+            // authRepository.fetchUserDetails()
         }
         setupFragments()
         setupBottomNavigationView()

@@ -1,4 +1,4 @@
-package com.taskraze.myapplication.view.authentication
+package com.taskraze.myapplication.view.auth
 
 import android.content.Context
 import android.content.Intent
@@ -18,7 +18,7 @@ import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.taskraze.myapplication.common.UserPreferences
-import com.taskraze.myapplication.model.authentication.EncryptionHelper
+import com.taskraze.myapplication.model.auth.EncryptionHelper
 
 class LoginActivity: AppCompatActivity() {
     private lateinit var binding: LoginActivityBinding

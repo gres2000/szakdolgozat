@@ -13,6 +13,8 @@ import com.taskraze.myapplication.model.room_database.data_classes.User
 import com.taskraze.myapplication.databinding.FoundUsersActivityBinding
 import com.taskraze.myapplication.viewmodel.MainViewModel
 import com.google.firebase.firestore.FirebaseFirestore
+import com.taskraze.myapplication.model.auth.AuthRepository
+import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
 import kotlinx.coroutines.launch
 
 class FoundUsersActivity : AppCompatActivity() {
@@ -22,6 +24,7 @@ class FoundUsersActivity : AppCompatActivity() {
     private lateinit var searchResutltsTextView: TextView
     private lateinit var viewModel: MainViewModel
     private val TAG = "FoundUsersActivity"
+    private val authRepository = AuthRepository()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,15 +58,15 @@ class FoundUsersActivity : AppCompatActivity() {
                         dataList.add(user!!)
                     }
                     viewModel.viewModelScope.launch {
-                        viewModel.authenticateUser()
+                        // authRepository.fetchUserDetails()
                         viewModel.fetchUsersFromFriendsList { alreadyFriends ->
                             for (data in dataList) {
                                 if (alreadyFriends.contains(data)) {
                                     dataList.remove(data)
                                 }
                             }
-                            if (dataList.contains(viewModel.loggedInUser)) {
-                                dataList.remove(viewModel.loggedInUser)
+                            if (dataList.contains(AuthViewModel.loggedInUser)) {
+                                dataList.remove(AuthViewModel.loggedInUser)
                             }
 
                             foundUsersRecyclerView.adapter = CustomFoundUsersAdapter(this@FoundUsersActivity, dataList)
@@ -97,8 +100,8 @@ class FoundUsersActivity : AppCompatActivity() {
                                     dataList.remove(data)
                                 }
                             }
-                            if (dataList.contains(viewModel.loggedInUser)) {
-                                dataList.remove(viewModel.loggedInUser)
+                            if (dataList.contains(AuthViewModel.loggedInUser)) {
+                                dataList.remove(AuthViewModel.loggedInUser)
                             }
 
                             foundUsersRecyclerView.adapter = CustomFoundUsersAdapter(this@FoundUsersActivity, dataList)

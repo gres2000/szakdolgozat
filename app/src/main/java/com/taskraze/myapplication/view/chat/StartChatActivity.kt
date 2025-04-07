@@ -23,6 +23,7 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.taskraze.myapplication.model.chat.ChatData
+import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
 import kotlinx.coroutines.launch
 
 class StartChatActivity: AppCompatActivity(), CustomUsersAdapter.ChatActionListener {
@@ -119,7 +120,7 @@ class StartChatActivity: AppCompatActivity(), CustomUsersAdapter.ChatActionListe
                 }
                 else {
                     val intent = Intent(this@StartChatActivity, ChatActivity::class.java)
-                    val id = '-' + MainViewModel.generateIdFromEmails(receiverUser.email, MainViewModel.loggedInUser!!.email)
+                    val id = '-' + MainViewModel.generateIdFromEmails(receiverUser.email, AuthViewModel.loggedInUser!!.email)
                     intent.putExtra("chatId", id)
                     intent.putExtra("chatName", receiverUser.email)
 

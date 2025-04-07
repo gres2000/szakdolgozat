@@ -15,8 +15,10 @@ import androidx.lifecycle.viewModelScope
 import androidx.recyclerview.widget.RecyclerView
 import com.taskraze.myapplication.R
 import com.taskraze.myapplication.model.calendar.CalendarData
+import com.taskraze.myapplication.model.calendar.LocalCalendarRepository
 import com.taskraze.myapplication.view.calendar.details.CalendarDetailFragment
 import com.taskraze.myapplication.viewmodel.MainViewModel
+import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
@@ -32,6 +34,8 @@ class CustomSharedCalendarAdapter(private val activity: AppCompatActivity, priva
         var viewHolderId: Int = -1
         lateinit var viewModel: MainViewModel
     }
+
+    private val localCalendarRepository = LocalCalendarRepository()
 
     override fun onCreateViewHolder(view: ViewGroup, viewType: Int): SharedCalendarItemViewHolder {
         val itemView = LayoutInflater.from(view.context).inflate(R.layout.calendar_item_view, view, false)
@@ -110,7 +114,7 @@ class CustomSharedCalendarAdapter(private val activity: AppCompatActivity, priva
             // For example, call a method to delete the item from your data source
             val viewModel = ViewModelProvider(activity)[MainViewModel::class.java]
             viewModel.viewModelScope.launch { // Launch a coroutine
-                viewModel.removeUserFromCalendar(activity, MainViewModel.loggedInUser!!, dataList[position])
+                localCalendarRepository.removeUserFromCalendar(activity, AuthViewModel.loggedInUser!!, dataList[position])
                 dataList.removeAt(position)
                 notifyItemRemoved(position)
             }

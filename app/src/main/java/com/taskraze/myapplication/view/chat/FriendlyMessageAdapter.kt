@@ -19,6 +19,7 @@ import com.firebase.ui.database.FirebaseRecyclerOptions
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.ktx.storage
 import com.taskraze.myapplication.model.chat.FriendlyMessage
+import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
 
 class FriendlyMessageAdapter(
     private val options: FirebaseRecyclerOptions<FriendlyMessage>,
@@ -96,7 +97,7 @@ class FriendlyMessageAdapter(
 
     override fun getItemViewType(position: Int): Int {
         return if (options.snapshots[position].text != null) {
-            if (options.snapshots[position].name == MainViewModel.loggedInUser!!.username) {
+            if (options.snapshots[position].name == AuthViewModel.loggedInUser!!.username) {
                 VIEW_TYPE_TEXT_OWN
             }
             else {
