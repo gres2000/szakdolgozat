@@ -148,7 +148,7 @@ object MainViewModel : ViewModel() {
 
     suspend fun getFriends(callback: (MutableList<User>) -> Unit) {
         // authRepository.fetchUserDetails()
-//        AuthViewModel.loggedInUser = loggedInDeferred.await()
+        // AuthViewModel.loggedInUser = loggedInDeferred.await()
         if (AuthViewModel.loggedInUser != null) {
             firestoreDB.collection("friend_requests")
                 .whereEqualTo("receiverId", AuthViewModel.loggedInUser.email)

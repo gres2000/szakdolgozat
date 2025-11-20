@@ -41,8 +41,6 @@ class FirestoreCalendarRepository(private val localCalendarRepository: LocalCale
                 }
             }
 
-
-
             Log.d(ContentValues.TAG, "Calendars saved to Firestore for user: $AuthViewModel.loggedInUserEmail")
         } catch (e: Exception) {
             Log.e(ContentValues.TAG, "Error saving calendars to Firestore: $e")

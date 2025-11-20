@@ -10,7 +10,6 @@ import com.taskraze.myapplication.model.room_database.data_classes.RoomEventData
 import com.taskraze.myapplication.model.room_database.data_classes.User
 import com.taskraze.myapplication.model.room_database.data_classes.UserData
 import com.taskraze.myapplication.model.room_database.db.AppDatabase
-import com.taskraze.myapplication.viewmodel.MainViewModel
 import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
 import java.time.LocalDate
 import java.time.ZoneId
@@ -28,11 +27,7 @@ class LocalCalendarRepository {
         ).build()
 
         val calendarDao = roomDB.calendarItemDao()
-//        val eventDao = roomDB.eventItemDao()
-//        val sharedUsersDao = roomDB.sharedUsersDao()
 
-
-        // authRepository.fetchUserDetails()
         val loggedInUserJson =
             Gson().toJson(UserData(0, AuthViewModel.loggedInUser.username, AuthViewModel.loggedInUser.email)).toString()
 
@@ -259,7 +254,7 @@ class LocalCalendarRepository {
         )
 
         eventDao.insertEvent(newRoomEventData)
-        val enetList = eventDao.getEventByCalendarId(calendarData.id)?.toMutableList()?.map { eventData ->
+        val eventList = eventDao.getEventByCalendarId(calendarData.id)?.toMutableList()?.map { eventData ->
             EventData(
                 eventData.title,
                 eventData.description,
@@ -269,9 +264,9 @@ class LocalCalendarRepository {
                 eventData.wholeDayEvent
             )
         }?.toMutableList()
-        if (enetList != null) {
+        if (eventList != null) {
             calendarData.events.clear()
-            calendarData.events.addAll(enetList)
+            calendarData.events.addAll(eventList)
         }
 
         calendarData.lastUpdated = Date.from(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant())

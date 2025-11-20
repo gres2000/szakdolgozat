@@ -63,8 +63,11 @@ class CustomEventAdapter(private val activity: AppCompatActivity, private val da
         val tmpString = if (!currentItem.wholeDayEvent) dateFormat.format(currentItem.startTime).toString() + "-" + dateFormat.format(currentItem.endTime).toString() else "Whole day event"
         viewHolder.intervalTextView.text = tmpString
 
-        viewHolder.deleteEventImageButton.setOnClickListener{
-            showDeleteDialog(viewHolder.layoutPosition)
+        viewHolder.deleteEventImageButton.setOnClickListener {
+            val pos = viewHolder.bindingAdapterPosition
+            if (pos != RecyclerView.NO_POSITION) {
+                showDeleteDialog(pos)
+            }
         }
 
         viewHolder.itemView.setOnClickListener{
@@ -73,17 +76,6 @@ class CustomEventAdapter(private val activity: AppCompatActivity, private val da
 //            val clickedEvent = dataList[position]
 //            openEventDetailFragmentForEditing(clickedEvent)
         }
-    }
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    fun instantToLocalDate(instant: Instant): LocalDate {
-        // Convert Instant to Epoch Milliseconds
-        val epochMillis = instant.toEpochMilli()
-
-        // Convert Epoch Milliseconds to LocalDate
-        return Instant.ofEpochMilli(epochMillis)
-            .atZone(ZoneId.systemDefault())
-            .toLocalDate()
     }
 
     override fun getItemCount() = dataList.size
@@ -124,22 +116,17 @@ class CustomEventAdapter(private val activity: AppCompatActivity, private val da
                     dataList.removeAt(position)
                     notifyItemRemoved(position)
                     firestoreCalendarRepository.saveAllCalendarsToFirestoreDB(activity, AuthViewModel.loggedInUser!!.email)
-                }
-                else {
+                } else {
                     MainViewModel.deleteEventFromSharedCalendar(dataList[position], calendar.owner.email, calendar.id)
                     onItemRemovedListener?.onItemRemoved(dataList[position])
                     dataList.removeAt(position)
                     notifyItemRemoved(position)
                 }
 
-
             }
             dialog.dismiss()
         }
 
         dialog.show()
-    }
-    fun getDataList():List<EventData> {
-        return dataList
     }
 }

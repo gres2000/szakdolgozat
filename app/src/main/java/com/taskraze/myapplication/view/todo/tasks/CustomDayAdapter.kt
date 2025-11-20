@@ -16,7 +16,6 @@ import com.taskraze.myapplication.R
 import com.taskraze.myapplication.view.todo.daily.DailyFragment
 import com.taskraze.myapplication.model.todo.TaskData
 import com.taskraze.myapplication.viewmodel.MainViewModel
-import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
 import com.taskraze.myapplication.viewmodel.todo.TaskViewModel
 import kotlinx.coroutines.launch
 

@@ -73,12 +73,8 @@ dependencies {
     val roomVersion = "2.6.1"
 
     implementation("androidx.room:room-runtime:$roomVersion")
-    annotationProcessor("androidx.room:room-compiler:$roomVersion")
 
-    // To use Kotlin annotation processing tool (kapt)
     kapt("androidx.room:room-compiler:$roomVersion")
-    // To use Kotlin Symbol Processing (KSP)
-    //ksp("androidx.room:room-compiler:$roomVersion")
 
     // optional - Kotlin Extensions and Coroutines support for Room
     implementation("androidx.room:room-ktx:$roomVersion")
@@ -115,7 +111,7 @@ dependencies {
     implementation("io.ktor:ktor-client-logging:2.3.11")
     implementation("io.ktor:ktor-client-cio:2.3.11")
 
-    //google calendar
-
+    // calendar component
+    implementation("com.kizitonwose.calendar:view:2.0.4")
 
 }

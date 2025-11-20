@@ -6,7 +6,6 @@ import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -22,15 +21,9 @@ import com.taskraze.myapplication.view.chat.StartChatActivity
 import com.taskraze.myapplication.view.friends.FriendsActivity
 import com.taskraze.myapplication.viewmodel.MainViewModel
 import com.taskraze.myapplication.databinding.HomeFragmentBinding
-import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.taskraze.myapplication.model.home.InternetConnectivityCallback
 import com.taskraze.myapplication.model.room_database.data_classes.User
 import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
-import io.ktor.client.HttpClient
-import io.ktor.client.call.body
-import io.ktor.client.engine.cio.*
-import io.ktor.client.request.get
-import io.ktor.client.statement.HttpResponse
 import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.launch
 
@@ -41,7 +34,6 @@ class HomeFragment : Fragment() {
     private lateinit var openChatButton: Button
     private lateinit var openFriendsButton: Button
     private lateinit var suggestedEventsRecyclerView: RecyclerView
-    private lateinit var sendButton: FloatingActionButton
     private lateinit var connectivityCallback: InternetConnectivityCallback
 
     private val binding get() = _binding!!
@@ -66,9 +58,9 @@ class HomeFragment : Fragment() {
             lifecycleScope.launch(Main) {
 
                 if (isConnected) {
-                    updateUI(true)
+                    updateInternetConnection(true)
                 } else {
-                    updateUI(false)
+                    updateInternetConnection(false)
                 }
             }
 
@@ -79,7 +71,6 @@ class HomeFragment : Fragment() {
         openChatButton = view.findViewById(R.id.openChatButton)
         openFriendsButton = view.findViewById(R.id.openFriendsButton)
         suggestedEventsRecyclerView = view.findViewById(R.id.suggestedEventsRecyclerView)
-        sendButton = view.findViewById(R.id.fab_send_request)
 
         if (MainViewModel.auth.currentUser != null) {
             currentUserTextView.text = MainViewModel.auth.currentUser!!.email
@@ -107,15 +98,6 @@ class HomeFragment : Fragment() {
             startActivity(intent)
         }
 
-        sendButton.setOnClickListener{
-            lifecycleScope.launch {
-                val client = HttpClient(CIO)
-                val response: HttpResponse = client.get("https://newsapi.org/v2/top-headlines?country=hu&apiKey=56fa83c71bf84433a94e739663d52bac")
-                val body: String = response.body()
-                Log.d("adatok", body)
-
-            }
-        }
 
 
     }
@@ -130,26 +112,19 @@ class HomeFragment : Fragment() {
     private fun isInternetAvailable(context: Context): Boolean {
         val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            val network = connectivityManager.activeNetwork ?: return false
-            val activeNetwork = connectivityManager.getNetworkCapabilities(network) ?: return false
+        val network = connectivityManager.activeNetwork ?: return false
+        val activeNetwork = connectivityManager.getNetworkCapabilities(network) ?: return false
 
-            return when {
-                activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> true
+        return when {
+            activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> true
 
-                activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> true
+            activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> true
 
-                else -> false
-            }
-        } else {
-            @Suppress("DEPRECATION") val networkInfo =
-                connectivityManager.activeNetworkInfo ?: return false
-            @Suppress("DEPRECATION")
-            return networkInfo.isConnected
+            else -> false
         }
     }
 
-    private fun updateUI(isConnected: Boolean) {
+    private fun updateInternetConnection(isConnected: Boolean) {
         if (isConnected) {
             binding.noInternetTextView.visibility = TextView.GONE
         }
