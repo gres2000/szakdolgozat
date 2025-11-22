@@ -15,11 +15,9 @@ import androidx.lifecycle.viewModelScope
 import androidx.recyclerview.widget.RecyclerView
 import com.taskraze.myapplication.R
 import com.taskraze.myapplication.model.calendar.CalendarData
-import com.taskraze.myapplication.model.calendar.FirestoreCalendarRepository
-import com.taskraze.myapplication.model.calendar.LocalCalendarRepository
 import com.taskraze.myapplication.view.calendar.details.CalendarDetailFragment
 import com.taskraze.myapplication.viewmodel.MainViewModel
-import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
+import com.taskraze.myapplication.viewmodel.calendar.FirestoreViewModel
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
@@ -35,11 +33,12 @@ class CustomOwnCalendarAdapter(private val activity: AppCompatActivity, private 
         var viewHolderId: Int = -1
         lateinit var viewModel: MainViewModel
     }
-    private val localCalendarRepository = LocalCalendarRepository()
-    private val firestoreCalendarRepository = FirestoreCalendarRepository(localCalendarRepository)
+
+    private lateinit var firestoreViewModel: FirestoreViewModel
 
     override fun onCreateViewHolder(view: ViewGroup, viewType: Int): CalendarItemViewHolder {
         val itemView = LayoutInflater.from(view.context).inflate(R.layout.calendar_item_view, view, false)
+        firestoreViewModel = ViewModelProvider(activity)[FirestoreViewModel::class.java]
         return CalendarItemViewHolder(itemView)
     }
 
@@ -114,8 +113,8 @@ class CustomOwnCalendarAdapter(private val activity: AppCompatActivity, private 
             val viewModel = ViewModelProvider(activity)[MainViewModel::class.java]
             viewModel.viewModelScope.launch { // Launch a coroutine
                 viewModel.deleteSharedUsersFromCalendar(dataList[position].sharedPeople, dataList[position])
-                localCalendarRepository.deleteCalendarLocal(activity, dataList[position])
-                firestoreCalendarRepository.saveAllCalendarsToFirestoreDB(activity, AuthViewModel.loggedInUser!!.email)
+                firestoreViewModel.deleteCalendar(dataList[position])
+                firestoreViewModel.updateCalendar(dataList[position])
                 dataList.removeAt(position)
                 notifyItemRemoved(position)
             }

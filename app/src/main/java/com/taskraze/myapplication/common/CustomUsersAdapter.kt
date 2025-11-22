@@ -13,10 +13,10 @@ import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.RecyclerView
 import com.taskraze.myapplication.R
-import com.taskraze.myapplication.model.room_database.data_classes.User
+import com.taskraze.myapplication.model.calendar.UserData
 import com.taskraze.myapplication.viewmodel.MainViewModel
 
-class CustomUsersAdapter(private val activity: AppCompatActivity, private val dataList: MutableList<User>, private val chatActionListener: ChatActionListener?, private val deleteActionListener: DeleteActionListener?, private val deleteButtonVisibility: Boolean) : RecyclerView.Adapter<CustomUsersAdapter.FriendsItemViewHolder>() {
+class CustomUsersAdapter(private val activity: AppCompatActivity, private val dataList: MutableList<UserData>, private val chatActionListener: ChatActionListener?, private val deleteActionListener: DeleteActionListener?, private val deleteButtonVisibility: Boolean) : RecyclerView.Adapter<CustomUsersAdapter.FriendsItemViewHolder>() {
     private lateinit var dialogPrompt: String
 
     inner class FriendsItemViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
@@ -27,13 +27,13 @@ class CustomUsersAdapter(private val activity: AppCompatActivity, private val da
     }
 
     interface ChatActionListener {
-        fun onUserClickConfirmed(receiverUser: User)
+        fun onUserClickConfirmed(receiverUser: UserData)
 
     }
 
     interface DeleteActionListener {
 
-        fun onDeleteConfirmed(deletedUser: User, position: Int)
+        fun onDeleteConfirmed(deletedUser: UserData, position: Int)
     }
 
 
@@ -93,11 +93,11 @@ class CustomUsersAdapter(private val activity: AppCompatActivity, private val da
         dialogPrompt = prompt
     }
 
-    fun addItem(receiverUser: User) {
+    fun addItem(receiverUser: UserData) {
         dataList.add(receiverUser)
     }
 
-    fun removeItem(deletedUser: User) {
+    fun removeItem(deletedUser: UserData) {
         dataList.remove(deletedUser)
     }
 

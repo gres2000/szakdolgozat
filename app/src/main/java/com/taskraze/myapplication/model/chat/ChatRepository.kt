@@ -6,12 +6,12 @@ import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.taskraze.myapplication.model.auth.AuthRepository
 import com.taskraze.myapplication.model.calendar.CalendarData
-import com.taskraze.myapplication.model.room_database.data_classes.User
+import com.taskraze.myapplication.model.calendar.UserData
 import com.taskraze.myapplication.viewmodel.MainViewModel
 
 class ChatRepository {
     private val authRepository = AuthRepository()
-    suspend fun deleteUserFromRealtimeSharedChat(myUser: User, calendarData: CalendarData) {
+    suspend fun deleteUserFromRealtimeSharedChat(myUser: UserData, calendarData: CalendarData) {
         // authRepository.fetchUserDetails()
 
         val chatId = MainViewModel.generateIdFromOwner(calendarData.owner.email, calendarData.id.toString())
@@ -57,7 +57,7 @@ class ChatRepository {
         })
     }
 
-    suspend fun addUserToRealtimeSharedChat(myUser: User, calendarData: CalendarData) {
+    suspend fun addUserToRealtimeSharedChat(myUser: UserData, calendarData: CalendarData) {
         // authRepository.fetchUserDetails()
 
         val chatId = MainViewModel.generateIdFromOwner(calendarData.owner.email, calendarData.id.toString())

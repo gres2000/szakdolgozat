@@ -21,8 +21,8 @@ import com.taskraze.myapplication.view.chat.StartChatActivity
 import com.taskraze.myapplication.view.friends.FriendsActivity
 import com.taskraze.myapplication.viewmodel.MainViewModel
 import com.taskraze.myapplication.databinding.HomeFragmentBinding
+import com.taskraze.myapplication.model.calendar.UserData
 import com.taskraze.myapplication.model.home.InternetConnectivityCallback
-import com.taskraze.myapplication.model.room_database.data_classes.User
 import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
 import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.launch
@@ -80,7 +80,7 @@ class HomeFragment : Fragment() {
         }
 
         logoutButton.setOnClickListener {
-            AuthViewModel.loggedInUser = User("empty", "empty")
+            AuthViewModel.loggedInUser.value = UserData("","empty", "empty")
             MainViewModel.auth.signOut()
             UserPreferences.logoutUser(requireContext())
             val intent = Intent(requireContext(), LoginActivity::class.java)

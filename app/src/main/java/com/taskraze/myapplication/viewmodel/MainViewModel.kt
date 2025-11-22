@@ -7,11 +7,9 @@ import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.room.Room
-import com.taskraze.myapplication.model.room_database.data_classes.User
-import com.taskraze.myapplication.model.calendar.UserFirestoreData
+import com.taskraze.myapplication.model.calendar.UserData
 import com.taskraze.myapplication.model.chat.ChatData
 import com.taskraze.myapplication.model.chat.FriendlyMessage
-import com.taskraze.myapplication.model.room_database.db.AppDatabase
 import com.google.android.gms.tasks.Tasks
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.database.FirebaseDatabase
@@ -19,9 +17,9 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.ktx.Firebase
-import com.taskraze.myapplication.model.auth.AuthRepository
 import com.taskraze.myapplication.model.calendar.CalendarData
 import com.taskraze.myapplication.model.calendar.EventData
+import com.taskraze.myapplication.model.calendar.UserCalendarsData
 import com.taskraze.myapplication.model.friends.FriendRequestData
 import com.taskraze.myapplication.model.friends.UserFriendsData
 import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
@@ -36,12 +34,10 @@ import java.util.Calendar
 
 object MainViewModel : ViewModel() {
     private val firestoreDB = FirebaseFirestore.getInstance()
-    //helper variables
     var auth = Firebase.auth
     private var _CalendarDataToPass: CalendarData? = null
     var newEventStartingDay: Calendar? = null
     private val authViewModel = AuthViewModel
-
 
     init {
         viewModelScope.launch {
@@ -56,35 +52,17 @@ object MainViewModel : ViewModel() {
     fun getCalendarToFragment(): CalendarData? {
         val temp = _CalendarDataToPass
         _CalendarDataToPass = null
-        if (temp != null) {
-            return temp
-        } else {
-            return null
-        }
-    }
-
-    suspend fun deleteEventFromRoom(context: Context, event: EventData, calendarName: String) {
-        val roomDB = Room.databaseBuilder(
-            context,
-            AppDatabase::class.java, "database-name"
-        ).build()
-
-        val eventDao = roomDB.eventItemDao()
-
-        val eventData = eventDao.getSpecificEvent(calendarName, event.title, event.startTime, event.endTime)
-        if (eventData != null) {
-            eventDao.deleteEvent(eventData)
-        }
+        return temp
     }
 
     suspend fun getFriendRequests(callback: (List<FriendRequestData>) -> Unit) {
         // authRepository.fetchUserDetails()
 
         val receiverQuery = firestoreDB.collection("friend_requests")
-            .whereEqualTo("receiverId", AuthViewModel.loggedInUser.email)
+            .whereEqualTo("receiverId", AuthViewModel.getUserId())
 
         val senderQuery = firestoreDB.collection("friend_requests")
-            .whereEqualTo("senderId", AuthViewModel.loggedInUser.email)
+            .whereEqualTo("senderId", AuthViewModel.getUserId())
 
         val friendRequestDataList = mutableListOf<FriendRequestData>()
         receiverQuery.get()
@@ -146,12 +124,10 @@ object MainViewModel : ViewModel() {
             }
     }
 
-    suspend fun getFriends(callback: (MutableList<User>) -> Unit) {
-        // authRepository.fetchUserDetails()
-        // AuthViewModel.loggedInUser = loggedInDeferred.await()
+    suspend fun getFriends(callback: (MutableList<UserData>) -> Unit) {
         if (AuthViewModel.loggedInUser != null) {
             firestoreDB.collection("friend_requests")
-                .whereEqualTo("receiverId", AuthViewModel.loggedInUser.email)
+                .whereEqualTo("receiverId", AuthViewModel.getUserId())
                 .get()
                 .addOnSuccessListener { result ->
                     val acceptedFriends = mutableListOf<FriendRequestData>()
@@ -182,15 +158,14 @@ object MainViewModel : ViewModel() {
         }
     }
 
-    suspend fun fetchUsersFromFriendsList(callback: (MutableList<User>) -> Unit) {
-        // authRepository.fetchUserDetails()
+    fun fetchUsersFromFriendsList(callback: (MutableList<UserData>) -> Unit) {
         firestoreDB.collection("user_friends")
-            .document(AuthViewModel.loggedInUser.email)
+            .document(AuthViewModel.getUserId())
             .get()
             .addOnSuccessListener { documentSnapshot ->
                 val friendsList = documentSnapshot.toObject(UserFriendsData::class.java)?.friends ?: emptyList()
 
-                val users = mutableListOf<User>()
+                val users = mutableListOf<UserData>()
                 val userRef = firestoreDB.collection("registered_users")
 
                 val queries = friendsList.map { friendId ->
@@ -200,7 +175,7 @@ object MainViewModel : ViewModel() {
                 Tasks.whenAllSuccess<DocumentSnapshot>(queries)
                     .addOnSuccessListener { snapshots ->
                         snapshots.forEach { snapshot ->
-                            val user = snapshot.toObject(User::class.java)
+                            val user = snapshot.toObject(UserData::class.java)
                             user?.let {
                                 users.add(user)
                             }
@@ -217,10 +192,9 @@ object MainViewModel : ViewModel() {
     }
 
     private fun updateOrCreateUserFriendsDocument(acceptedFriends: List<FriendRequestData>): Deferred<Unit> {
-        val currentEmail = AuthViewModel.loggedInUser.email
+        val currentEmail = AuthViewModel.getUserId()
         val deferred = CompletableDeferred<Unit>()
 
-        // Update or create the document in Firestore
         firestoreDB.collection("user_friends")
             .document(currentEmail)
             .get()
@@ -228,7 +202,6 @@ object MainViewModel : ViewModel() {
                 val currentUserFriendsData = documentSnapshot.toObject(UserFriendsData::class.java)
                 val existingFriends = currentUserFriendsData?.friends ?: emptyList()
 
-                // Merge existing friends with new friends
                 val updatedFriends = existingFriends.toMutableList()
                 acceptedFriends.forEach { friendRequest ->
                     if (!existingFriends.contains(friendRequest.senderId)) {
@@ -236,7 +209,6 @@ object MainViewModel : ViewModel() {
                     }
                 }
 
-                // Update the document with merged friends list
                 val userFriendsMap = mapOf(
                     "userId" to currentEmail,
                     "friends" to updatedFriends
@@ -259,8 +231,8 @@ object MainViewModel : ViewModel() {
                         .addOnSuccessListener { documentSnapshot ->
                             val friendFriends = documentSnapshot.toObject(UserFriendsData::class.java)
                             val updatedFriends = friendFriends?.friends?.toMutableList() ?: mutableListOf()
-                            if (!updatedFriends.contains(AuthViewModel.loggedInUser.email)) {
-                                updatedFriends.add(AuthViewModel.loggedInUser.email)
+                            if (!updatedFriends.contains(AuthViewModel.getUserId())) {
+                                updatedFriends.add(AuthViewModel.getUserId())
                                 val data = mapOf("friends" to updatedFriends)
                                 firestoreDB.collection("user_friends")
                                     .document(friendEmail)
@@ -292,7 +264,6 @@ object MainViewModel : ViewModel() {
     private fun deleteRejectedFriendRequests(rejectedFriends: List<FriendRequestData>) {
         val batch = firestoreDB.batch()
 
-        // Iterate through the rejected friend requests and delete them
         rejectedFriends.forEach { friendRequest ->
             val query = firestoreDB.collection("friend_requests")
                 .whereEqualTo("receiverId", friendRequest.receiverId)
@@ -305,7 +276,6 @@ object MainViewModel : ViewModel() {
                         batch.delete(document.reference)
                     }
 
-                    // Commit the batch delete operation
                     batch.commit()
                         .addOnSuccessListener {
                             Log.d(TAG, "Rejected friend requests deleted successfully.")
@@ -323,7 +293,6 @@ object MainViewModel : ViewModel() {
     private fun deleteAcceptedFriendRequests(acceptedFriends: List<FriendRequestData>) {
         val batch = firestoreDB.batch()
 
-        // Iterate through the rejected friend requests and delete them
         acceptedFriends.forEach { friendRequest ->
             val query = firestoreDB.collection("friend_requests")
                 .whereEqualTo("receiverId", friendRequest.receiverId)
@@ -384,8 +353,8 @@ object MainViewModel : ViewModel() {
         return stringBuilder.toString()
     }
 
-    private suspend fun checkExistingChat(user1: User, user2: User): Boolean {
-        val chatId = '-' + generateIdFromEmails(user1.email, user2.email)
+    private suspend fun checkExistingChat(userId1: String, userId2: String): Boolean {
+        val chatId = '-' + generateIdFromEmails(userId1, userId2)
 
         val database =
             FirebaseDatabase.getInstance("https://szakdolgozat-7f789-default-rtdb.europe-west1.firebasedatabase.app/")
@@ -406,19 +375,17 @@ object MainViewModel : ViewModel() {
         return chatSnapshot.exists()
     }
 
-    suspend fun startNewChat(chosenFriend: User): ChatData? {
-        // authRepository.fetchUserDetails()
-
-        val existingChat = checkExistingChat(AuthViewModel.loggedInUser, chosenFriend)
+    suspend fun startNewChat(chosenFriend: UserData): ChatData? {
+        val existingChat = checkExistingChat(AuthViewModel.getUserId(), chosenFriend.userId)
         if (existingChat) {
             return null
         }
 
         val newChat = ChatData()
-        val chatId = "-" + generateIdFromEmails(AuthViewModel.loggedInUser.email, chosenFriend.email)
+        val chatId = "-" + generateIdFromEmails(AuthViewModel.getUserId(), chosenFriend.email)
         newChat.id = chatId
-        newChat.title = chosenFriend.email + "&" + AuthViewModel.loggedInUser.email
-        newChat.users.add(AuthViewModel.loggedInUser)
+        newChat.title = chosenFriend.email + "&" + AuthViewModel.getUserId()
+        newChat.users.add(AuthViewModel.loggedInUser.value!!)
         newChat.users.add(chosenFriend)
         newChat.users.sortWith(compareByDescending { it.email })
 
@@ -451,14 +418,14 @@ object MainViewModel : ViewModel() {
 
         chatData.users.sortWith(compareByDescending { it.email })
 
-        val index = chatData.users.indexOfFirst { it.email == AuthViewModel.loggedInUser.email }
+        val index = chatData.users.indexOfFirst { it.email == AuthViewModel.getUserId() }
         chatData.users.removeAt(index)
         usersRef.setValue(chatData.users).addOnCompleteListener { task ->
             if (task.isSuccessful) {
                 Toast.makeText(context, "Quit chat successfully", Toast.LENGTH_SHORT).show()
 
                 val leaveMessage =
-                    FriendlyMessage("# # # # # #\n${AuthViewModel.loggedInUser.email} has left the chat\n# # # # # #", "System")
+                    FriendlyMessage("# # # # # #\n${AuthViewModel.getUserId()} has left the chat\n# # # # # #", "System")
                 val messagesRef = chatsRef.child(chatData.id).child("messages")
                 messagesRef.push().setValue(leaveMessage)
 
@@ -474,7 +441,7 @@ object MainViewModel : ViewModel() {
         val calendarsCollection = firestoreDB.collection("calendars")
         val userInCalendarsCollection = firestoreDB.collection("user_in_calendars")
 
-        val userId = AuthViewModel.loggedInUser.email
+        val userId = AuthViewModel.getUserId()
         val resultList = mutableListOf<CalendarData>()
         try {
             val userSharedCalendarsDoc = userInCalendarsCollection.document(userId).get().await()
@@ -494,7 +461,7 @@ object MainViewModel : ViewModel() {
                             val userDocument = calendarsCollection.document(ownerId).get().await()
 
                             if (userDocument.exists()) {
-                                val calendars = userDocument.toObject(UserFirestoreData::class.java)?.calendars
+                                val calendars = userDocument.toObject(UserCalendarsData::class.java)?.calendars
                                 Log.d(TAG, "Calendars retrieved from Firestore for user: $userId")
                                 calendars
                             } else {
@@ -508,7 +475,7 @@ object MainViewModel : ViewModel() {
 
                         if (allData != null) {
                             for (cal in allData) {
-                                if (cal.sharedPeople.contains(AuthViewModel.loggedInUser)) {
+                                if (cal.sharedPeople.contains(AuthViewModel.loggedInUser.value!!)) {
                                     resultList.add(cal)
                                 }
                             }
@@ -530,7 +497,7 @@ object MainViewModel : ViewModel() {
             val existingDoc =
                 calendarsCollection.document(thisCalendar.owner.email).get().await()
 
-            val calendarList = existingDoc.toObject(UserFirestoreData::class.java)?.calendars
+            val calendarList = existingDoc.toObject(UserCalendarsData::class.java)?.calendars
             if (calendarList != null) {
                 for (calendar in calendarList) {
                     if (calendar.id == thisCalendar.id) {
@@ -546,7 +513,7 @@ object MainViewModel : ViewModel() {
         }
     }
 
-    suspend fun deleteSharedUsersFromCalendar(sharedUsers: MutableList<User>, calendar: CalendarData) {
+    suspend fun deleteSharedUsersFromCalendar(sharedUsers: MutableList<UserData>, calendar: CalendarData) {
         val firestoreDB = FirebaseFirestore.getInstance()
         val userInCalendarsCollection = firestoreDB.collection("user_in_calendars")
         try {
@@ -580,31 +547,9 @@ object MainViewModel : ViewModel() {
         }
     }
 
-    suspend fun deleteEventFromSharedCalendar(event: EventData, userId: String, calendarId: Long) {
-        val firestoreDB = FirebaseFirestore.getInstance()
-        val calendarsCollection = firestoreDB.collection("calendars")
-        try {
-            val existingDoc =
-                calendarsCollection.document(userId).get().await()
-
-            val calendarList = existingDoc.toObject(UserFirestoreData::class.java)?.calendars
-            if (calendarList != null) {
-                for (calendar in calendarList) {
-                    if (calendar.id == calendarId) {
-                        calendar.events.remove(event)
-                    }
-                }
-
-                calendarsCollection.document(userId).update("calendars", calendarList)
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error saving calendars to Firestore: $e")
-        }
-    }
-
-    fun removeUserFromFriends(context: Context, deletedUser: User) {
+    fun removeUserFromFriends(context: Context, deletedUser: UserData) {
         firestoreDB.collection("user_friends")
-            .document(AuthViewModel.loggedInUser.email)
+            .document(AuthViewModel.getUserId())
             .get()
             .addOnSuccessListener { documentSnapshot ->
                 //current user
@@ -614,7 +559,7 @@ object MainViewModel : ViewModel() {
                 val newFriendsList = existingFriends.toMutableList()
                 newFriendsList.remove(deletedUser.email)
                 firestoreDB.collection("user_friends")
-                    .document(AuthViewModel.loggedInUser.email).update("friends", newFriendsList)
+                    .document(AuthViewModel.getUserId()).update("friends", newFriendsList)
 
                 //other user
                 firestoreDB.collection("user_friends")
@@ -625,7 +570,7 @@ object MainViewModel : ViewModel() {
                         val otherExistingFriends = otherUserFriendsData?.friends ?: emptyList()
 
                         val otherNewFriendsList = otherExistingFriends.toMutableList()
-                        otherNewFriendsList.remove(AuthViewModel.loggedInUser.email)
+                        otherNewFriendsList.remove(AuthViewModel.getUserId())
 
                         firestoreDB.collection("user_friends")
                             .document(deletedUser.email).update("friends", otherNewFriendsList)
@@ -653,7 +598,7 @@ object MainViewModel : ViewModel() {
         val chatId = generateIdFromOwner(calendar.owner.email, calendar.id.toString())
         newChat.id = chatId
         newChat.title = calendar.name
-        newChat.users.add(AuthViewModel.loggedInUser)
+        newChat.users.add(AuthViewModel.loggedInUser.value!!)
         for (user in calendar.sharedPeople) {
             newChat.users.add(user)
         }

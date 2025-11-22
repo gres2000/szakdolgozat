@@ -13,7 +13,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.taskraze.myapplication.view.main.MainActivity
 import com.taskraze.myapplication.R
-import com.taskraze.myapplication.model.room_database.data_classes.User
 import com.taskraze.myapplication.databinding.StartChatActivityBinding
 import com.taskraze.myapplication.common.CustomUsersAdapter
 import com.taskraze.myapplication.viewmodel.MainViewModel
@@ -22,6 +21,7 @@ import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
+import com.taskraze.myapplication.model.calendar.UserData
 import com.taskraze.myapplication.model.chat.ChatData
 import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
 import kotlinx.coroutines.launch
@@ -105,7 +105,7 @@ class StartChatActivity: AppCompatActivity(), CustomUsersAdapter.ChatActionListe
         }
     }
 
-    override fun onUserClickConfirmed(receiverUser: User) {
+    override fun onUserClickConfirmed(receiverUser: UserData) {
         MainViewModel.viewModelScope.launch {
             MainViewModel.viewModelScope.launch {
                 val newChat = MainViewModel.startNewChat(receiverUser)
@@ -120,7 +120,7 @@ class StartChatActivity: AppCompatActivity(), CustomUsersAdapter.ChatActionListe
                 }
                 else {
                     val intent = Intent(this@StartChatActivity, ChatActivity::class.java)
-                    val id = '-' + MainViewModel.generateIdFromEmails(receiverUser.email, AuthViewModel.loggedInUser!!.email)
+                    val id = '-' + MainViewModel.generateIdFromEmails(receiverUser.email, AuthViewModel.loggedInUser.value!!.email)
                     intent.putExtra("chatId", id)
                     intent.putExtra("chatName", receiverUser.email)
 

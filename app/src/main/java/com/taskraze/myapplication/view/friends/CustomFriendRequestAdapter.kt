@@ -25,7 +25,7 @@ class CustomFriendRequestAdapter (private val onButtonClickListener: OnAcceptBut
         fun onButtonClicked(position: Int)
     }
     override fun getItemViewType(position: Int): Int {
-        return if (dataList[position].receiverId == AuthViewModel.loggedInUser!!.email) {
+        return if (dataList[position].receiverId == AuthViewModel.getUserId()) {
             0
         } else {
             1

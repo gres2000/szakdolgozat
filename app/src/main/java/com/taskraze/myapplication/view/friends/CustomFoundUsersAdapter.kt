@@ -12,14 +12,14 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.RecyclerView
 import com.taskraze.myapplication.R
-import com.taskraze.myapplication.model.room_database.data_classes.User
 import com.taskraze.myapplication.view.chat.FriendlyMessageAdapter.Companion.TAG
 import com.taskraze.myapplication.viewmodel.MainViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import com.taskraze.myapplication.model.calendar.UserData
 
-class CustomFoundUsersAdapter(private val activity: AppCompatActivity, private val dataList: MutableList<User>) : RecyclerView.Adapter<CustomFoundUsersAdapter.FoundUsersItemViewHolder>() {
+class CustomFoundUsersAdapter(private val activity: AppCompatActivity, private val dataList: MutableList<UserData>) : RecyclerView.Adapter<CustomFoundUsersAdapter.FoundUsersItemViewHolder>() {
     inner class FoundUsersItemViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val profilePictureImageView: ImageView = itemView.findViewById(R.id.imageViewProfilePicture)
         val usernameTextView: TextView = itemView.findViewById(R.id.textViewUserName)

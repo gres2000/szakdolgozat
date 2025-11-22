@@ -10,7 +10,7 @@ import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
 
 class TaskRepository(private val context: Context) {
 
-    private val userId = AuthViewModel.loggedInUser.email
+    private val userId = AuthViewModel.getUserId()
     private val dailyFileName = userId + "_daily_tasks.json"
     private val weeklyFileName = userId + "_weekly_tasks.json"
     fun saveTasksLocally(dailyTaskList: List<TaskData>, weeklyTaskList: List<List<TaskData>>) {

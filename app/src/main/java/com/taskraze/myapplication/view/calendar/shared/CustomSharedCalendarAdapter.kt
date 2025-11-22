@@ -1,4 +1,4 @@
-package com.taskraze.myapplication.calendar.own_calendars
+package com.taskraze.myapplication.view.calendar.shared
 
 import android.os.Build
 import android.view.LayoutInflater
@@ -15,10 +15,10 @@ import androidx.lifecycle.viewModelScope
 import androidx.recyclerview.widget.RecyclerView
 import com.taskraze.myapplication.R
 import com.taskraze.myapplication.model.calendar.CalendarData
-import com.taskraze.myapplication.model.calendar.LocalCalendarRepository
 import com.taskraze.myapplication.view.calendar.details.CalendarDetailFragment
 import com.taskraze.myapplication.viewmodel.MainViewModel
 import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
+import com.taskraze.myapplication.viewmodel.calendar.FirestoreViewModel
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
@@ -34,8 +34,8 @@ class CustomSharedCalendarAdapter(private val activity: AppCompatActivity, priva
         var viewHolderId: Int = -1
         lateinit var viewModel: MainViewModel
     }
-
-    private val localCalendarRepository = LocalCalendarRepository()
+    private val firestoreViewModel: FirestoreViewModel =
+        ViewModelProvider(activity)[FirestoreViewModel::class.java]
 
     override fun onCreateViewHolder(view: ViewGroup, viewType: Int): SharedCalendarItemViewHolder {
         val itemView = LayoutInflater.from(view.context).inflate(R.layout.calendar_item_view, view, false)
@@ -44,7 +44,7 @@ class CustomSharedCalendarAdapter(private val activity: AppCompatActivity, priva
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onBindViewHolder(viewHolder: SharedCalendarItemViewHolder, position: Int) {
-        viewHolder.viewModel = ViewModelProvider(activity)[MainViewModel::class.java]
+
         val currentItem = dataList[position]
         viewHolder.titleTextView.text = currentItem.name
         val tempString = "People: " + currentItem.sharedPeopleNumber.toString()
@@ -114,7 +114,7 @@ class CustomSharedCalendarAdapter(private val activity: AppCompatActivity, priva
             // For example, call a method to delete the item from your data source
             val viewModel = ViewModelProvider(activity)[MainViewModel::class.java]
             viewModel.viewModelScope.launch { // Launch a coroutine
-                localCalendarRepository.removeUserFromCalendar(activity, AuthViewModel.loggedInUser!!, dataList[position])
+                firestoreViewModel.removeUserFromCalendar(AuthViewModel.getUserId(), dataList[position].id)
                 dataList.removeAt(position)
                 notifyItemRemoved(position)
             }

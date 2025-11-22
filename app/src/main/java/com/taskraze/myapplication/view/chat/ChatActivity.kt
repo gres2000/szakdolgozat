@@ -179,7 +179,7 @@ class ChatActivity: AppCompatActivity() {
 //            user.email
 //        } else ANONYMOUS
         return if (AuthViewModel.loggedInUser != null) {
-            AuthViewModel.loggedInUser!!.username
+            AuthViewModel.loggedInUser.value!!.username
         } else ANONYMOUS
     }
     companion object {

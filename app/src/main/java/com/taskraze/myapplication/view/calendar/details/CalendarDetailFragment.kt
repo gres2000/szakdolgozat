@@ -32,14 +32,14 @@ import com.kizitonwose.calendar.core.DayPosition
 import com.kizitonwose.calendar.view.MonthDayBinder
 import com.kizitonwose.calendar.view.ViewContainer
 import com.taskraze.myapplication.R
-import com.taskraze.myapplication.model.room_database.data_classes.User
 import com.taskraze.myapplication.common.CustomUsersAdapter
 import com.taskraze.myapplication.databinding.CalendarDetailFragmentBinding
 import com.taskraze.myapplication.model.calendar.CalendarData
 import com.taskraze.myapplication.model.calendar.EventData
-import com.taskraze.myapplication.model.calendar.LocalCalendarRepository
+import com.taskraze.myapplication.model.calendar.UserData
 import com.taskraze.myapplication.viewmodel.MainViewModel
 import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
+import com.taskraze.myapplication.viewmodel.calendar.FirestoreViewModel
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -65,14 +65,13 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
             }
         }
     }
-
+    private lateinit var firestoreViewModel: FirestoreViewModel
     private var selectedDate: LocalDate? = null
     private lateinit var toolbar: Toolbar
     private var _binding: CalendarDetailFragmentBinding? = null
     private lateinit var viewModel: MainViewModel
     private lateinit var adapter: CustomEventAdapter
     private var thisCalendar: CalendarData? = null
-    private val localCalendarRepository = LocalCalendarRepository()
     private val binding get() = _binding!!
 
     override fun onCreateView(
@@ -109,6 +108,7 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
         viewModel = ViewModelProvider(requireActivity())[MainViewModel::class.java]
         toolbar = binding.calendarDetailToolbar
         thisCalendar = viewModel.getCalendarToFragment()
@@ -130,7 +130,8 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
             adapter = CustomEventAdapter(
                 requireActivity() as AppCompatActivity,
                 thisCalendar!!.events.toMutableList(),
-                thisCalendar!!
+                thisCalendar!!,
+                MainViewModel
             )
             binding.recyclerViewEvents.adapter = adapter
 
@@ -145,7 +146,7 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
                 thisCalendar!!.sharedPeople,
                 null,
                 this@CalendarDetailFragment,
-                AuthViewModel.loggedInUser!!.email == thisCalendar!!.owner.email
+                AuthViewModel.getUserId() == thisCalendar!!.owner.userId
             )
             binding.recyclerViewUsers.adapter = usersAdapter
         }
@@ -224,8 +225,8 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
     override fun onNewEventCreated(event: EventData) {
         viewModel.viewModelScope.launch {
 
-            if (AuthViewModel.loggedInUser.email == thisCalendar!!.owner.email) {
-                localCalendarRepository.addEventToCalendar(requireContext(), event, thisCalendar!!)
+            if (AuthViewModel.getUserId() == thisCalendar!!.owner.email) {
+                MainViewModel.addEventToSharedCalendar(event, thisCalendar!!)
             }
             else {
                 MainViewModel.addEventToSharedCalendar(event, thisCalendar!!)
@@ -249,8 +250,7 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
         val chooseFriendRecyclerView = dialog.findViewById<RecyclerView>(R.id.chooseFriendRecyclerView)
         chooseFriendRecyclerView.layoutManager = GridLayoutManager(requireContext(), 3)
 
-        MainViewModel.getFriends { friendList ->
-
+        MainViewModel.getFriends { friendList: MutableList<UserData> ->
 
             for (user in thisCalendar!!.sharedPeople){
                 friendList.remove(user)
@@ -266,17 +266,17 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
         }
     }
 
-    override fun onUserClickConfirmed(receiverUser: User) {
+    override fun onUserClickConfirmed(receiverUser: UserData) {
         MainViewModel.viewModelScope.launch {
-            localCalendarRepository.addUserToCalendar(requireContext(), receiverUser, thisCalendar!!)
+            firestoreViewModel.addUserToCalendar(receiverUser, thisCalendar!!.id)
             (binding.recyclerViewUsers.adapter as CustomUsersAdapter).addItem(receiverUser)
             binding.recyclerViewUsers.adapter!!.notifyItemInserted(thisCalendar!!.sharedPeopleNumber)
         }
     }
 
-    override fun onDeleteConfirmed(deletedUser: User, position: Int) {
+    override fun onDeleteConfirmed(deletedUser: UserData, position: Int) {
         MainViewModel.viewModelScope.launch {
-            localCalendarRepository.removeUserFromCalendar(requireContext(), deletedUser, thisCalendar!!)
+            firestoreViewModel.removeUserFromCalendar(deletedUser.userId, thisCalendar!!.id)
             (binding.recyclerViewUsers.adapter as CustomUsersAdapter).removeItem(deletedUser)
             binding.recyclerViewUsers.adapter!!.notifyItemRemoved(position)
         }

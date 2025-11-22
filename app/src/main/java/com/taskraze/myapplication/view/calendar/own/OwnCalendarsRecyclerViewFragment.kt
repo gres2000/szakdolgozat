@@ -5,14 +5,15 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewModelScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.taskraze.myapplication.R
-import com.taskraze.myapplication.model.room_database.data_classes.User
 import com.taskraze.myapplication.model.calendar.CalendarData
 import com.taskraze.myapplication.model.calendar.EventData
 import com.taskraze.myapplication.databinding.OwnCalendarsRecyclerViewBinding
@@ -20,8 +21,9 @@ import com.taskraze.myapplication.viewmodel.MainViewModel
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.taskraze.myapplication.model.auth.AuthRepository
 import com.taskraze.myapplication.model.calendar.FirestoreCalendarRepository
-import com.taskraze.myapplication.model.calendar.LocalCalendarRepository
+import com.taskraze.myapplication.model.calendar.UserData
 import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
+import com.taskraze.myapplication.viewmodel.calendar.FirestoreViewModel
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.ZoneId
@@ -32,10 +34,8 @@ class OwnCalendarsRecyclerViewFragment : Fragment(), CalendarDialogFragment.Cale
     private val binding get() = _binding!!
     private lateinit var addNewCalendar: FloatingActionButton
     private lateinit var saveCalendars: FloatingActionButton
-    private val authRepository = AuthRepository()
-    private val localCalendarRepository = LocalCalendarRepository()
-    private val firestoreCalendarRepository = FirestoreCalendarRepository(localCalendarRepository)
-
+    private lateinit var viewModel: MainViewModel
+    private lateinit var firestoreViewModel: FirestoreViewModel
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -48,59 +48,35 @@ class OwnCalendarsRecyclerViewFragment : Fragment(), CalendarDialogFragment.Cale
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        viewModel = ViewModelProvider(requireActivity())[MainViewModel::class.java]
+        firestoreViewModel = ViewModelProvider(requireActivity())[FirestoreViewModel::class.java]
+
         addNewCalendar = view.findViewById(R.id.fab_add_calendar)
         saveCalendars = view.findViewById(R.id.fab_save_calendars)
 
         binding.ownCalendarsRecyclerView.layoutManager = LinearLayoutManager(requireContext())
 
-        lifecycleScope.launch {
-            if (this@OwnCalendarsRecyclerViewFragment.isAdded) {
-                val adapter = CustomOwnCalendarAdapter(
-                    requireActivity() as AppCompatActivity,
-                    localCalendarRepository.getAllCalendarsLocal(requireContext())
-                )
-                binding.ownCalendarsRecyclerView.adapter = adapter
-                binding.ownCalendarsRecyclerView.adapter?.notifyDataSetChanged()
-                //MyItemTouchHelperCallback.attachDragAndDrop(adapter, calendarsRecyclerView)
-            }
-        }
+        val adapter = CustomOwnCalendarAdapter(requireActivity() as AppCompatActivity, mutableListOf())
+        binding.ownCalendarsRecyclerView.adapter = adapter
 
-        lifecycleScope.launch {
-            // authRepository.fetchUserDetails()
-            firestoreCalendarRepository.getAllCalendarsFromFirestoreDB(requireContext())
+        firestoreViewModel.loadCalendars()
 
-            if (this@OwnCalendarsRecyclerViewFragment.isAdded) {
-                val adapter = CustomOwnCalendarAdapter(
-                    requireActivity() as AppCompatActivity,
-                    localCalendarRepository.getAllCalendarsLocal(requireContext())
-                )
-
-                binding.ownCalendarsRecyclerView.adapter = adapter
-                binding.ownCalendarsRecyclerView.adapter?.notifyDataSetChanged()
-                //MyItemTouchHelperCallback.attachDragAndDrop(adapter, calendarsRecyclerView)
+        lifecycleScope.launchWhenStarted {
+            firestoreViewModel.calendars.collect { calendarList ->
+                Toast.makeText(requireContext(), "Loaded: ${calendarList.size} calendars", Toast.LENGTH_SHORT).show()
+                adapter.updateData(calendarList)
             }
         }
 
         addNewCalendar.setOnClickListener{
-
             showNewCalendarDialog()
-
         }
 
-        saveCalendars.setOnClickListener{
-            MainViewModel.viewModelScope.launch {
-                // authRepository.fetchUserDetails()
-                firestoreCalendarRepository.getAllCalendarsFromFirestoreDB(
-                    requireContext()
-                )
-                if (this@OwnCalendarsRecyclerViewFragment.isAdded) {
-                    val adapter = CustomOwnCalendarAdapter(
-                        requireActivity() as AppCompatActivity,
-                        localCalendarRepository.getAllCalendarsLocal(requireContext())
-                    )
-                    binding.ownCalendarsRecyclerView.adapter = adapter
-                    binding.ownCalendarsRecyclerView.adapter?.notifyDataSetChanged()
-                    //MyItemTouchHelperCallback.attachDragAndDrop(adapter, calendarsRecyclerView)
+        saveCalendars.setOnClickListener {
+            firestoreViewModel.loadCalendars()
+            lifecycleScope.launchWhenStarted {
+                firestoreViewModel.calendars.collect { list ->
+                    Toast.makeText(requireActivity(), "Loaded ${list.size} calendars", Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -116,16 +92,13 @@ class OwnCalendarsRecyclerViewFragment : Fragment(), CalendarDialogFragment.Cale
         val date = Date.from(
             LocalDate.now().atStartOfDay(
             ZoneId.systemDefault()).toInstant())
-        val userList = mutableListOf<User>()
-        val owner = User(AuthViewModel.loggedInUser!!.username, AuthViewModel.loggedInUser!!.email)
+        val userList = mutableListOf<UserData>()
+        val owner = UserData("", AuthViewModel.getUserId(), AuthViewModel.getUserId())
         val eventList: MutableList<EventData> = mutableListOf()
 
         val cal = CalendarData(-1, name, 0, userList, owner, eventList, date)
         MainViewModel.viewModelScope.launch {
-
-            localCalendarRepository.addOrUpdateCalendarLocal(requireContext(), cal)
-
-            (binding.ownCalendarsRecyclerView.adapter as CustomOwnCalendarAdapter).updateData(localCalendarRepository.getAllCalendarsLocal(requireContext()))
+            firestoreViewModel.addCalendar(cal)
         }
     }
 }

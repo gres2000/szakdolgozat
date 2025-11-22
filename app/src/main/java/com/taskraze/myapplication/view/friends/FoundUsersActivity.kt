@@ -9,11 +9,11 @@ import androidx.lifecycle.viewModelScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.taskraze.myapplication.R
-import com.taskraze.myapplication.model.room_database.data_classes.User
 import com.taskraze.myapplication.databinding.FoundUsersActivityBinding
 import com.taskraze.myapplication.viewmodel.MainViewModel
 import com.google.firebase.firestore.FirebaseFirestore
 import com.taskraze.myapplication.model.auth.AuthRepository
+import com.taskraze.myapplication.model.calendar.UserData
 import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
 import kotlinx.coroutines.launch
 
@@ -33,7 +33,7 @@ class FoundUsersActivity : AppCompatActivity() {
         foundUsersRecyclerView = findViewById(R.id.recyclerViewFoundUsers)
         searchResutltsTextView = findViewById(R.id.textViewSearchResults)
         viewModel = ViewModelProvider(this)[MainViewModel::class.java]
-        val dataList:MutableList<User> = mutableListOf()
+        val dataList:MutableList<UserData> = mutableListOf()
 
         val searchQuery = intent.getStringExtra("searchQuery")
 
@@ -54,7 +54,7 @@ class FoundUsersActivity : AppCompatActivity() {
                 .addOnSuccessListener { querySnapshot ->
                     for (document in querySnapshot.documents) {
                         // Access the user data from the document
-                        val user = document.toObject(User::class.java)
+                        val user = document.toObject(UserData::class.java)
                         dataList.add(user!!)
                     }
                     viewModel.viewModelScope.launch {
@@ -65,8 +65,8 @@ class FoundUsersActivity : AppCompatActivity() {
                                     dataList.remove(data)
                                 }
                             }
-                            if (dataList.contains(AuthViewModel.loggedInUser)) {
-                                dataList.remove(AuthViewModel.loggedInUser)
+                            if (dataList.contains(AuthViewModel.loggedInUser.value)) {
+                                dataList.remove(AuthViewModel.loggedInUser.value)
                             }
 
                             foundUsersRecyclerView.adapter = CustomFoundUsersAdapter(this@FoundUsersActivity, dataList)
@@ -90,7 +90,7 @@ class FoundUsersActivity : AppCompatActivity() {
                 .addOnSuccessListener { querySnapshot ->
                     for (document in querySnapshot.documents) {
                         // Access the user data from the document
-                        val user = document.toObject(User::class.java)
+                        val user = document.toObject(UserData::class.java)
                         dataList.add(user!!)
                     }
                     viewModel.viewModelScope.launch {
@@ -100,8 +100,8 @@ class FoundUsersActivity : AppCompatActivity() {
                                     dataList.remove(data)
                                 }
                             }
-                            if (dataList.contains(AuthViewModel.loggedInUser)) {
-                                dataList.remove(AuthViewModel.loggedInUser)
+                            if (dataList.contains(AuthViewModel.loggedInUser.value)) {
+                                dataList.remove(AuthViewModel.loggedInUser.value)
                             }
 
                             foundUsersRecyclerView.adapter = CustomFoundUsersAdapter(this@FoundUsersActivity, dataList)

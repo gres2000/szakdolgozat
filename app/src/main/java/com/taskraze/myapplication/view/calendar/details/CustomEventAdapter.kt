@@ -1,32 +1,27 @@
 package com.taskraze.myapplication.view.calendar.details
 
-import android.os.Build
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.ImageButton
 import android.widget.TextView
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewModelScope
 import androidx.recyclerview.widget.RecyclerView
 import com.taskraze.myapplication.R
 import com.taskraze.myapplication.model.calendar.CalendarData
 import com.taskraze.myapplication.model.calendar.EventData
 import com.taskraze.myapplication.model.calendar.FirestoreCalendarRepository
-import com.taskraze.myapplication.model.calendar.LocalCalendarRepository
 import com.taskraze.myapplication.viewmodel.MainViewModel
-import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
-import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneId
 
-class CustomEventAdapter(private val activity: AppCompatActivity, private val dataList: MutableList<EventData>, private val calendar: CalendarData) : RecyclerView.Adapter<CustomEventAdapter.EventItemViewHolder>() {
+class CustomEventAdapter(
+    private val activity: AppCompatActivity,
+    private val dataList: MutableList<EventData>,
+    private val calendar: CalendarData,
+    private val viewModel: MainViewModel
+) : RecyclerView.Adapter<CustomEventAdapter.EventItemViewHolder>() {
     inner class EventItemViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val startingTimeTextView: TextView = itemView.findViewById(R.id.textViewStartingTime)
         val eventTitleTextView: TextView = itemView.findViewById(R.id.textViewEventTitle)
@@ -36,8 +31,6 @@ class CustomEventAdapter(private val activity: AppCompatActivity, private val da
         lateinit var viewModel: MainViewModel
     }
     private var onItemRemovedListener: OnItemRemovedListener? = null
-    private val localCalendarRepository = LocalCalendarRepository()
-    private val firestoreCalendarRepository = FirestoreCalendarRepository(localCalendarRepository)
 
     interface OnItemRemovedListener {
         fun onItemRemoved(event: EventData)
@@ -52,7 +45,6 @@ class CustomEventAdapter(private val activity: AppCompatActivity, private val da
     }
 
     override fun onBindViewHolder(viewHolder: EventItemViewHolder, position: Int) {
-        viewHolder.viewModel = ViewModelProvider(activity)[MainViewModel::class.java]
         val currentItem = dataList[position]
 
         val dateFormat = SimpleDateFormat("HH:mm")
@@ -72,9 +64,6 @@ class CustomEventAdapter(private val activity: AppCompatActivity, private val da
 
         viewHolder.itemView.setOnClickListener{
             //open event for editing needs implementation
-//            viewHolder.viewModel.toggleExistingEvent()
-//            val clickedEvent = dataList[position]
-//            openEventDetailFragmentForEditing(clickedEvent)
         }
     }
 
@@ -108,21 +97,15 @@ class CustomEventAdapter(private val activity: AppCompatActivity, private val da
         }
 
         buttonDelete.setOnClickListener {
-            val viewModel = ViewModelProvider(activity)[MainViewModel::class.java]
-            viewModel.viewModelScope.launch {
-                if (calendar.owner.email == AuthViewModel.loggedInUser!!.email) {
-                    viewModel.deleteEventFromRoom(activity, dataList[position], calendar.name)
-                    onItemRemovedListener?.onItemRemoved(dataList[position])
-                    dataList.removeAt(position)
-                    notifyItemRemoved(position)
-                    firestoreCalendarRepository.saveAllCalendarsToFirestoreDB(activity, AuthViewModel.loggedInUser!!.email)
-                } else {
-                    MainViewModel.deleteEventFromSharedCalendar(dataList[position], calendar.owner.email, calendar.id)
-                    onItemRemovedListener?.onItemRemoved(dataList[position])
-                    dataList.removeAt(position)
-                    notifyItemRemoved(position)
-                }
+            if (position != RecyclerView.NO_POSITION) {
+                // Notify fragment or listener
+                onItemRemovedListener?.onItemRemoved(dataList[position])
 
+                // Remove from adapter list
+                dataList.removeAt(position)
+
+                // Update RecyclerView
+                notifyItemRemoved(position)
             }
             dialog.dismiss()
         }

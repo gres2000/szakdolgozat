@@ -10,13 +10,11 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewModelScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.taskraze.myapplication.R
-import com.taskraze.myapplication.calendar.own_calendars.CustomSharedCalendarAdapter
 import com.taskraze.myapplication.databinding.SharedCalendarsRecyclerViewBinding
 import com.taskraze.myapplication.viewmodel.MainViewModel
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.taskraze.myapplication.model.auth.AuthRepository
 import com.taskraze.myapplication.model.calendar.FirestoreCalendarRepository
-import com.taskraze.myapplication.model.calendar.LocalCalendarRepository
 import kotlinx.coroutines.launch
 
 class SharedCalendarsRecyclerViewFragment : Fragment() {
@@ -24,8 +22,7 @@ class SharedCalendarsRecyclerViewFragment : Fragment() {
     private val binding get() = _binding!!
     private lateinit var saveCalendars: FloatingActionButton
     private val authRepository = AuthRepository()
-    private val localCalendarRepository = LocalCalendarRepository()
-    private val firestoreCalendarRepository = FirestoreCalendarRepository(localCalendarRepository)
+    private val firestoreCalendarRepository = FirestoreCalendarRepository()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -55,8 +52,6 @@ class SharedCalendarsRecyclerViewFragment : Fragment() {
         }
 
         lifecycleScope.launch {
-            // authRepository.fetchUserDetails()
-            firestoreCalendarRepository.getAllCalendarsFromFirestoreDB(requireContext())
 
             if (this@SharedCalendarsRecyclerViewFragment.isAdded) {
                 val adapter = CustomSharedCalendarAdapter(
@@ -72,10 +67,6 @@ class SharedCalendarsRecyclerViewFragment : Fragment() {
 
         saveCalendars.setOnClickListener{
             MainViewModel.viewModelScope.launch {
-                // authRepository.fetchUserDetails()
-                firestoreCalendarRepository.getAllCalendarsFromFirestoreDB(
-                    requireContext()
-                )
                 if (this@SharedCalendarsRecyclerViewFragment.isAdded) {
                     val adapter = CustomSharedCalendarAdapter(
                         requireActivity() as AppCompatActivity,

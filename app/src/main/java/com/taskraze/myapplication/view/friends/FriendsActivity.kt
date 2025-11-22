@@ -13,11 +13,11 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.taskraze.myapplication.R
-import com.taskraze.myapplication.model.room_database.data_classes.User
 import com.taskraze.myapplication.view.chat.ChatActivity
 import com.taskraze.myapplication.common.CustomUsersAdapter
 import com.taskraze.myapplication.databinding.FriendsActivityBinding
 import com.taskraze.myapplication.model.auth.AuthRepository
+import com.taskraze.myapplication.model.calendar.UserData
 import com.taskraze.myapplication.viewmodel.MainViewModel
 import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
 import kotlinx.coroutines.launch
@@ -122,7 +122,7 @@ class FriendsActivity : AppCompatActivity(), CustomFriendRequestAdapter.OnAccept
         }
     }
 
-    override fun onUserClickConfirmed(receiverUser: User) {
+    override fun onUserClickConfirmed(receiverUser: UserData) {
         MainViewModel.viewModelScope.launch {
             val newChat = MainViewModel.startNewChat(receiverUser)
 
@@ -136,7 +136,7 @@ class FriendsActivity : AppCompatActivity(), CustomFriendRequestAdapter.OnAccept
             }
             else {
                 val intent = Intent(this@FriendsActivity, ChatActivity::class.java)
-                val id = '-' + MainViewModel.generateIdFromEmails(receiverUser.email, AuthViewModel.loggedInUser!!.email)
+                val id = '-' + MainViewModel.generateIdFromEmails(receiverUser.email, AuthViewModel.getUserId())
                 intent.putExtra("chatId", id)
                 intent.putExtra("chatName", receiverUser.email)
 
@@ -146,7 +146,7 @@ class FriendsActivity : AppCompatActivity(), CustomFriendRequestAdapter.OnAccept
         }
     }
 
-    override fun onDeleteConfirmed(deletedUser: User, position: Int) {
+    override fun onDeleteConfirmed(deletedUser: UserData, position: Int) {
         MainViewModel.viewModelScope.launch {
             MainViewModel.removeUserFromFriends(this@FriendsActivity, deletedUser)
             (binding.friendsRecyclerView.adapter as CustomUsersAdapter).removeItem(deletedUser)

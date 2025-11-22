@@ -42,7 +42,7 @@ class TodoFragment : Fragment() {
         val weeklyEditText = binding.weeklyLabel
 
         // get saved switch state
-        val sharedPref = (requireActivity() as MainActivity).getSharedPreferences(AuthViewModel.loggedInUser.email, MODE_PRIVATE)
+        val sharedPref = (requireActivity() as MainActivity).getSharedPreferences(AuthViewModel.getUserId(), MODE_PRIVATE)
         switchButton.isChecked = sharedPref.getBoolean("switch_state", false)
 
         switchFragment(switchButton.isChecked)

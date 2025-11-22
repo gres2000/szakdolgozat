@@ -97,7 +97,7 @@ class FriendlyMessageAdapter(
 
     override fun getItemViewType(position: Int): Int {
         return if (options.snapshots[position].text != null) {
-            if (options.snapshots[position].name == AuthViewModel.loggedInUser!!.username) {
+            if (options.snapshots[position].name == AuthViewModel.loggedInUser.value!!.username) {
                 VIEW_TYPE_TEXT_OWN
             }
             else {
