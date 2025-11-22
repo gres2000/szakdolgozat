@@ -47,7 +47,7 @@ import java.time.YearMonth
 import java.util.Calendar
 
 class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListener,
-    CustomEventAdapter.OnItemRemovedListener, CustomUsersAdapter.ChatActionListener, CustomUsersAdapter.DeleteActionListener {
+    CustomEventAdapter.OnEventActionListener, CustomUsersAdapter.ChatActionListener, CustomUsersAdapter.DeleteActionListener {
 
     class DayViewContainer(
         view: View,
@@ -110,6 +110,7 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
         super.onViewCreated(view, savedInstanceState)
 
         viewModel = ViewModelProvider(requireActivity())[MainViewModel::class.java]
+        firestoreViewModel = ViewModelProvider(requireActivity())[FirestoreViewModel::class.java]
         toolbar = binding.calendarDetailToolbar
         thisCalendar = viewModel.getCalendarToFragment()
 
@@ -212,7 +213,7 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
                 .commit()
         }
 
-        (binding.recyclerViewEvents.adapter as CustomEventAdapter).setOnItemRemovedListener(this)
+        (binding.recyclerViewEvents.adapter as CustomEventAdapter).setOnEventActionListener(this)
     }
 
 
@@ -238,8 +239,36 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
         }
     }
 
+    override fun onEditEvent(event: EventData) {
+        thisCalendar?.let { calendar ->
+            val index = calendar.events.indexOfFirst { it.id == event.id }
+            if (index != -1) {
+                calendar.events[index] = event
+                adapter.updateData(calendar.events.filter { it.startTime.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate() == selectedDate })
+                firestoreViewModel.updateCalendar(calendar)
+            }
+
+            requireActivity().onBackPressedDispatcher.onBackPressed()
+        }
+    }
+
     override fun onItemRemoved(event: EventData) {
-        thisCalendar!!.events.remove(event)
+        thisCalendar?.let { calendar ->
+            calendar.events.remove(event)
+            firestoreViewModel.updateCalendar(calendar)
+        }
+    }
+
+    override fun onItemClicked(event: EventData) {
+        val fragment = EventDetailFragment().apply {
+            listener = this@CalendarDetailFragment
+            this.eventToEdit = event
+            this.calendar = thisCalendar!!
+        }
+        requireActivity().supportFragmentManager.beginTransaction()
+            .replace(R.id.constraint_container, fragment)
+            .addToBackStack(null)
+            .commit()
     }
 
     private suspend fun showChooseFriendDialog() {

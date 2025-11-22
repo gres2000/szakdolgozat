@@ -16,6 +16,7 @@ import androidx.appcompat.widget.SwitchCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.taskraze.myapplication.R
+import com.taskraze.myapplication.model.calendar.CalendarData
 import com.taskraze.myapplication.model.calendar.EventData
 import com.taskraze.myapplication.viewmodel.MainViewModel
 import java.text.SimpleDateFormat
@@ -26,6 +27,7 @@ import java.util.Locale
 class EventDetailFragment : Fragment() {
     interface EventDetailListener {
         fun onNewEventCreated(event: EventData)
+        fun onEditEvent(event: EventData)
     }
     private lateinit var viewModel: MainViewModel
     private lateinit var dateUntilTextView: TextView
@@ -38,6 +40,8 @@ class EventDetailFragment : Fragment() {
     lateinit var listener: EventDetailListener
     private lateinit var eventTitle: TextView
     private lateinit var eventDescrption: TextView
+    lateinit var eventToEdit: EventData
+    lateinit var calendar: CalendarData
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.event_detail_fragment, container, false)
@@ -88,6 +92,8 @@ class EventDetailFragment : Fragment() {
         hourPickerUntil.visibility = if (wholeDaySwitch.isChecked) View.GONE else View.VISIBLE
         minutePickerUntil.visibility = if (wholeDaySwitch.isChecked) View.GONE else View.VISIBLE
 
+        prefillEventIfEditing()
+
         val foldUpAnimation = AnimationUtils.loadAnimation(requireContext(), R.anim.fold_up)
         val foldDownAnimation = AnimationUtils.loadAnimation(requireContext(), R.anim.fold_down)
 
@@ -134,28 +140,32 @@ class EventDetailFragment : Fragment() {
         view.findViewById<Button>(R.id.cancelButtonEventDetail).setOnClickListener {
             requireActivity().onBackPressedDispatcher.onBackPressed()
         }
+
         view.findViewById<Button>(R.id.saveButtonEventDetail).setOnClickListener {
             val dateFormat = SimpleDateFormat("yyyy/MM/dd HH:mm", Locale.getDefault())
             val dateFrom = dateFormat.parse("${dateFromTextView.text} ${hourPickerFrom.value}:${minutePickerFrom.value}")!!
             val dateUntil = dateFormat.parse("${dateUntilTextView.text} ${hourPickerUntil.value}:${minutePickerUntil.value}")!!
-            val newEvent = EventData(
-                eventTitle.text.toString(),
-                eventDescrption.text.toString(),
-                dateFrom,
-                dateUntil,
-                null,
-                wholeDaySwitch.isChecked
 
-            )
-            listener.onNewEventCreated(newEvent)
+            if (::eventToEdit.isInitialized) {
+                eventToEdit.title = eventTitle.text.toString()
+                eventToEdit.description = eventDescrption.text.toString()
+                eventToEdit.startTime = dateFrom
+                eventToEdit.endTime = dateUntil
+                eventToEdit.wholeDayEvent = wholeDaySwitch.isChecked
+
+                listener.onEditEvent(eventToEdit)
+            } else {
+                val newEvent = EventData(
+                    title = eventTitle.text.toString(),
+                    description = eventDescrption.text.toString(),
+                    startTime = dateFrom,
+                    endTime = dateUntil,
+                    location = null,
+                    wholeDayEvent = wholeDaySwitch.isChecked
+                )
+                listener.onNewEventCreated(newEvent)
+            }
         }
-
-
-
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
     }
 
     override fun onCreateAnimation(transit: Int, enter: Boolean, nextAnim: Int): Animation? {
@@ -190,6 +200,32 @@ class EventDetailFragment : Fragment() {
         val dateFormat = "yyyy/MM/dd"
         val simpleDateFormat = SimpleDateFormat(dateFormat, Locale.getDefault())
         dateTextView.text = simpleDateFormat.format(calendar.time)
+    }
+
+    private fun prefillEventIfEditing() {
+        if (!::eventToEdit.isInitialized) return
+
+        eventTitle.text = eventToEdit.title
+        eventDescrption.text = eventToEdit.description
+
+        val calStart = Calendar.getInstance().apply { time = eventToEdit.startTime }
+        val calEnd = Calendar.getInstance().apply { time = eventToEdit.endTime }
+
+        updateDateInView(calStart, dateFromTextView)
+        updateDateInView(calEnd, dateUntilTextView)
+
+        hourPickerFrom.value = calStart.get(Calendar.HOUR_OF_DAY)
+        minutePickerFrom.value = calStart.get(Calendar.MINUTE)
+        hourPickerUntil.value = calEnd.get(Calendar.HOUR_OF_DAY)
+        minutePickerUntil.value = calEnd.get(Calendar.MINUTE)
+
+        wholeDaySwitch.isChecked = eventToEdit.wholeDayEvent
+
+        val visibility = if (eventToEdit.wholeDayEvent) View.GONE else View.VISIBLE
+        hourPickerFrom.visibility = visibility
+        minutePickerFrom.visibility = visibility
+        hourPickerUntil.visibility = visibility
+        minutePickerUntil.visibility = visibility
     }
 
 }

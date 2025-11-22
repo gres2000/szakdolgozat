@@ -12,7 +12,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.taskraze.myapplication.R
 import com.taskraze.myapplication.model.calendar.CalendarData
 import com.taskraze.myapplication.model.calendar.EventData
-import com.taskraze.myapplication.model.calendar.FirestoreCalendarRepository
 import com.taskraze.myapplication.viewmodel.MainViewModel
 import java.text.SimpleDateFormat
 
@@ -30,13 +29,14 @@ class CustomEventAdapter(
         var viewHolderId: Int = -1
         lateinit var viewModel: MainViewModel
     }
-    private var onItemRemovedListener: OnItemRemovedListener? = null
+    private var onEventActionListener: OnEventActionListener? = null
 
-    interface OnItemRemovedListener {
+    interface OnEventActionListener {
         fun onItemRemoved(event: EventData)
+        fun onItemClicked(event: EventData)
     }
-    fun setOnItemRemovedListener(listener: OnItemRemovedListener) {
-        onItemRemovedListener = listener
+    fun setOnEventActionListener(listener: OnEventActionListener) {
+        onEventActionListener = listener
     }
 
     override fun onCreateViewHolder(view: ViewGroup, viewType: Int): EventItemViewHolder {
@@ -62,8 +62,11 @@ class CustomEventAdapter(
             }
         }
 
-        viewHolder.itemView.setOnClickListener{
-            //open event for editing needs implementation
+        viewHolder.itemView.setOnClickListener {
+            val pos = viewHolder.bindingAdapterPosition
+            if (pos != RecyclerView.NO_POSITION) {
+                onEventActionListener?.onItemClicked(dataList[pos])
+            }
         }
     }
 
@@ -99,7 +102,7 @@ class CustomEventAdapter(
         buttonDelete.setOnClickListener {
             if (position != RecyclerView.NO_POSITION) {
                 // Notify fragment or listener
-                onItemRemovedListener?.onItemRemoved(dataList[position])
+                onEventActionListener?.onItemRemoved(dataList[position])
 
                 // Remove from adapter list
                 dataList.removeAt(position)
