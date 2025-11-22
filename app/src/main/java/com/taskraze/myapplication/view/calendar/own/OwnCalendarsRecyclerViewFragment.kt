@@ -19,8 +19,6 @@ import com.taskraze.myapplication.model.calendar.EventData
 import com.taskraze.myapplication.databinding.OwnCalendarsRecyclerViewBinding
 import com.taskraze.myapplication.viewmodel.MainViewModel
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import com.taskraze.myapplication.model.auth.AuthRepository
-import com.taskraze.myapplication.model.calendar.FirestoreCalendarRepository
 import com.taskraze.myapplication.model.calendar.UserData
 import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
 import com.taskraze.myapplication.viewmodel.calendar.FirestoreViewModel

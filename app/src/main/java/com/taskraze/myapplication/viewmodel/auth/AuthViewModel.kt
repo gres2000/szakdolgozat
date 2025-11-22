@@ -6,12 +6,14 @@ import androidx.lifecycle.viewModelScope
 import com.taskraze.myapplication.model.auth.AuthRepository
 import com.taskraze.myapplication.model.calendar.UserData
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 object AuthViewModel : ViewModel() {
     private val authRepository = AuthRepository()
+
     private val _loggedInUser = MutableStateFlow<UserData?>(null)
-    val loggedInUser = _loggedInUser // expose as read-only
+    val loggedInUser = _loggedInUser
 
     init {
         viewModelScope.launch {
@@ -21,8 +23,12 @@ object AuthViewModel : ViewModel() {
         }
     }
 
-    // helper to get userId safely
     fun getUserId(): String {
-        return _loggedInUser.value?.userId ?: ""
+        return _loggedInUser.value?.userId.orEmpty()
+    }
+
+    suspend fun awaitUserId(): String {
+        val user = loggedInUser.first { it?.userId?.isNotEmpty() == true }
+        return user!!.userId
     }
 }

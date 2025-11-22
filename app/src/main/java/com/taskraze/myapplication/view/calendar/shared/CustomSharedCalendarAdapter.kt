@@ -60,10 +60,11 @@ class CustomSharedCalendarAdapter(private val activity: AppCompatActivity, priva
         }
 
         viewHolder.itemView.setOnClickListener{
-            viewHolder.viewModel.newEventStartingDay = null
+            val viewModel = ViewModelProvider(activity)[MainViewModel::class.java]
+            viewModel.newEventStartingDay = null
             val calendarDetailFragment = CalendarDetailFragment()
 
-            viewHolder.viewModel.passCalendarToFragment(dataList[position])
+            viewModel.passCalendarToFragment(dataList[position])
 
             val fragmentManager = activity.supportFragmentManager
             fragmentManager.beginTransaction()

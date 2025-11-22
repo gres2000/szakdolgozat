@@ -6,7 +6,6 @@ import android.util.Log
 import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.room.Room
 import com.taskraze.myapplication.model.calendar.UserData
 import com.taskraze.myapplication.model.chat.ChatData
 import com.taskraze.myapplication.model.chat.FriendlyMessage
@@ -124,7 +123,7 @@ object MainViewModel : ViewModel() {
             }
     }
 
-    suspend fun getFriends(callback: (MutableList<UserData>) -> Unit) {
+    fun getFriends(callback: (MutableList<UserData>) -> Unit) {
         if (AuthViewModel.loggedInUser != null) {
             firestoreDB.collection("friend_requests")
                 .whereEqualTo("receiverId", AuthViewModel.getUserId())
@@ -191,12 +190,12 @@ object MainViewModel : ViewModel() {
             }
     }
 
-    private fun updateOrCreateUserFriendsDocument(acceptedFriends: List<FriendRequestData>): Deferred<Unit> {
-        val currentEmail = AuthViewModel.getUserId()
+    private suspend fun updateOrCreateUserFriendsDocument(acceptedFriends: List<FriendRequestData>): Deferred<Unit> {
+        val currentId = AuthViewModel.awaitUserId()
         val deferred = CompletableDeferred<Unit>()
 
         firestoreDB.collection("user_friends")
-            .document(currentEmail)
+            .document(currentId)
             .get()
             .addOnSuccessListener { documentSnapshot ->
                 val currentUserFriendsData = documentSnapshot.toObject(UserFriendsData::class.java)
@@ -210,11 +209,11 @@ object MainViewModel : ViewModel() {
                 }
 
                 val userFriendsMap = mapOf(
-                    "userId" to currentEmail,
+                    "userId" to currentId,
                     "friends" to updatedFriends
                 )
                 firestoreDB.collection("user_friends")
-                    .document(currentEmail)
+                    .document(currentId)
                     .set(userFriendsMap)
                     .addOnSuccessListener {
                         Log.d(TAG, "User friends document updated successfully.")

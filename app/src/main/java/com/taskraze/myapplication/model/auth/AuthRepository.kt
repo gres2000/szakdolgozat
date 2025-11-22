@@ -9,17 +9,28 @@ import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 
 class AuthRepository {
+
     suspend fun fetchUserDetails(): UserData {
         val firestoreDB = FirebaseFirestore.getInstance()
-        return withContext(Dispatchers.Main) {
-            val docRef = firestoreDB.collection("registered_users")
-                .document(Firebase.auth.currentUser?.email.toString())
+
+        return withContext(Dispatchers.IO) {
+
+            val email = Firebase.auth.currentUser?.email
+                ?: return@withContext UserData("", "", "")
+
+            val docRef = firestoreDB.collection("registered_users").document(email)
+
             val documentSnapshot = docRef.get().await()
+
             val username = documentSnapshot.getString("username") ?: ""
             val userId = documentSnapshot.getString("email") ?: ""
-            val email = documentSnapshot.getString("email") ?: ""
-            UserData(userId, username, email)
+            val emailField = documentSnapshot.getString("email") ?: ""
+
+            UserData(
+                userId = userId,
+                username = username,
+                email = emailField
+            )
         }
     }
-
 }

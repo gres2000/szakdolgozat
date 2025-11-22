@@ -14,12 +14,21 @@ class FirestoreViewModel : ViewModel() {
 
     // Observable calendars list from Firestore
     private val _calendars = MutableStateFlow<List<CalendarData>>(emptyList())
+    private val _sharedCalendars = MutableStateFlow<List<CalendarData>>(emptyList())
     val calendars: StateFlow<List<CalendarData>> = _calendars
+    val sharedCalendars: StateFlow<List<CalendarData>> = _sharedCalendars
 
     fun loadCalendars() {
         viewModelScope.launch {
-            val list = repository.getAllCalendars()
+            val list = repository.getOwnCalendars()
             _calendars.value = list
+        }
+    }
+
+    fun loadSharedCalendars() {
+        viewModelScope.launch {
+            val list = repository.getSharedCalendars()
+            _sharedCalendars.value = list
         }
     }
 

@@ -147,7 +147,7 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
                 thisCalendar!!.sharedPeople,
                 null,
                 this@CalendarDetailFragment,
-                AuthViewModel.getUserId() == thisCalendar!!.owner.userId
+                AuthViewModel.getUserId() == thisCalendar!!.owner.email // TODO this should be owner.userId
             )
             binding.recyclerViewUsers.adapter = usersAdapter
         }
@@ -271,7 +271,7 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
             .commit()
     }
 
-    private suspend fun showChooseFriendDialog() {
+    private fun showChooseFriendDialog() {
         val dialog = Dialog(requireContext())
         dialog.setContentView(R.layout.choose_friend_dialog)
         dialog.findViewById<TextView>(R.id.dialog_message).text = getString(R.string.choose_a_friend_to_add_to_this_calendar)
