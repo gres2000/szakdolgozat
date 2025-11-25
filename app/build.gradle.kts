@@ -10,6 +10,21 @@ plugins {
 
 }
 
+configurations.all {
+    resolutionStrategy {
+        force(
+            "io.grpc:grpc-okhttp:1.57.2",
+            "io.grpc:grpc-protobuf-lite:1.57.2",
+            "io.grpc:grpc-stub:1.57.2",
+            "io.grpc:grpc-core:1.57.2",
+            "io.grpc:grpc-android:1.57.2",
+            "io.grpc:grpc-api:1.57.2",
+            "io.grpc:grpc-context:1.57.2"
+        )
+    }
+}
+
+
 android {
     namespace = "com.taskraze.myapplication"
     compileSdk = 34
@@ -22,6 +37,9 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Uncomment only if you run into multidex issues
+        multiDexEnabled = true
     }
 
     buildTypes {
@@ -33,85 +51,55 @@ android {
             )
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
-    kotlinOptions {
-        jvmTarget = "1.8"
-    }
-    buildFeatures {
-        viewBinding = true
+    kotlinOptions { jvmTarget = "1.8" }
+    buildFeatures { viewBinding = true }
+
+    packaging {
+        resources {
+            excludes += listOf(
+                "META-INF/INDEX.LIST",
+                "META-INF/DEPENDENCIES"
+            )
+        }
     }
 }
 
 dependencies {
-
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
-    implementation(libs.firebase.auth.ktx)
-    implementation(libs.firebase.firestore.ktx)
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
-    // Import the BoM for the Firebase platform
+
+    // Use latest MSAL; 6.+ is current in MSAL repo examples — check repo for latest
+    implementation("com.microsoft.identity.client:msal:8.1.0")
+    // Firebase BoM
     implementation(platform("com.google.firebase:firebase-bom:32.8.1"))
-
-    // Add the dependency for the Realtime Database library
-    // When using the BoM, you don't specify versions in Firebase library dependencies
+    implementation("com.google.firebase:firebase-firestore-ktx")
+    implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-database")
-
-    // When using the BoM, you don't specify versions in Firebase library dependencies
-
-    // Add the dependency for the Firebase SDK for Google Analytics
     implementation("com.google.firebase:firebase-analytics")
 
-    val roomVersion = "2.6.1"
-
-    implementation("androidx.room:room-runtime:$roomVersion")
-
-    kapt("androidx.room:room-compiler:$roomVersion")
-
-    // optional - Kotlin Extensions and Coroutines support for Room
-    implementation("androidx.room:room-ktx:$roomVersion")
-
-    // optional - RxJava2 support for Room
-    implementation("androidx.room:room-rxjava2:$roomVersion")
-
-    // optional - RxJava3 support for Room
-    implementation("androidx.room:room-rxjava3:$roomVersion")
-
-    // optional - Guava support for Room, including Optional and ListenableFuture
-    implementation("androidx.room:room-guava:$roomVersion")
-
-    // optional - Test helpers
-    testImplementation("androidx.room:room-testing:$roomVersion")
-
-    // optional - Paging 3 Integration
-    implementation("androidx.room:room-paging:$roomVersion")
-
-    implementation("com.google.code.gson:gson:2.8.8")
-
-    // FirebaseUI for Firebase Realtime Database
+    // FirebaseUI
     implementation("com.firebaseui:firebase-ui-database:8.0.2")
-
-    // FirebaseUI for Cloud Firestore
     implementation("com.firebaseui:firebase-ui-firestore:8.0.2")
-            // FirebaseUI fr Firebase Aut
     implementation("com.firebaseui:firebase-ui-auth:8.0.2")
-           // FirebaseUI fr Cloud Storag
     implementation("com.firebaseui:firebase-ui-storage:8.0.2")
 
+    // AndroidX & UI
+    implementation("androidx.multidex:multidex:2.0.1")
     implementation("io.ktor:ktor-client-core:2.3.11")
-    //implementation("io.ktor:ktor-client-json:2.3.11")
     implementation("io.ktor:ktor-client-logging:2.3.11")
     implementation("io.ktor:ktor-client-cio:2.3.11")
-
-    // calendar component
     implementation("com.kizitonwose.calendar:view:2.0.4")
-
+    implementation("com.google.android.gms:play-services-auth:21.3.0")
+    implementation("com.squareup.okhttp3:okhttp:4.11.0")
+    implementation("com.google.api-client:google-api-client-android:2.8.1")
+    implementation("com.google.api-client:google-api-client-gson:2.8.1")
 }

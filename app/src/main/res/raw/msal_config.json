@@ -1,0 +1,16 @@
+{
+  "client_id" : "630f27b0-ab47-4cd9-91d3-7ecfb70c0cb4",
+  "authorization_user_agent" : "DEFAULT",
+  "broker_redirect_uri_registered": false,
+  "account_mode": "SINGLE",
+  "redirect_uri" : "msauth://com.taskraze.myapplication/4FHALdQ6KlUgnXnT%2F57NCDP6V1Y%3D",
+  "authorities" : [
+    {
+      "type": "AAD",
+      "audience": {
+        "type": "AzureADandPersonalMicrosoftAccount",
+        "tenant_id": "common"
+      }
+    }
+  ]
+}
