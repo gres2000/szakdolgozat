@@ -81,6 +81,7 @@
     <string name="capitalSaturday">SA</string>
     <string name="capitalSunday">SU</string>
     <string name="notification">Notification</string>
+    <string name="month">Month</string>
 
 
 </resources>

@@ -36,7 +36,6 @@ object MainViewModel : ViewModel() {
     var auth = Firebase.auth
     private var _CalendarDataToPass: CalendarData? = null
     var newEventStartingDay: Calendar? = null
-    private val authViewModel = AuthViewModel
 
     init {
         viewModelScope.launch {

@@ -61,6 +61,14 @@
             android:text="@string/test_capital_letter"
             android:textSize="18sp"/>
 
+        <TextView
+            android:id="@+id/textViewCurrentMonth"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="18sp"
+            android:textAlignment="center"
+            android:textColor="@android:color/white"
+            android:text="@string/month" />
 
         <LinearLayout
             android:id="@+id/titlesContainer"

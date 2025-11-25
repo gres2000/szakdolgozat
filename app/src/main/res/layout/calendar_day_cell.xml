@@ -11,4 +11,20 @@
         android:gravity="center"
         android:textColor="@android:color/black"
         android:textSize="14sp"/>
+
+    <FrameLayout
+        android:id="@+id/eventIndicatorContainer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_gravity="center"/>
+
+    <!-- optional single indicator for backward compatibility -->
+    <View
+        android:id="@+id/eventIndicator"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_gravity="center"
+        android:background="@drawable/event_circle"
+        android:visibility="gone"/>
+
 </FrameLayout>

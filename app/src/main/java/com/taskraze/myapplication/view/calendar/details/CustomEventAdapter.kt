@@ -14,22 +14,22 @@ import com.taskraze.myapplication.model.calendar.CalendarData
 import com.taskraze.myapplication.model.calendar.EventData
 import com.taskraze.myapplication.viewmodel.MainViewModel
 import java.text.SimpleDateFormat
+import java.time.LocalDateTime
+import java.time.ZoneId
 
 class CustomEventAdapter(
     private val activity: AppCompatActivity,
     private val dataList: MutableList<EventData>,
-    private val calendar: CalendarData,
-    private val viewModel: MainViewModel
 ) : RecyclerView.Adapter<CustomEventAdapter.EventItemViewHolder>() {
     inner class EventItemViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val startingTimeTextView: TextView = itemView.findViewById(R.id.textViewStartingTime)
         val eventTitleTextView: TextView = itemView.findViewById(R.id.textViewEventTitle)
         val intervalTextView: TextView = itemView.findViewById(R.id.textViewInterval)
         val deleteEventImageButton: ImageButton = itemView.findViewById(R.id.imageButtonDeleteEvent)
-        var viewHolderId: Int = -1
         lateinit var viewModel: MainViewModel
     }
     private var onEventActionListener: OnEventActionListener? = null
+    private val dateFormat = SimpleDateFormat("HH:mm")
 
     interface OnEventActionListener {
         fun onItemRemoved(event: EventData)
@@ -44,26 +44,55 @@ class CustomEventAdapter(
         return EventItemViewHolder(itemView)
     }
 
-    override fun onBindViewHolder(viewHolder: EventItemViewHolder, position: Int) {
-        val currentItem = dataList[position]
+    override fun onBindViewHolder(holder: EventItemViewHolder, position: Int) {
+        val event = dataList[position]
 
-        val dateFormat = SimpleDateFormat("HH:mm")
+        holder.startingTimeTextView.text =
+            if (!event.wholeDayEvent) dateFormat.format(event.startTime)
+            else "--:--"
 
-        viewHolder.startingTimeTextView.text = if (!currentItem.wholeDayEvent) dateFormat.format(currentItem.startTime).toString() else "--:--"
-        viewHolder.eventTitleTextView.text = currentItem.title
+        holder.eventTitleTextView.text = event.title
 
-        val tmpString = if (!currentItem.wholeDayEvent) dateFormat.format(currentItem.startTime).toString() + "-" + dateFormat.format(currentItem.endTime).toString() else "Whole day event"
-        viewHolder.intervalTextView.text = tmpString
+        val start = event.startTime
+        val end = event.endTime
 
-        viewHolder.deleteEventImageButton.setOnClickListener {
-            val pos = viewHolder.bindingAdapterPosition
-            if (pos != RecyclerView.NO_POSITION) {
-                showDeleteDialog(pos)
+        val timeFormat = SimpleDateFormat("HH:mm")
+        val monthDayFormat = SimpleDateFormat("MM/dd")
+        val fullDateFormat = SimpleDateFormat("yyyy/MM/dd")
+
+        val startDT = LocalDateTime.ofInstant(event.startTime.toInstant(), ZoneId.systemDefault())
+        val endDT = LocalDateTime.ofInstant(event.endTime.toInstant(), ZoneId.systemDefault())
+
+        val sameDay = startDT.toLocalDate() == endDT.toLocalDate()
+        val sameYear = startDT.year == endDT.year
+
+        holder.intervalTextView.text =
+            if (event.wholeDayEvent) {
+                "Whole day event"
+            } else {
+                when {
+                    sameDay -> {
+                        "${timeFormat.format(start)} - ${timeFormat.format(end)}"
+                    }
+                    sameYear -> {
+                        "${monthDayFormat.format(start)} ${timeFormat.format(start)} - " +
+                                "${monthDayFormat.format(end)} ${timeFormat.format(end)}"
+                    }
+                    else -> {
+                        "${fullDateFormat.format(start)} ${timeFormat.format(start)} - " +
+                                "${fullDateFormat.format(end)} ${timeFormat.format(end)}"
+                    }
+                }
             }
+
+        // Clicks
+        holder.deleteEventImageButton.setOnClickListener {
+            val pos = holder.bindingAdapterPosition
+            if (pos != RecyclerView.NO_POSITION) showDeleteDialog(pos)
         }
 
-        viewHolder.itemView.setOnClickListener {
-            val pos = viewHolder.bindingAdapterPosition
+        holder.itemView.setOnClickListener {
+            val pos = holder.bindingAdapterPosition
             if (pos != RecyclerView.NO_POSITION) {
                 onEventActionListener?.onItemClicked(dataList[pos])
             }
@@ -73,14 +102,13 @@ class CustomEventAdapter(
     override fun getItemCount() = dataList.size
 
     fun updateData(newData: List<EventData>) {
-        val originSize = dataList.size
+        val oldSize = dataList.size
         dataList.clear()
         dataList.addAll(newData)
-        if (newData.isNotEmpty()) {
-            notifyDataSetChanged()
-        }
-        else {
-            notifyItemRangeRemoved(0, originSize)
+        notifyItemRangeChanged(0, newData.size)
+
+        if (newData.size < oldSize) {
+            notifyItemRangeRemoved(newData.size, oldSize - newData.size)
         }
     }
 

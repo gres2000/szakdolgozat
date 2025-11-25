@@ -1,16 +1,21 @@
 package com.taskraze.myapplication.view.calendar.details
 
 import android.app.Dialog
+import android.content.res.Resources
 import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.LayerDrawable
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
@@ -18,6 +23,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
+import androidx.core.content.ContextCompat
 import androidx.core.view.MenuHost
 import androidx.core.view.MenuProvider
 import androidx.core.view.children
@@ -59,6 +65,8 @@ import com.microsoft.identity.client.ISingleAccountPublicClientApplication
 import com.microsoft.identity.client.PublicClientApplication
 import com.microsoft.identity.client.SilentAuthenticationCallback
 import com.microsoft.identity.client.exception.MsalException
+import java.time.ZoneId
+import androidx.core.graphics.toColorInt
 
 class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListener,
     CustomEventAdapter.OnEventActionListener, CustomUsersAdapter.ChatActionListener, CustomUsersAdapter.DeleteActionListener {
@@ -67,8 +75,9 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
         view: View,
         val onClick: (CalendarDay) -> Unit
     ) : ViewContainer(view) {
-
         val textView: TextView = view.findViewById(R.id.dayText)
+        val eventIndicator: View = view.findViewById(R.id.eventIndicator)
+        val eventIndicatorContainer: FrameLayout = view.findViewById(R.id.eventIndicatorContainer)
         lateinit var day: CalendarDay
 
         init {
@@ -91,6 +100,18 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
     private lateinit var msalApp: ISingleAccountPublicClientApplication
     private var msalAccount = null as com.microsoft.identity.client.IAccount?
 
+    private val eventColors = listOf(
+        "#F44336".toColorInt(), "#E91E63".toColorInt(), "#9C27B0".toColorInt(),
+        "#673AB7".toColorInt(), "#3F51B5".toColorInt(), "#2196F3".toColorInt(),
+        "#03A9F4".toColorInt(), "#00BCD4".toColorInt(), "#009688".toColorInt(),
+        "#4CAF50".toColorInt(), "#8BC34A".toColorInt(), "#CDDC39".toColorInt(),
+        "#FFEB3B".toColorInt(), "#FFC107".toColorInt(), "#FF9800".toColorInt(),
+        "#FF5722".toColorInt(), "#795548".toColorInt(), "#9E9E9E".toColorInt(),
+        "#607D8B".toColorInt(), "#F06292".toColorInt(), "#BA68C8".toColorInt(),
+        "#9575CD".toColorInt(), "#64B5F6".toColorInt(), "#4DD0E1".toColorInt(),
+        "#4DB6AC".toColorInt(), "#81C784".toColorInt(), "#AED581".toColorInt(),
+        "#DCE775".toColorInt(), "#FFD54F".toColorInt(), "#FF8A65".toColorInt()
+    )
 
     private val googleSignInLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -135,9 +156,14 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
 
     private fun updateEventsForSelectedDay(date: LocalDate) {
         val filteredEvents = thisCalendar!!.events.filter { event ->
-            event.startTime.toInstant()
+            val startDate = event.startTime.toInstant()
                 .atZone(java.time.ZoneId.systemDefault())
-                .toLocalDate() == date
+                .toLocalDate()
+            val endDate = event.endTime.toInstant()
+                .atZone(java.time.ZoneId.systemDefault())
+                .toLocalDate()
+
+            !date.isBefore(startDate) && !date.isAfter(endDate)
         }
 
         adapter.updateData(filteredEvents)
@@ -191,8 +217,6 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
             adapter = CustomEventAdapter(
                 requireActivity() as AppCompatActivity,
                 thisCalendar!!.events.toMutableList(),
-                thisCalendar!!,
-                MainViewModel
             )
             binding.recyclerViewEvents.adapter = adapter
 
@@ -212,7 +236,6 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
             binding.recyclerViewUsers.adapter = usersAdapter
         }
 
-
         // calendarView setup
         val calendarView = binding.calendarViewCalendarDetail
         calendarView.dayBinder = object : MonthDayBinder<DayViewContainer> {
@@ -223,6 +246,7 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
                 container.day = data
                 container.textView.text = data.date.dayOfMonth.toString()
 
+                // grey out days outside month
                 if (data.position == DayPosition.MonthDate) {
                     container.textView.alpha = 1f
                     container.textView.setTextColor(Color.WHITE)
@@ -231,15 +255,82 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
                     container.textView.setTextColor(Color.GRAY)
                 }
 
-                // 🔵 Highlight selected date
+                // highlight selected day
                 if (data.date == selectedDate) {
                     container.textView.setBackgroundResource(R.drawable.selected_day_bg)
                     container.textView.setTextColor(Color.BLACK)
                 } else {
                     container.textView.background = null
                 }
+
+                val eventsForDay = thisCalendar?.events?.filter { event ->
+                    val start = event.startTime.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
+                    val end = event.endTime.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
+                    !data.date.isBefore(start) && !data.date.isAfter(end)
+                } ?: emptyList()
+
+                container.eventIndicatorContainer.removeAllViews()
+
+                if (eventsForDay.isNotEmpty()) {
+                    var sizeDp = 40
+                    val sizeDecrement = 5
+                    val minSizeDp = 20
+
+                    eventsForDay.forEach { event ->
+                        val start = event.startTime.toInstant()
+                            .atZone(ZoneId.systemDefault())
+                            .toLocalDate()
+
+                        val end = event.endTime.toInstant()
+                            .atZone(ZoneId.systemDefault())
+                            .toLocalDate()
+
+                        val drawableRes = when {
+                            data.date == start && data.date == end -> R.drawable.event_circle
+                            data.date == start -> R.drawable.event_start_circle
+                            data.date == end -> R.drawable.event_end_circle
+                            data.date.isAfter(start) && data.date.isBefore(end) -> R.drawable.event_middle_circle
+                            else -> R.drawable.event_circle
+                        }
+
+                        val circleView = View(requireContext()).apply {
+                            val layoutSize = sizeDp.dpToPx()
+                            layoutParams = FrameLayout.LayoutParams(layoutSize, layoutSize).apply {
+                                gravity = Gravity.CENTER
+                            }
+
+                            when (val drawable = ContextCompat.getDrawable(requireContext(), drawableRes)?.mutate()) {
+                                is LayerDrawable -> {
+                                    for (i in 0 until drawable.numberOfLayers - 1) {
+                                        val layer = drawable.getDrawable(i)
+                                        if (layer is GradientDrawable) {
+                                            layer.setStroke(2.dpToPx(), getEventColor(event.id))
+                                        }
+                                    }
+                                    background = drawable
+                                }
+
+                                is GradientDrawable -> {
+                                    drawable.setStroke(2.dpToPx(), getEventColor(event.id))
+                                    background = drawable
+                                }
+
+                                else -> {
+                                    setBackgroundColor(getEventColor(event.id))
+                                }
+                            }
+                        }
+
+                        container.eventIndicatorContainer.addView(circleView)
+
+                        sizeDp = (sizeDp - sizeDecrement).coerceAtLeast(minSizeDp)
+                    }
+                }
+
+                container.eventIndicator.visibility = if (eventsForDay.isEmpty()) View.GONE else View.INVISIBLE
             }
         }
+
 
         val daysOfWeek = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
 
@@ -258,6 +349,15 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
         calendarView.setup(startMonth, endMonth, DayOfWeek.MONDAY)
         calendarView.scrollToMonth(currentMonth)
 
+        calendarView.monthScrollListener = { month ->
+            val ym = month.yearMonth
+
+            val formatted = ym.month.name.lowercase()
+                .replaceFirstChar { it.uppercase() }
+
+            binding.textViewCurrentMonth.text = "$formatted ${ym.year}"
+        }
+
         // click listeners
         binding.imageButtonLeftArrow.setOnClickListener { requireActivity().onBackPressedDispatcher.onBackPressed() }
         binding.fabAddUser.setOnClickListener { lifecycleScope.launch { showChooseFriendDialog() } }
@@ -266,7 +366,15 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
         viewModel.newEventStartingDay = selectedCalendar
         binding.fabAddEvent.setOnClickListener {
             viewModel.passCalendarToFragment(thisCalendar!!)
+
+            viewModel.newEventStartingDay = selectedDate?.let { date ->
+                Calendar.getInstance().apply {
+                    set(date.year, date.monthValue - 1, date.dayOfMonth)
+                }
+            }
+
             val fragment = EventDetailFragment().apply { listener = this@CalendarDetailFragment }
+
             requireActivity().supportFragmentManager.beginTransaction()
                 .replace(R.id.constraint_container, fragment)
                 .addToBackStack(null)
@@ -316,6 +424,19 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
         thisCalendar?.let { calendar ->
             calendar.events.remove(event)
             firestoreViewModel.updateCalendar(calendar)
+
+            val startDate = event.startTime.toInstant()
+                .atZone(java.time.ZoneId.systemDefault())
+                .toLocalDate()
+            val endDate = event.endTime.toInstant()
+                .atZone(java.time.ZoneId.systemDefault())
+                .toLocalDate()
+
+            var date = startDate
+            while (!date.isAfter(endDate)) {
+                binding.calendarViewCalendarDetail.notifyDateChanged(date)
+                date = date.plusDays(1)
+            }
         }
     }
 
@@ -362,6 +483,7 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
             binding.recyclerViewUsers.adapter!!.notifyItemInserted(thisCalendar!!.sharedPeopleNumber)
         }
     }
+
 
     override fun onDeleteConfirmed(deletedUser: UserData, position: Int) {
         MainViewModel.viewModelScope.launch {
@@ -535,5 +657,12 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
                 }
             }
         )
+    }
+
+    fun Int.dpToPx(): Int = (this * Resources.getSystem().displayMetrics.density).toInt()
+
+    fun getEventColor(eventId: String): Int {
+        val index = (eventId.hashCode() and Int.MAX_VALUE) % eventColors.size
+        return eventColors[index]
     }
 }
