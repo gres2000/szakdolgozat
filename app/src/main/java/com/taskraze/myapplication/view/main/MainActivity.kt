@@ -1,20 +1,24 @@
 package com.taskraze.myapplication.view.main
 
-import android.content.Intent
 import android.os.Bundle
+import android.util.Log
+import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
-import androidx.activity.result.ActivityResultLauncher
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.taskraze.myapplication.R
 import com.taskraze.myapplication.databinding.ActivityMainBinding
-import com.taskraze.myapplication.model.auth.AuthRepository
 import com.taskraze.myapplication.view.todo.TodoFragment
 import com.taskraze.myapplication.view.home.HomeFragment
 import com.taskraze.myapplication.view.calendar.CalendarFragment
 import com.taskraze.myapplication.viewmodel.MainViewModel
+import com.taskraze.myapplication.viewmodel.NotificationViewModel
+import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
+import com.taskraze.myapplication.viewmodel.calendar.FirestoreViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -23,12 +27,13 @@ import kotlinx.coroutines.withContext
 
 class MainActivity : AppCompatActivity() {
 
-    private val authRepository = AuthRepository()
     private lateinit var binding: ActivityMainBinding
     private val fragmentManager = supportFragmentManager
     private val fragmentMap = mutableMapOf<String, Fragment>()
     private lateinit var viewModel: MainViewModel
-    private lateinit var overlayPermissionLauncher: ActivityResultLauncher<Intent>
+    private lateinit var firestoreViewModel: FirestoreViewModel
+    private lateinit var notificationViewModel: NotificationViewModel
+    private lateinit var authViewModel: AuthViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,30 +41,37 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         viewModel = ViewModelProvider(this)[MainViewModel::class.java]
-
+        firestoreViewModel = ViewModelProvider(this)[FirestoreViewModel::class.java]
+        notificationViewModel = ViewModelProvider(this)[NotificationViewModel::class.java]
+        authViewModel = ViewModelProvider(this)[AuthViewModel::class.java]
 
         lifecycleScope.launch {
-            // authRepository.fetchUserDetails()
+            authViewModel.awaitUserId()
+            firestoreViewModel.loadAllEvents()
+            firestoreViewModel.loadCalendars()
+            firestoreViewModel.loadSharedCalendars()
+
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                firestoreViewModel.events.collect { eventList ->
+                    if (eventList.isNotEmpty()) { // only run after events arrive
+                        // Optional: show a toast
+                        Toast.makeText(this@MainActivity, "Scheduling ${eventList.size} events", Toast.LENGTH_SHORT).show()
+
+                        // Call your NotificationViewModel
+                        notificationViewModel.scheduleAllNotifications(this@MainActivity, eventList)
+
+                        Log.d("NotificationMINE", "Scheduled all events")
+                    }
+                }
+            }
         }
+
+
         setupFragments()
         setupBottomNavigationView()
 
         setupOnBackPressedHandler()
 
-//        MainViewModel.newTask.observe(this) { eventData ->
-//            val transaction = fragmentManager.beginTransaction()
-//            transaction.replace(R.id.constraint_container, DayDetailFragment(eventData))
-//            transaction.commit()
-//        }
-
-//        MainViewModel.dayId.observe(this) { _ ->
-//            if (viewModel.taskReady) {
-//                val transaction = fragmentManager.beginTransaction()
-//                transaction.replace(R.id.constraint_container, fragmentMap["tasks"]!!)
-//                transaction.addToBackStack(null)
-//                transaction.commit()
-//            }
-//        }
         binding.bottomNavigationView.isSaveEnabled = false
 
         binding.bottomNavigationView.selectedItemId = R.id.destination_home

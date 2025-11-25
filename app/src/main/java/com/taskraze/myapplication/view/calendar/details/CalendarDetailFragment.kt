@@ -178,7 +178,6 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
         (requireActivity() as AppCompatActivity).setSupportActionBar(toolbar)
         createMenuToolbar()
 
-        // RecyclerViews setup
         binding.recyclerViewEvents.layoutManager = LinearLayoutManager(requireContext())
 
         val itemDecoration = UsersRecyclerItemDecoration()

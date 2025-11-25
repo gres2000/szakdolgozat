@@ -12,14 +12,12 @@ class FirestoreCalendarRepository {
     private val calendarsCollection = firestoreDB.collection("calendars")
     private val userInCalendarsCollection = firestoreDB.collection("user_in_calendars")
 
-    // Add a new calendar
     suspend fun addCalendar(calendar: CalendarData) {
         val calendars = getOwnCalendars().toMutableList()
         calendars.add(calendar)
         updateCalendars(calendars)
     }
 
-    // Update an existing calendar
     suspend fun updateCalendar(calendar: CalendarData) {
         val calendars = getOwnCalendars().toMutableList()
         val index = calendars.indexOfFirst { it.id == calendar.id }
@@ -29,14 +27,12 @@ class FirestoreCalendarRepository {
         }
     }
 
-    // Remove a calendar
     suspend fun removeCalendar(calendarId: Long) {
         val calendars = getOwnCalendars().toMutableList()
         calendars.removeIf { it.id == calendarId }
         updateCalendars(calendars)
     }
 
-    // Helper function to update Firestore
     private suspend fun updateCalendars(calendars: List<CalendarData>) {
         try {
             val userCalendars = UserCalendarsData(
@@ -45,7 +41,7 @@ class FirestoreCalendarRepository {
             )
 
             calendarsCollection.document(AuthViewModel.getUserId())
-                .set(userCalendars) // use set() instead of update()
+                .set(userCalendars)
                 .await()
 
             Log.d("FirestoreRepo", "Updated calendars for ${AuthViewModel.getUserId()}")
@@ -54,18 +50,39 @@ class FirestoreCalendarRepository {
         }
     }
 
-    // Get all calendars for the current user
-    suspend fun getOwnCalendars(): List<CalendarData> {
-        return try {
-            val doc = calendarsCollection.document(AuthViewModel.getUserId()).get().await()
-            if (doc.exists()) {
-                doc.toObject(UserCalendarsData::class.java)?.calendars ?: emptyList()
-            } else emptyList()
-        } catch (e: Exception) {
-            Log.e(ContentValues.TAG, "Error fetching calendars: $e")
+//    suspend fun getOwnCalendars(): List<CalendarData> {
+//        return try {
+//            val doc = calendarsCollection.document(AuthViewModel.getUserId()).get().await()
+//            if (doc.exists()) {
+//                doc.toObject(UserCalendarsData::class.java)?.calendars ?: emptyList()
+//            } else emptyList()
+//        } catch (e: Exception) {
+//            Log.e(ContentValues.TAG, "Error fetching calendars: $e")
+//            emptyList()
+//        }
+//    }
+suspend fun getOwnCalendars(): List<CalendarData> {
+    val userId = AuthViewModel.getUserId()
+    Log.d("NotificationMINE", "Fetching calendars for userId: $userId")
+
+    return try {
+        val doc = calendarsCollection.document(userId).get().await()
+        Log.d("NotificationMINE", "Document fetched: exists=${doc.exists()}")
+
+        if (doc.exists()) {
+            val calendars = doc.toObject(UserCalendarsData::class.java)?.calendars ?: emptyList()
+            Log.d("NotificationMINE", "Found ${calendars.size} calendars")
+            calendars
+        } else {
+            Log.d("NotificationMINE", "No calendars found for user")
             emptyList()
         }
+    } catch (e: Exception) {
+        Log.e("NotificationMINE", "Error fetching calendars for user $userId", e)
+        emptyList()
     }
+}
+
 
     suspend fun getSharedCalendars(): List<CalendarData> {
         val currentUserId = AuthViewModel.getUserId()
@@ -93,7 +110,6 @@ class FirestoreCalendarRepository {
         return sharedCalendars
     }
 
-    // Add a shared user to a calendar
     suspend fun addSharedUserToCalendar(sharedUser: UserData, calendarId: Long) {
         try {
             val doc = userInCalendarsCollection.document(sharedUser.email).get().await()
@@ -105,7 +121,6 @@ class FirestoreCalendarRepository {
         }
     }
 
-    // Remove a shared user from a calendar
     suspend fun removeSharedUserFromCalendar(sharedUserId: String, calendarId: Long) {
         try {
             val doc = userInCalendarsCollection.document(sharedUserId).get().await()
@@ -123,22 +138,10 @@ class FirestoreCalendarRepository {
         }
     }
 
-    // Get shared users for a specific calendar
-    suspend fun getSharedUsersForCalendar(calendarId: Long): List<String> {
-        val sharedUsers = mutableListOf<String>()
-        try {
-            val snapshot = userInCalendarsCollection.get().await()
-            for (doc in snapshot.documents) {
-                val owners = doc.get("owners") as? List<Map<String, Any>> ?: continue
-                if (owners.any { it["calendarId"] == calendarId }) {
-                    sharedUsers.add(doc.id) // email of shared user
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(ContentValues.TAG, "Error fetching shared users: $e")
-        }
-        return sharedUsers
+    suspend fun getAllEvents(): List<EventData> {
+        val ownCalendars = getOwnCalendars()
+        val sharedCalendars = getSharedCalendars()
+        return (ownCalendars + sharedCalendars).flatMap { it.events }
     }
-
 
 }

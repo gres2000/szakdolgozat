@@ -67,7 +67,7 @@ class OverlayService: Service() {
 
             val notificationBuilder = NotificationCompat.Builder(this, channelId)
             val notification = notificationBuilder.setOngoing(true)
-                .setSmallIcon(R.drawable.ic_notification)
+                .setSmallIcon(R.drawable.baseline_circle_notifications_24)
                 .setContentTitle("Overlay Service")
                 .setPriority(NotificationManager.IMPORTANCE_MIN)
                 .setCategory(Notification.CATEGORY_SERVICE)

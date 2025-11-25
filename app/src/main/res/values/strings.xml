@@ -80,6 +80,7 @@
     <string name="capitalFriday">F</string>
     <string name="capitalSaturday">SA</string>
     <string name="capitalSunday">SU</string>
+    <string name="notification">Notification</string>
 
 
 </resources>

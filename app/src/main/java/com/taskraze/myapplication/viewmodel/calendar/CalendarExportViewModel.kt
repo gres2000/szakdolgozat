@@ -79,12 +79,7 @@ class CalendarExportViewModel : ViewModel() {
     fun exportEventsToOutlookGraph(events: List<EventData>, accessToken: String) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val formatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME
-                val timeZone = ZoneId.systemDefault().id
-
                 events.forEach { event ->
-                    val startDateTime = event.startTime.toInstant().atZone(ZoneId.systemDefault()).format(formatter)
-                    val endDateTime = event.endTime.toInstant().atZone(ZoneId.systemDefault()).format(formatter)
 
                     val json = JSONObject().apply {
                         put("subject", event.title.takeIf { it.isNotBlank() } ?: "No title")

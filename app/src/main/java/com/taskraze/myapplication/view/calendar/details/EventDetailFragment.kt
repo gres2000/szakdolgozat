@@ -1,6 +1,7 @@
 package com.taskraze.myapplication.view.calendar.details
 
 import android.app.DatePickerDialog
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -8,17 +9,23 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.animation.Animation
 import android.view.animation.AnimationUtils
+import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.NumberPicker
+import android.widget.Spinner
 import android.widget.TextView
 import androidx.annotation.RequiresApi
+import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.taskraze.myapplication.R
 import com.taskraze.myapplication.model.calendar.CalendarData
 import com.taskraze.myapplication.model.calendar.EventData
 import com.taskraze.myapplication.viewmodel.MainViewModel
+import com.taskraze.myapplication.viewmodel.NotificationViewModel
 import java.text.SimpleDateFormat
 import java.time.LocalDateTime
 import java.util.Calendar
@@ -30,6 +37,7 @@ class EventDetailFragment : Fragment() {
         fun onEditEvent(event: EventData)
     }
     private lateinit var viewModel: MainViewModel
+    private lateinit var notificationViewModel: NotificationViewModel
     private lateinit var dateUntilTextView: TextView
     private lateinit var dateFromTextView: TextView
     private lateinit var hourPickerFrom: NumberPicker
@@ -37,9 +45,11 @@ class EventDetailFragment : Fragment() {
     private lateinit var hourPickerUntil: NumberPicker
     private lateinit var minutePickerUntil: NumberPicker
     private lateinit var wholeDaySwitch: SwitchCompat
+    private lateinit var notificationSwitch: SwitchCompat
+    private lateinit var notificationSpinner: Spinner
     lateinit var listener: EventDetailListener
     private lateinit var eventTitle: TextView
-    private lateinit var eventDescrption: TextView
+    private lateinit var eventDescription: TextView
     lateinit var eventToEdit: EventData
     lateinit var calendar: CalendarData
 
@@ -51,10 +61,11 @@ class EventDetailFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         viewModel = ViewModelProvider(requireActivity())[MainViewModel::class.java]
+        notificationViewModel = ViewModelProvider(requireActivity())[NotificationViewModel::class.java]
 
         wholeDaySwitch = view.findViewById(R.id.switchButtonEventDetail)
         eventTitle = view.findViewById(R.id.editTextTitleEventDetail)
-        eventDescrption = view.findViewById(R.id.editTextDescriptionEventDetail)
+        eventDescription = view.findViewById(R.id.editTextDescriptionEventDetail)
 
         dateUntilTextView = view.findViewById(R.id.dateUntilTextView)
         dateFromTextView = view.findViewById(R.id.dateFromTextView)
@@ -92,12 +103,25 @@ class EventDetailFragment : Fragment() {
         hourPickerUntil.visibility = if (wholeDaySwitch.isChecked) View.GONE else View.VISIBLE
         minutePickerUntil.visibility = if (wholeDaySwitch.isChecked) View.GONE else View.VISIBLE
 
+        // notification components
+        notificationSwitch = view.findViewById(R.id.switchNotification)
+        notificationSpinner = view.findViewById(R.id.spinnerNotificationTime)
+
+        val times = listOf("5 min", "10 min", "15 min", "30 min", "1 hour")
+        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, times)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        notificationSpinner.adapter = adapter
+
+        notificationSwitch.setOnCheckedChangeListener { _, isChecked ->
+            notificationSpinner.visibility = if (isChecked) View.VISIBLE else View.GONE
+        }
+
         prefillEventIfEditing()
 
         val foldUpAnimation = AnimationUtils.loadAnimation(requireContext(), R.anim.fold_up)
         val foldDownAnimation = AnimationUtils.loadAnimation(requireContext(), R.anim.fold_down)
 
-        wholeDaySwitch.setOnCheckedChangeListener { buttonView, isChecked ->
+        wholeDaySwitch.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked) {
                 wholeDaySwitch.isEnabled = false
                 hourPickerFrom.startAnimation(foldUpAnimation)
@@ -128,7 +152,6 @@ class EventDetailFragment : Fragment() {
             }
         }
 
-
         dateUntilTextView.setOnClickListener {
             showDatePickerDialog(dateUntilTextView)
         }
@@ -146,24 +169,51 @@ class EventDetailFragment : Fragment() {
             val dateFrom = dateFormat.parse("${dateFromTextView.text} ${hourPickerFrom.value}:${minutePickerFrom.value}")!!
             val dateUntil = dateFormat.parse("${dateUntilTextView.text} ${hourPickerUntil.value}:${minutePickerUntil.value}")!!
 
+            val notificationMinutes = if (notificationSwitch.isChecked) {
+                when (notificationSpinner.selectedItem.toString()) {
+                    "5 min" -> 5
+                    "10 min" -> 10
+                    "15 min" -> 15
+                    "30 min" -> 30
+                    "1 hour" -> 60
+                    else -> null
+                }
+            } else {
+                if (::eventToEdit.isInitialized) {
+                    notificationViewModel.cancelEventNotification(requireContext(), eventToEdit)
+                    eventToEdit.notificationMinutesBefore = null
+                }
+                null
+            }
+
             if (::eventToEdit.isInitialized) {
                 eventToEdit.title = eventTitle.text.toString()
-                eventToEdit.description = eventDescrption.text.toString()
+                eventToEdit.description = eventDescription.text.toString()
                 eventToEdit.startTime = dateFrom
                 eventToEdit.endTime = dateUntil
                 eventToEdit.wholeDayEvent = wholeDaySwitch.isChecked
+                eventToEdit.notificationMinutesBefore = notificationMinutes
 
                 listener.onEditEvent(eventToEdit)
+
+                if (notificationMinutes != null) {
+                    notificationViewModel.scheduleEventNotification(requireContext(), eventToEdit)
+                }
             } else {
                 val newEvent = EventData(
                     title = eventTitle.text.toString(),
-                    description = eventDescrption.text.toString(),
+                    description = eventDescription.text.toString(),
                     startTime = dateFrom,
                     endTime = dateUntil,
                     location = null,
-                    wholeDayEvent = wholeDaySwitch.isChecked
+                    wholeDayEvent = wholeDaySwitch.isChecked,
+                    notificationMinutesBefore = notificationMinutes
                 )
                 listener.onNewEventCreated(newEvent)
+
+                if (notificationMinutes != null) {
+                    notificationViewModel.scheduleEventNotification(requireContext(), newEvent)
+                }
             }
         }
     }
@@ -206,7 +256,7 @@ class EventDetailFragment : Fragment() {
         if (!::eventToEdit.isInitialized) return
 
         eventTitle.text = eventToEdit.title
-        eventDescrption.text = eventToEdit.description
+        eventDescription.text = eventToEdit.description
 
         val calStart = Calendar.getInstance().apply { time = eventToEdit.startTime }
         val calEnd = Calendar.getInstance().apply { time = eventToEdit.endTime }
@@ -226,6 +276,24 @@ class EventDetailFragment : Fragment() {
         minutePickerFrom.visibility = visibility
         hourPickerUntil.visibility = visibility
         minutePickerUntil.visibility = visibility
+
+        if (eventToEdit.notificationMinutesBefore != null) {
+            notificationSwitch.isChecked = true
+            notificationSpinner.visibility = View.VISIBLE
+            val minutes = eventToEdit.notificationMinutesBefore!!
+            val selectedIndex = when (minutes) {
+                5 -> 0
+                10 -> 1
+                15 -> 2
+                30 -> 3
+                60 -> 4
+                else -> 0
+            }
+            notificationSpinner.setSelection(selectedIndex)
+        } else {
+            notificationSwitch.isChecked = false
+            notificationSpinner.visibility = View.GONE
+        }
     }
 
 }

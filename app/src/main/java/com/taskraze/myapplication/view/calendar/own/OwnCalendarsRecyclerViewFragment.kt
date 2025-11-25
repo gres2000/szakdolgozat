@@ -9,8 +9,10 @@ import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.taskraze.myapplication.R
@@ -20,6 +22,7 @@ import com.taskraze.myapplication.databinding.OwnCalendarsRecyclerViewBinding
 import com.taskraze.myapplication.viewmodel.MainViewModel
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.taskraze.myapplication.model.calendar.UserData
+import com.taskraze.myapplication.viewmodel.NotificationViewModel
 import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
 import com.taskraze.myapplication.viewmodel.calendar.FirestoreViewModel
 import kotlinx.coroutines.launch
@@ -34,6 +37,7 @@ class OwnCalendarsRecyclerViewFragment : Fragment(), CalendarDialogFragment.Cale
     private lateinit var saveCalendars: FloatingActionButton
     private lateinit var viewModel: MainViewModel
     private lateinit var firestoreViewModel: FirestoreViewModel
+    private lateinit var notificationViewModel: NotificationViewModel
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -48,6 +52,7 @@ class OwnCalendarsRecyclerViewFragment : Fragment(), CalendarDialogFragment.Cale
 
         viewModel = ViewModelProvider(requireActivity())[MainViewModel::class.java]
         firestoreViewModel = ViewModelProvider(requireActivity())[FirestoreViewModel::class.java]
+        notificationViewModel = ViewModelProvider(requireActivity())[NotificationViewModel::class.java]
 
         addNewCalendar = view.findViewById(R.id.fab_add_calendar)
         saveCalendars = view.findViewById(R.id.fab_save_calendars)
@@ -57,12 +62,12 @@ class OwnCalendarsRecyclerViewFragment : Fragment(), CalendarDialogFragment.Cale
         val adapter = CustomOwnCalendarAdapter(requireActivity() as AppCompatActivity, mutableListOf())
         binding.ownCalendarsRecyclerView.adapter = adapter
 
-        firestoreViewModel.loadCalendars()
-
-        lifecycleScope.launchWhenStarted {
-            firestoreViewModel.calendars.collect { calendarList ->
-                Toast.makeText(requireContext(), "Loaded: ${calendarList.size} calendars", Toast.LENGTH_SHORT).show()
-                adapter.updateData(calendarList)
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                firestoreViewModel.calendars.collect { calendarList ->
+                    Toast.makeText(requireContext(), "Loaded: ${calendarList.size} calendars", Toast.LENGTH_SHORT).show()
+                    adapter.updateData(calendarList)
+                }
             }
         }
 

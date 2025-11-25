@@ -7,8 +7,10 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.taskraze.myapplication.R
@@ -18,6 +20,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.taskraze.myapplication.model.auth.AuthRepository
 import com.taskraze.myapplication.model.calendar.FirestoreCalendarRepository
 import com.taskraze.myapplication.view.calendar.own.CustomOwnCalendarAdapter
+import com.taskraze.myapplication.viewmodel.NotificationViewModel
 import com.taskraze.myapplication.viewmodel.calendar.FirestoreViewModel
 import kotlinx.coroutines.launch
 
@@ -26,6 +29,7 @@ class SharedCalendarsRecyclerViewFragment : Fragment() {
     private val binding get() = _binding!!
     private lateinit var saveCalendars: FloatingActionButton
     private lateinit var firestoreViewModel: FirestoreViewModel
+    private lateinit var notificationViewModel: NotificationViewModel
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -47,35 +51,15 @@ class SharedCalendarsRecyclerViewFragment : Fragment() {
         val adapter = CustomSharedCalendarAdapter(requireActivity() as AppCompatActivity, mutableListOf())
         binding.sharedCalendarsRecyclerView.adapter = adapter
 
-        firestoreViewModel.loadSharedCalendars()
-
-        lifecycleScope.launchWhenStarted {
-            firestoreViewModel.sharedCalendars.collect { calendarList ->
-                Toast.makeText(requireContext(), "Loaded: ${calendarList.size} SHARED calendars", Toast.LENGTH_SHORT).show()
-                adapter.updateData(calendarList)
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                firestoreViewModel.sharedCalendars.collect { calendarList ->
+                    Toast.makeText(requireContext(), "Loaded: ${calendarList.size} SHARED calendars", Toast.LENGTH_SHORT).show()
+                    adapter.updateData(calendarList)
+                }
             }
         }
-//
-//        lifecycleScope.launch {
-//            if (this@SharedCalendarsRecyclerViewFragment.isAdded) {
-//                binding.sharedCalendarsRecyclerView.adapter?.notifyDataSetChanged()
-//                //MyItemTouchHelperCallback.attachDragAndDrop(adapter, calendarsRecyclerView)
-//            }
-//        }
 
-//        lifecycleScope.launch {
-//
-//            if (this@SharedCalendarsRecyclerViewFragment.isAdded) {
-//                val adapter = CustomSharedCalendarAdapter(
-//                    requireActivity() as AppCompatActivity,
-//                    MainViewModel.getSharedCalendars(requireContext())
-//                )
-//
-//                binding.sharedCalendarsRecyclerView.adapter = adapter
-//                binding.sharedCalendarsRecyclerView.adapter?.notifyDataSetChanged()
-//                //MyItemTouchHelperCallback.attachDragAndDrop(adapter, calendarsRecyclerView)
-//            }
-//        }
 
         saveCalendars.setOnClickListener{
             MainViewModel.viewModelScope.launch {

@@ -11,7 +11,8 @@ data class EventData(
     var startTime: Date,
     var endTime: Date,
     var location: String? = null,
-    var wholeDayEvent: Boolean
+    var wholeDayEvent: Boolean,
+    var notificationMinutesBefore: Int? = null
 ) {
-    constructor() : this("", "", null, Date(), Date(), null, false)
+    constructor() : this("", "", null, Date(), Date(), null, false, null)
 }
