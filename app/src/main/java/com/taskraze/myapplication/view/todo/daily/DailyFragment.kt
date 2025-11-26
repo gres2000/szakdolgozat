@@ -10,7 +10,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.taskraze.myapplication.R
-import com.taskraze.myapplication.view.todo.tasks.CustomDayAdapter
+import com.taskraze.myapplication.view.todo.tasks.CustomTaskAdapter
 import com.taskraze.myapplication.model.todo.TaskData
 import com.taskraze.myapplication.databinding.DailyFragmentBinding
 import com.taskraze.myapplication.view.todo.tasks.TaskDetailFragment
@@ -58,10 +58,10 @@ class DailyFragment : Fragment() {
         taskViewModel.loadTasks()
 
         val dataList: MutableList<TaskData>
-        val adapter: CustomDayAdapter
+        val adapter: CustomTaskAdapter
         if (dayId == -1) {
             dataList = taskViewModel.dailyTasksList.value.toMutableList()
-            adapter = CustomDayAdapter(this, requireActivity() as AppCompatActivity, dataList, Mode.DAILY)
+            adapter = CustomTaskAdapter(this, requireActivity() as AppCompatActivity, dataList, Mode.DAILY)
 
             viewLifecycleOwner.lifecycleScope.launch {
                 taskViewModel.dailyTasksList.collect { newList ->
@@ -78,7 +78,7 @@ class DailyFragment : Fragment() {
             }
         } else {
             dataList = taskViewModel.weeklyTasksList.value[dayId].toMutableList()
-            adapter = CustomDayAdapter(this, requireActivity() as AppCompatActivity, dataList, Mode.WEEKLY, dayId)
+            adapter = CustomTaskAdapter(this, requireActivity() as AppCompatActivity, dataList, Mode.WEEKLY, dayId)
 
             viewLifecycleOwner.lifecycleScope.launch {
                 taskViewModel.weeklyTasksList.collect { newList ->

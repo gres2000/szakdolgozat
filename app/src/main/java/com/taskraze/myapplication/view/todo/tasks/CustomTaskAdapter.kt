@@ -19,38 +19,38 @@ import com.taskraze.myapplication.viewmodel.MainViewModel
 import com.taskraze.myapplication.viewmodel.todo.TaskViewModel
 import kotlinx.coroutines.launch
 
-class CustomDayAdapter(
+class CustomTaskAdapter(
     private val containingFragment: DailyFragment,
     val activity: AppCompatActivity,
     data: List<TaskData>,
     private val mode: DailyFragment.Mode,
     private val dayId: Int? = null
-) : RecyclerView.Adapter<CustomDayAdapter.DayItemViewHolder>() {
-    inner class DayItemViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+) : RecyclerView.Adapter<CustomTaskAdapter.TaskItemViewHolder>() {
+    inner class TaskItemViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val titleTextView: TextView = itemView.findViewById(R.id.textViewTitle)
         val descriptionTextView: TextView = itemView.findViewById(R.id.textViewDescription)
         val timeTextView: TextView = itemView.findViewById(R.id.textViewTime)
-        val checkBox: CheckBox = itemView.findViewById(R.id.checkBox)
+        val checkBox: CheckBox = itemView.findViewById(R.id.check_box)
         val deleteButton: ImageButton = itemView.findViewById(R.id.imageButtonDelete)
         var viewHolderId: String = ""
-        lateinit var viewModel: MainViewModel
+        lateinit var taskViewModel: TaskViewModel
     }
 
     private val dataList = data.toMutableList()
     private val viewModel = ViewModelProvider(activity)[TaskViewModel::class.java]
-    override fun onCreateViewHolder(view: ViewGroup, viewType: Int): DayItemViewHolder {
-        val itemView = LayoutInflater.from(view.context).inflate(R.layout.day_item_view, view, false)
+    override fun onCreateViewHolder(view: ViewGroup, viewType: Int): TaskItemViewHolder {
+        val itemView = LayoutInflater.from(view.context).inflate(R.layout.task_item_view, view, false)
 
-        return DayItemViewHolder(itemView)
+        return TaskItemViewHolder(itemView)
     }
-    override fun onBindViewHolder(viewHolder: DayItemViewHolder, position: Int) {
+    override fun onBindViewHolder(viewHolder: TaskItemViewHolder, position: Int) {
         val currentItem = dataList[position]
         viewHolder.viewHolderId = currentItem.taskId
         viewHolder.titleTextView.text = currentItem.title
         viewHolder.descriptionTextView.text = currentItem.description
         viewHolder.timeTextView.text = currentItem.time
         viewHolder.checkBox.isChecked = currentItem.isChecked
-        viewHolder.viewModel = ViewModelProvider(activity)[MainViewModel::class.java]
+        viewHolder.taskViewModel = ViewModelProvider(activity)[TaskViewModel::class.java]
 
         viewHolder.itemView.setOnClickListener {
             val taskData = TaskData(viewHolder.viewHolderId, viewHolder.titleTextView.text.toString(), viewHolder.descriptionTextView.text.toString(), viewHolder.timeTextView.text.toString(), viewHolder.checkBox.isChecked)
@@ -58,6 +58,7 @@ class CustomDayAdapter(
         }
         viewHolder.checkBox.setOnCheckedChangeListener { _, isChecked ->
             currentItem.isChecked = isChecked
+            viewModel.toggleChecked(currentItem.taskId, isChecked, mode, containingFragment.getDayId())
         }
 
         viewHolder.deleteButton.setOnClickListener {
