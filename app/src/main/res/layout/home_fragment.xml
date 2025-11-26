@@ -52,6 +52,35 @@
         android:layout_height="wrap_content"
         android:text="@string/friends" />
 
+    <LinearLayout
+        android:id="@+id/notification_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_gravity="center_vertical"
+        android:padding="16dp"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:text="@string/overlay_menu"
+            android:textSize="25sp"
+            android:layout_weight="2"/>
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/switch_overlay_menu"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:paddingEnd="20dp"
+            android:gravity="center"
+            android:scaleX="1.7"
+            android:scaleY="1.7" />
+
+    </LinearLayout>
+
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab_send_request"
         android:layout_width="wrap_content"

@@ -1,33 +1,40 @@
 package com.taskraze.myapplication.view.overlay_widget
 
-import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.Service
-import android.content.Context
+import android.app.*
 import android.content.Intent
-import android.graphics.Color
 import android.graphics.PixelFormat
 import android.os.Build
 import android.os.IBinder
-import android.view.Gravity
-import android.view.LayoutInflater
-import android.view.View
-import android.view.WindowManager
-import android.widget.Button
+import android.view.*
+import android.widget.FrameLayout
+import android.widget.ImageView
+import android.widget.LinearLayout
 import androidx.core.app.NotificationCompat
 import com.taskraze.myapplication.R
+import com.taskraze.myapplication.view.main.MainActivity
 
-class OverlayService: Service() {
+class OverlayService : Service() {
+
     private lateinit var windowManager: WindowManager
-    private lateinit var overlayView: View
+    private lateinit var rootView: FrameLayout
+    private lateinit var bubbleIcon: ImageView
+    private lateinit var optionsContainer: LinearLayout
+
+    private var isLeftSide = true
 
     override fun onCreate() {
         super.onCreate()
-        windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
-        overlayView = LayoutInflater.from(this).inflate(R.layout.overlay_layout, null)
 
-        val layoutParams = WindowManager.LayoutParams(
+        startForeground(1, createNotification())
+
+        windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
+        rootView = LayoutInflater.from(this)
+            .inflate(R.layout.overlay_layout, null) as FrameLayout
+
+        bubbleIcon = rootView.findViewById(R.id.bubbleIcon)
+        optionsContainer = rootView.findViewById(R.id.optionsContainer)
+
+        val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
@@ -38,50 +45,131 @@ class OverlayService: Service() {
             PixelFormat.TRANSLUCENT
         )
 
-        layoutParams.gravity = Gravity.TOP or Gravity.START
-        layoutParams.x = 0
-        layoutParams.y = 100
+        params.gravity = Gravity.TOP or Gravity.START
+        params.x = 0
+        params.y = 200
 
-        windowManager.addView(overlayView, layoutParams)
+        windowManager.addView(rootView, params)
 
-        val closeButton = overlayView.findViewById<Button>(R.id.close_button)
-        closeButton.setOnClickListener {
-            stopSelf()
-        }
+        setupDrag(params)
+        setupBubbleClick()
+        setupOptionClicks()
+    }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            startForegroundService()
+    private fun setupBubbleClick() {
+        bubbleIcon.setOnClickListener {
+            if (optionsContainer.visibility == View.VISIBLE)
+                optionsContainer.visibility = View.GONE
+            else
+                optionsContainer.visibility = View.VISIBLE
         }
     }
 
-    private fun startForegroundService() {
-        val channelId = "overlay_service_channel"
-        val channelName = "Overlay Service Channel"
+    private fun setupDrag(params: WindowManager.LayoutParams) {
+        bubbleIcon.setOnTouchListener(object : View.OnTouchListener {
+            var startX = 0
+            var startY = 0
+            var touchX = 0f
+            var touchY = 0f
+            var isClick = true
+
+            override fun onTouch(v: View?, event: MotionEvent?): Boolean {
+                when (event?.action) {
+
+                    MotionEvent.ACTION_DOWN -> {
+                        isClick = true
+                        startX = params.x
+                        startY = params.y
+                        touchX = event.rawX
+                        touchY = event.rawY
+                        return true
+                    }
+
+                    MotionEvent.ACTION_MOVE -> {
+                        val dx = (event.rawX - touchX).toInt()
+                        val dy = (event.rawY - touchY).toInt()
+
+                        // if moved enough, treat as drag
+                        if (dx * dx + dy * dy > 25) isClick = false  // small threshold
+
+                        params.x = startX + dx
+                        params.y = startY + dy
+                        windowManager.updateViewLayout(rootView, params)
+
+                        return true
+                    }
+
+                    MotionEvent.ACTION_UP -> {
+                        if (isClick) {
+                            // This is a click → call performClick for accessibility
+                            v?.performClick()
+                        } else {
+                            snapToEdge(params)
+                        }
+                        return true
+                    }
+                }
+                return false
+            }
+        })
+    }
+
+
+    private fun snapToEdge(params: WindowManager.LayoutParams) {
+        val width = resources.displayMetrics.widthPixels
+        val midpoint = width / 2
+
+        if (params.x < midpoint) {
+            params.x = 0
+            isLeftSide = true
+        } else {
+            params.x = width
+            isLeftSide = false
+        }
+
+        windowManager.updateViewLayout(rootView, params)
+    }
+
+    private fun setupOptionClicks() {
+        optionsContainer.findViewById<View>(R.id.option1).setOnClickListener { launchOption(1) }
+        optionsContainer.findViewById<View>(R.id.option2).setOnClickListener { launchOption(2) }
+        optionsContainer.findViewById<View>(R.id.option3).setOnClickListener { launchOption(3) }
+    }
+
+    private fun launchOption(option: Int) {
+        val intent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            when(option) {
+                1 -> putExtra("navigateTo", "tasks")
+                2 -> putExtra("navigateTo", "home")
+                3 -> putExtra("navigateTo", "calendar")
+            }
+        }
+        startActivity(intent)
+        stopSelf()
+    }
+
+    private fun createNotification(): Notification {
+        val channelId = "overlay_channel"
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val chan = NotificationChannel(channelId, channelName, NotificationManager.IMPORTANCE_NONE)
-            chan.lightColor = Color.BLUE
-            chan.lockscreenVisibility = Notification.VISIBILITY_PRIVATE
-            val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            manager.createNotificationChannel(chan)
-
-            val notificationBuilder = NotificationCompat.Builder(this, channelId)
-            val notification = notificationBuilder.setOngoing(true)
-                .setSmallIcon(R.drawable.baseline_circle_notifications_24)
-                .setContentTitle("Overlay Service")
-                .setPriority(NotificationManager.IMPORTANCE_MIN)
-                .setCategory(Notification.CATEGORY_SERVICE)
-                .build()
-            startForeground(1, notification)
+            val channel = NotificationChannel(
+                channelId, "Overlay", NotificationManager.IMPORTANCE_LOW
+            )
+            getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
         }
+
+        return NotificationCompat.Builder(this, channelId)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setContentText("Floating bubble running")
+            .setOngoing(true)
+            .build()
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        if (::overlayView.isInitialized) windowManager.removeView(overlayView)
+        if (::rootView.isInitialized) windowManager.removeView(rootView)
     }
 
-    override fun onBind(intent: Intent?): IBinder? {
-        return null
-    }
+    override fun onBind(intent: Intent?): IBinder? = null
 }

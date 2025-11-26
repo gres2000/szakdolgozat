@@ -1,5 +1,6 @@
 package com.taskraze.myapplication.view.main
 
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.OnBackPressedCallback
@@ -39,6 +40,7 @@ class MainActivity : AppCompatActivity() {
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
         viewModel = ViewModelProvider(this)[MainViewModel::class.java]
         calendarViewModel = ViewModelProvider(this)[CalendarViewModel::class.java]
         notificationViewModel = ViewModelProvider(this)[NotificationViewModel::class.java]
@@ -71,6 +73,9 @@ class MainActivity : AppCompatActivity() {
         fragmentManager.beginTransaction()
             .replace(R.id.constraint_container, fragmentMap["home"]!!)
             .commit()
+
+
+        handleOverlayIntent(intent)
     }
 
 
@@ -129,19 +134,40 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupFragments() {
-        val homeFragment = HomeFragment()
-        fragmentMap["home"] = homeFragment
-        CoroutineScope(Dispatchers.Default).launch {
-            val tasksFragmentDeferred = async { TodoFragment() }
-            val calendarFragmentDeferred = async { CalendarFragment() }
+        fragmentMap["home"] = HomeFragment()
+        fragmentMap["tasks"] = TodoFragment()
+        fragmentMap["calendar"] = CalendarFragment()
+    }
 
-            val tasksFragment = tasksFragmentDeferred.await()
-            val calendarFragment = calendarFragmentDeferred.await()
+    private fun handleOverlayIntent(intent: Intent?) {
+        intent?.getStringExtra("navigateTo")?.let { destination ->
+            when(destination) {
+                "tasks" -> {
+                    binding.bottomNavigationView.selectedItemId = R.id.destination_tasks
+                    fragmentManager.beginTransaction()
+                        .replace(R.id.constraint_container, fragmentMap["tasks"]!!)
+                        .commit()
+                }
+                "calendar" -> {
+                    binding.bottomNavigationView.selectedItemId = R.id.destination_calendar
+                    fragmentManager.beginTransaction()
+                        .replace(R.id.constraint_container, fragmentMap["calendar"]!!)
+                        .commit()
+                }
+                "home" -> {
+                    binding.bottomNavigationView.selectedItemId = R.id.destination_home
+                    fragmentManager.beginTransaction()
+                        .replace(R.id.constraint_container, fragmentMap["home"]!!)
+                        .commit()
+                }
 
-            withContext(Dispatchers.Main) {
-                fragmentMap["tasks"] = tasksFragment
-                fragmentMap["calendar"] = calendarFragment
+                else -> {}
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        handleOverlayIntent(intent)
     }
 }

@@ -4,14 +4,17 @@ import android.content.Context
 import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.TextView
+import androidx.appcompat.widget.SwitchCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import com.taskraze.myapplication.R
@@ -26,6 +29,8 @@ import com.taskraze.myapplication.model.home.InternetConnectivityCallback
 import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
 import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.launch
+import androidx.core.net.toUri
+import com.taskraze.myapplication.view.overlay_widget.OverlayService
 
 class HomeFragment : Fragment() {
     private var _binding: HomeFragmentBinding? = null
@@ -33,6 +38,7 @@ class HomeFragment : Fragment() {
     private lateinit var currentUserTextView: TextView
     private lateinit var openChatButton: Button
     private lateinit var openFriendsButton: Button
+    private lateinit var overlayMenuSwitch: SwitchCompat
     private lateinit var suggestedEventsRecyclerView: RecyclerView
     private lateinit var connectivityCallback: InternetConnectivityCallback
 
@@ -71,6 +77,7 @@ class HomeFragment : Fragment() {
         openChatButton = binding.openChatButton
         openFriendsButton = binding.openFriendsButton
         suggestedEventsRecyclerView = binding.suggestedEventsRecyclerView
+        overlayMenuSwitch = binding.switchOverlayMenu
 
         if (MainViewModel.auth.currentUser != null) {
             currentUserTextView.text = MainViewModel.auth.currentUser!!.email
@@ -98,8 +105,61 @@ class HomeFragment : Fragment() {
             startActivity(intent)
         }
 
+        val isEnabled = UserPreferences.isOverlayEnabled(requireContext())
+        overlayMenuSwitch.isChecked = isEnabled
 
+        // If previously enabled AND permission is already granted
+        if (isEnabled && Settings.canDrawOverlays(requireContext())) {
+            startOverlayService()
+        }
 
+        overlayMenuSwitch.setOnCheckedChangeListener { _, isChecked ->
+            UserPreferences.setOverlayEnabled(requireContext(), isChecked)
+
+            if (isChecked) {
+                if (Settings.canDrawOverlays(requireContext())) {
+                    startOverlayService()
+                } else {
+                    requestOverlayPermission()
+                    overlayMenuSwitch.isChecked = false
+                    UserPreferences.setOverlayEnabled(requireContext(), false)
+                }
+            } else {
+                stopOverlayService()
+            }
+        }
+
+    }
+
+    private fun requestOverlayPermission() {
+        val intent = Intent(
+            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+            "package:${requireContext().packageName}".toUri()
+        )
+        startActivity(intent)
+    }
+
+    private fun startOverlayService() {
+        val intent = Intent(requireContext(), OverlayService::class.java)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            requireContext().startForegroundService(intent)
+        } else {
+            requireContext().startService(intent)
+        }
+    }
+
+    private fun stopOverlayService() {
+        val intent = Intent(requireContext(), OverlayService::class.java)
+        requireContext().stopService(intent)
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        if (overlayMenuSwitch.isChecked && Settings.canDrawOverlays(requireContext())) {
+            startOverlayService()
+        }
     }
 
     override fun onDestroyView() {
