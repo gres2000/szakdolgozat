@@ -49,13 +49,10 @@ class WeeklyFragment : Fragment() {
 
         val currentDayOfWeek = java.util.Calendar.getInstance().get(java.util.Calendar.DAY_OF_WEEK)
 
-        // adjust for Monday
         val adjustedDayOfWeek = if (currentDayOfWeek == java.util.Calendar.SUNDAY) 6 else currentDayOfWeek - java.util.Calendar.MONDAY
 
-        // set to current day
         viewPager.setCurrentItem(adjustedDayOfWeek, false)
 
-        // attach tab layout to viewpager
         TabLayoutMediator(tabLayout, viewPager) { tab, position ->
             tab.text = daysOfWeek[position]
         }.attach()

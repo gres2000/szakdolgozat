@@ -17,18 +17,15 @@ import com.taskraze.myapplication.R
 import com.taskraze.myapplication.databinding.SharedCalendarsRecyclerViewBinding
 import com.taskraze.myapplication.viewmodel.MainViewModel
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import com.taskraze.myapplication.model.auth.AuthRepository
-import com.taskraze.myapplication.model.calendar.FirestoreCalendarRepository
-import com.taskraze.myapplication.view.calendar.own.CustomOwnCalendarAdapter
 import com.taskraze.myapplication.viewmodel.NotificationViewModel
-import com.taskraze.myapplication.viewmodel.calendar.FirestoreViewModel
+import com.taskraze.myapplication.viewmodel.calendar.CalendarViewModel
 import kotlinx.coroutines.launch
 
 class SharedCalendarsRecyclerViewFragment : Fragment() {
     private var _binding: SharedCalendarsRecyclerViewBinding? = null
     private val binding get() = _binding!!
     private lateinit var saveCalendars: FloatingActionButton
-    private lateinit var firestoreViewModel: FirestoreViewModel
+    private lateinit var calendarViewModel: CalendarViewModel
     private lateinit var notificationViewModel: NotificationViewModel
 
     override fun onCreateView(
@@ -42,7 +39,7 @@ class SharedCalendarsRecyclerViewFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        firestoreViewModel = ViewModelProvider(requireActivity())[FirestoreViewModel::class.java]
+        calendarViewModel = ViewModelProvider(requireActivity())[CalendarViewModel::class.java]
 
         saveCalendars = view.findViewById(R.id.fab_save_calendars)
 
@@ -53,8 +50,7 @@ class SharedCalendarsRecyclerViewFragment : Fragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                firestoreViewModel.sharedCalendars.collect { calendarList ->
-                    Toast.makeText(requireContext(), "Loaded: ${calendarList.size} SHARED calendars", Toast.LENGTH_SHORT).show()
+                calendarViewModel.sharedCalendars.collect { calendarList ->
                     adapter.updateData(calendarList)
                 }
             }

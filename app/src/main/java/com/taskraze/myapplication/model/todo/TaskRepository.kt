@@ -1,96 +1,61 @@
 package com.taskraze.myapplication.model.todo
 
-import android.content.Context
 import android.util.Log
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
-import com.taskraze.myapplication.viewmodel.MainViewModel
 import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
+import kotlinx.coroutines.tasks.await
 
-class TaskRepository(private val context: Context) {
+class TaskRepository {
 
-    private val userId = AuthViewModel.getUserId()
-    private val dailyFileName = userId + "_daily_tasks.json"
-    private val weeklyFileName = userId + "_weekly_tasks.json"
-    fun saveTasksLocally(dailyTaskList: List<TaskData>, weeklyTaskList: List<List<TaskData>>) {
-        // daily save
-        val dailyJson = Gson().toJson(dailyTaskList)
-        context.openFileOutput(dailyFileName, Context.MODE_PRIVATE).use {
-            it.write(dailyJson.toByteArray())
-        }
+    data class DailyWrapper(
+        val tasks: List<TaskData> = emptyList()
+    )
 
-        // weekly save
-        val weeklyJson = Gson().toJson(weeklyTaskList)
-        context.openFileOutput(weeklyFileName, Context.MODE_PRIVATE).use {
-            it.write(weeklyJson.toByteArray())
-        }
-    }
+    data class WeeklyWrapper(
+        val tasks: Map<String, List<TaskData>> = emptyMap()
+    )
 
-    fun loadDailyTasksLocally(): List<TaskData> {
-        return try {
-            val file = context.getFileStreamPath(dailyFileName)
-            if (!file.exists()) return emptyList()
+    private val firestoreDB = FirebaseFirestore.getInstance()
+    private val dailyTasksCollection = firestoreDB.collection("todo_tasks")
+    private val weeklyTasksCollection = firestoreDB.collection("todo_tasks")
 
-            val json = context.openFileInput(dailyFileName).bufferedReader().readText()
-            Gson().fromJson(json, object : TypeToken<List<TaskData>>() {}.type) ?: emptyList()
-        } catch (e: Exception) {
-            emptyList()
-        }
-    }
-
-    fun loadWeeklyTasksLocally(): List<List<TaskData>> {
-        return try {
-            val file = context.getFileStreamPath(weeklyFileName)
-            if (!file.exists()) return List(7) { mutableListOf<TaskData>() }
-
-            val json = context.openFileInput(weeklyFileName).bufferedReader().readText()
-            val some = Gson().fromJson(json, object : TypeToken<List<List<TaskData>>>() {}.type)
-                ?: List(7) { mutableListOf<TaskData>() }
-            some
-        } catch (e: Exception) {
-            List(7) { mutableListOf<TaskData>() }
-        }
-    }
-
-    fun uploadTasksToFirebase(dailyList: List<TaskData>, weeklyList: List<List<TaskData>>) {
-        val db = FirebaseFirestore.getInstance()
-        val dailyDoc = db.collection("todo_tasks").document(userId + "_daily_tasks")
-        dailyDoc.set(mapOf("tasks" to dailyList))
-            .addOnSuccessListener { Log.d("Firebase", "Daily tasks uploaded!") }
+    suspend fun updateTasks(dailyList: List<TaskData>, weeklyList: List<List<TaskData>>) {
+        val userId = AuthViewModel.awaitUserId()
+        dailyTasksCollection.document(userId + "_daily_tasks").set(mapOf("tasks" to dailyList))
+            .addOnSuccessListener { Log.d("Firebase", "Daily tasks uploaded") }
             .addOnFailureListener { e -> Log.e("Firebase", "Error uploading daily tasks", e) }
 
         val weeklyMap = weeklyList.mapIndexed { index, tasks -> index.toString() to tasks }.toMap()
-        val weeklyDoc = db.collection("todo_tasks").document(userId + "_weekly_tasks")
-        weeklyDoc.set(mapOf("tasks" to weeklyMap))
-            .addOnSuccessListener { Log.d("Firebase", "Weekly tasks uploaded!") }
+        weeklyTasksCollection.document(userId + "_weekly_tasks").set(mapOf("tasks" to weeklyMap))
+            .addOnSuccessListener { Log.d("Firebase", "Weekly tasks uploaded") }
             .addOnFailureListener { e -> Log.e("Firebase", "Error uploading weekly tasks", e) }
     }
 
-    fun downloadTasksFromFirebase(onSuccess: (List<TaskData>, List<List<TaskData>>) -> Unit, onFailure: (Exception) -> Unit) {
-        val db = FirebaseFirestore.getInstance()
-        val dailyDoc = db.collection("todo_tasks").document(userId + "_daily_tasks")
-        val weeklyDoc = db.collection("todo_tasks").document(userId + "_weekly_tasks")
+    suspend fun getTasks(): Pair<List<TaskData>, List<List<TaskData>>> {
+        val userId = AuthViewModel.awaitUserId()
+        return try {
+            val dailySnapshot = dailyTasksCollection.document(userId + "_daily_tasks").get().await()
+            val weeklySnapshot = weeklyTasksCollection.document(userId + "_weekly_tasks").get().await()
 
-        dailyDoc.get()
-            .addOnSuccessListener { dailySnapshot ->
-                val dailyTasksMap = dailySnapshot.data?.get("tasks") as? List<Map<String, Any>> ?: emptyList()
-                val dailyTasks = dailyTasksMap.map { Gson().fromJson(Gson().toJson(it), TaskData::class.java) }
+            val dailyTasks = if (dailySnapshot.exists()) {
+                dailySnapshot.toObject(DailyWrapper::class.java)?.tasks ?: emptyList()
+            } else emptyList()
 
-                weeklyDoc.get()
-                    .addOnSuccessListener { weeklySnapshot ->
-                        val weeklyTasksMap = weeklySnapshot.data?.get("tasks") as? Map<String, List<Map<String, Any>>> ?: emptyMap()
-                        val weeklyTasks = List(7) { dayId ->
-                            weeklyTasksMap[dayId.toString()]?.map { Gson().fromJson(Gson().toJson(it), TaskData::class.java) }?.toMutableList() ?: mutableListOf()
-                        }
-                        onSuccess(dailyTasks, weeklyTasks)
-                    }
-                    .addOnFailureListener { e ->
-                        onFailure(e)
-                    }
-            }
-            .addOnFailureListener { e ->
-                onFailure(e)
-            }
+            val weeklyMap = if (weeklySnapshot.exists()) {
+                weeklySnapshot.toObject(WeeklyWrapper::class.java)?.tasks ?: emptyMap()
+            } else emptyMap()
+
+            val weeklyList = weeklyMap.entries
+                .sortedBy { it.key.toInt() }
+                .map { it.value }
+                .let { list -> if (list.size == 7) list else List(7) { i -> list.getOrNull(i) ?: mutableListOf() } }
+
+            Pair(dailyTasks, weeklyList)
+
+        } catch (e: Exception) {
+            Log.e("TaskRepository", "Error fetching tasks for $userId", e)
+            Pair(emptyList(), emptyList())
+        }
     }
+
 }

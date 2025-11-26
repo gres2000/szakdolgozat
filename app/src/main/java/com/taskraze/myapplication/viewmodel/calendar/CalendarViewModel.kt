@@ -1,19 +1,17 @@
 package com.taskraze.myapplication.viewmodel.calendar
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.taskraze.myapplication.model.calendar.CalendarData
 import com.taskraze.myapplication.model.calendar.EventData
 import com.taskraze.myapplication.model.calendar.UserData
-import com.taskraze.myapplication.model.calendar.FirestoreCalendarRepository
+import com.taskraze.myapplication.model.calendar.CalendarRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-class FirestoreViewModel : ViewModel() {
-    private val repository = FirestoreCalendarRepository()
-
+class CalendarViewModel : ViewModel() {
+    private val repository = CalendarRepository()
     private val _calendars = MutableStateFlow<List<CalendarData>>(emptyList())
     private val _sharedCalendars = MutableStateFlow<List<CalendarData>>(emptyList())
     private val _events = MutableStateFlow<List<EventData>>(emptyList())
@@ -35,47 +33,22 @@ class FirestoreViewModel : ViewModel() {
         }
     }
 
-//    fun loadAllEvents() {
-//        viewModelScope.launch {
-//            val own = repository.getOwnCalendars()
-//            val shared = repository.getSharedCalendars()
-//
-//            val allCalendars = own + shared
-//
-//            val allEvents = mutableListOf<EventData>()
-//            allCalendars.forEach { cal ->
-//                cal.events.let { eventList ->
-//                    allEvents.addAll(eventList)
-//                }
-//            }
-//
-//            _events.value = allEvents
-//        }
-//    }
-fun loadAllEvents() {
-    viewModelScope.launch {
-        Log.d("NotificationMINE", "Loading all events...")
+    fun loadAllEvents() {
+        viewModelScope.launch {
+            val own = repository.getOwnCalendars()
+            val shared = repository.getSharedCalendars()
 
-        val own = repository.getOwnCalendars()
-        Log.d("NotificationMINE", "Own calendars loaded: ${own.size}")
+            val allCalendars = own + shared
+            val allEvents = allCalendars.flatMap { it.events }
 
-        val shared = repository.getSharedCalendars()
-        Log.d("NotificationMINE", "Shared calendars loaded: ${shared.size}")
-
-        val allCalendars = own + shared
-        val allEvents = allCalendars.flatMap { it.events }
-
-        Log.d("NotificationMINE", "Total events found: ${allEvents.size}")
-
-        _events.value = allEvents
-        Log.d("NotificationMINE", "Events StateFlow updated")
+            _events.value = allEvents
+        }
     }
-}
 
     fun addCalendar(calendar: CalendarData) {
         viewModelScope.launch {
             repository.addCalendar(calendar)
-            loadCalendars() // refresh
+            loadCalendars()
         }
     }
 
@@ -97,6 +70,7 @@ fun loadAllEvents() {
         viewModelScope.launch {
             repository.addSharedUserToCalendar(user, calendarId)
             loadCalendars()
+            loadSharedCalendars()
         }
     }
 

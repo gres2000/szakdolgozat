@@ -17,7 +17,7 @@ import com.taskraze.myapplication.R
 import com.taskraze.myapplication.model.calendar.CalendarData
 import com.taskraze.myapplication.view.calendar.details.CalendarDetailFragment
 import com.taskraze.myapplication.viewmodel.MainViewModel
-import com.taskraze.myapplication.viewmodel.calendar.FirestoreViewModel
+import com.taskraze.myapplication.viewmodel.calendar.CalendarViewModel
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
@@ -34,11 +34,11 @@ class CustomOwnCalendarAdapter(private val activity: AppCompatActivity, private 
         lateinit var viewModel: MainViewModel
     }
 
-    private lateinit var firestoreViewModel: FirestoreViewModel
+    private lateinit var calendarViewModel: CalendarViewModel
 
     override fun onCreateViewHolder(view: ViewGroup, viewType: Int): CalendarItemViewHolder {
         val itemView = LayoutInflater.from(view.context).inflate(R.layout.calendar_item_view, view, false)
-        firestoreViewModel = ViewModelProvider(activity)[FirestoreViewModel::class.java]
+        calendarViewModel = ViewModelProvider(activity)[CalendarViewModel::class.java]
         return CalendarItemViewHolder(itemView)
     }
 
@@ -113,8 +113,8 @@ class CustomOwnCalendarAdapter(private val activity: AppCompatActivity, private 
             val viewModel = ViewModelProvider(activity)[MainViewModel::class.java]
             viewModel.viewModelScope.launch { // Launch a coroutine
                 viewModel.deleteSharedUsersFromCalendar(dataList[position].sharedPeople, dataList[position])
-                firestoreViewModel.deleteCalendar(dataList[position])
-                firestoreViewModel.updateCalendar(dataList[position])
+                calendarViewModel.deleteCalendar(dataList[position])
+                calendarViewModel.updateCalendar(dataList[position])
                 dataList.removeAt(position)
                 notifyItemRemoved(position)
             }

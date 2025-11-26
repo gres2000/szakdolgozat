@@ -1,7 +1,6 @@
 package com.taskraze.myapplication.view.calendar.details
 
 import android.app.DatePickerDialog
-import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -15,10 +14,7 @@ import android.widget.NumberPicker
 import android.widget.Spinner
 import android.widget.TextView
 import androidx.annotation.RequiresApi
-import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.taskraze.myapplication.R

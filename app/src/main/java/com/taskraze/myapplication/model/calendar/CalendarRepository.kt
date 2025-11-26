@@ -6,8 +6,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
 import kotlinx.coroutines.tasks.await
 
-class FirestoreCalendarRepository {
-
+class CalendarRepository {
     private val firestoreDB = FirebaseFirestore.getInstance()
     private val calendarsCollection = firestoreDB.collection("calendars")
     private val userInCalendarsCollection = firestoreDB.collection("user_in_calendars")
@@ -34,62 +33,44 @@ class FirestoreCalendarRepository {
     }
 
     private suspend fun updateCalendars(calendars: List<CalendarData>) {
+        val userId = AuthViewModel.awaitUserId()
         try {
             val userCalendars = UserCalendarsData(
-                userId = AuthViewModel.getUserId(),
+                userId = userId,
                 calendars = calendars.toMutableList()
             )
 
-            calendarsCollection.document(AuthViewModel.getUserId())
+            calendarsCollection.document(userId)
                 .set(userCalendars)
                 .await()
-
-            Log.d("FirestoreRepo", "Updated calendars for ${AuthViewModel.getUserId()}")
         } catch (e: Exception) {
             Log.e("FirestoreRepo", "Error updating calendars: $e")
         }
     }
 
-//    suspend fun getOwnCalendars(): List<CalendarData> {
-//        return try {
-//            val doc = calendarsCollection.document(AuthViewModel.getUserId()).get().await()
-//            if (doc.exists()) {
-//                doc.toObject(UserCalendarsData::class.java)?.calendars ?: emptyList()
-//            } else emptyList()
-//        } catch (e: Exception) {
-//            Log.e(ContentValues.TAG, "Error fetching calendars: $e")
-//            emptyList()
-//        }
-//    }
-suspend fun getOwnCalendars(): List<CalendarData> {
-    val userId = AuthViewModel.getUserId()
-    Log.d("NotificationMINE", "Fetching calendars for userId: $userId")
+    suspend fun getOwnCalendars(): List<CalendarData> {
+        val userId = AuthViewModel.awaitUserId()
+        return try {
+            val doc = calendarsCollection.document(userId).get().await()
 
-    return try {
-        val doc = calendarsCollection.document(userId).get().await()
-        Log.d("NotificationMINE", "Document fetched: exists=${doc.exists()}")
-
-        if (doc.exists()) {
-            val calendars = doc.toObject(UserCalendarsData::class.java)?.calendars ?: emptyList()
-            Log.d("NotificationMINE", "Found ${calendars.size} calendars")
-            calendars
-        } else {
-            Log.d("NotificationMINE", "No calendars found for user")
+            if (doc.exists()) {
+                val calendars = doc.toObject(UserCalendarsData::class.java)?.calendars ?: emptyList()
+                calendars
+            } else {
+                emptyList()
+            }
+        } catch (e: Exception) {
+            Log.e("NotificationMINE", "Error fetching calendars for user $userId", e)
             emptyList()
         }
-    } catch (e: Exception) {
-        Log.e("NotificationMINE", "Error fetching calendars for user $userId", e)
-        emptyList()
     }
-}
-
 
     suspend fun getSharedCalendars(): List<CalendarData> {
-        val currentUserId = AuthViewModel.getUserId()
+        val userId = AuthViewModel.awaitUserId()
         val sharedCalendars = mutableListOf<CalendarData>()
 
         try {
-            val snapshot = userInCalendarsCollection.document(currentUserId).get().await()
+            val snapshot = userInCalendarsCollection.document(userId).get().await()
             val owners = snapshot.get("owners") as? List<Map<String, Any>> ?: emptyList()
 
             for (ownerEntry in owners) {
@@ -137,11 +118,4 @@ suspend fun getOwnCalendars(): List<CalendarData> {
             Log.e(ContentValues.TAG, "Error removing shared user: $e")
         }
     }
-
-    suspend fun getAllEvents(): List<EventData> {
-        val ownCalendars = getOwnCalendars()
-        val sharedCalendars = getSharedCalendars()
-        return (ownCalendars + sharedCalendars).flatMap { it.events }
-    }
-
 }

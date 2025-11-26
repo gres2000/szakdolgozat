@@ -24,7 +24,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.taskraze.myapplication.model.calendar.UserData
 import com.taskraze.myapplication.viewmodel.NotificationViewModel
 import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
-import com.taskraze.myapplication.viewmodel.calendar.FirestoreViewModel
+import com.taskraze.myapplication.viewmodel.calendar.CalendarViewModel
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.ZoneId
@@ -36,7 +36,7 @@ class OwnCalendarsRecyclerViewFragment : Fragment(), CalendarDialogFragment.Cale
     private lateinit var addNewCalendar: FloatingActionButton
     private lateinit var saveCalendars: FloatingActionButton
     private lateinit var viewModel: MainViewModel
-    private lateinit var firestoreViewModel: FirestoreViewModel
+    private lateinit var calendarViewModel: CalendarViewModel
     private lateinit var notificationViewModel: NotificationViewModel
 
     override fun onCreateView(
@@ -51,7 +51,7 @@ class OwnCalendarsRecyclerViewFragment : Fragment(), CalendarDialogFragment.Cale
         super.onViewCreated(view, savedInstanceState)
 
         viewModel = ViewModelProvider(requireActivity())[MainViewModel::class.java]
-        firestoreViewModel = ViewModelProvider(requireActivity())[FirestoreViewModel::class.java]
+        calendarViewModel = ViewModelProvider(requireActivity())[CalendarViewModel::class.java]
         notificationViewModel = ViewModelProvider(requireActivity())[NotificationViewModel::class.java]
 
         addNewCalendar = view.findViewById(R.id.fab_add_calendar)
@@ -64,8 +64,7 @@ class OwnCalendarsRecyclerViewFragment : Fragment(), CalendarDialogFragment.Cale
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                firestoreViewModel.calendars.collect { calendarList ->
-                    Toast.makeText(requireContext(), "Loaded: ${calendarList.size} calendars", Toast.LENGTH_SHORT).show()
+                calendarViewModel.calendars.collect { calendarList ->
                     adapter.updateData(calendarList)
                 }
             }
@@ -75,14 +74,6 @@ class OwnCalendarsRecyclerViewFragment : Fragment(), CalendarDialogFragment.Cale
             showNewCalendarDialog()
         }
 
-        saveCalendars.setOnClickListener {
-            firestoreViewModel.loadCalendars()
-            lifecycleScope.launchWhenStarted {
-                firestoreViewModel.calendars.collect { list ->
-                    Toast.makeText(requireActivity(), "Loaded ${list.size} calendars", Toast.LENGTH_SHORT).show()
-                }
-            }
-        }
     }
 
     private fun showNewCalendarDialog() {
@@ -101,7 +92,7 @@ class OwnCalendarsRecyclerViewFragment : Fragment(), CalendarDialogFragment.Cale
 
         val cal = CalendarData(-1, name, 0, userList, owner, eventList, date)
         MainViewModel.viewModelScope.launch {
-            firestoreViewModel.addCalendar(cal)
+            calendarViewModel.addCalendar(cal)
         }
     }
 }

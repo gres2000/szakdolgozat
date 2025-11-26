@@ -19,14 +19,20 @@ import com.taskraze.myapplication.viewmodel.MainViewModel
 import com.taskraze.myapplication.viewmodel.todo.TaskViewModel
 import kotlinx.coroutines.launch
 
-class CustomDayAdapter(private val containingFragment: DailyFragment, val activity: AppCompatActivity, data: List<TaskData>) : RecyclerView.Adapter<CustomDayAdapter.DayItemViewHolder>() {
+class CustomDayAdapter(
+    private val containingFragment: DailyFragment,
+    val activity: AppCompatActivity,
+    data: List<TaskData>,
+    private val mode: DailyFragment.Mode,
+    private val dayId: Int? = null
+) : RecyclerView.Adapter<CustomDayAdapter.DayItemViewHolder>() {
     inner class DayItemViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val titleTextView: TextView = itemView.findViewById(R.id.textViewTitle)
         val descriptionTextView: TextView = itemView.findViewById(R.id.textViewDescription)
         val timeTextView: TextView = itemView.findViewById(R.id.textViewTime)
         val checkBox: CheckBox = itemView.findViewById(R.id.checkBox)
         val deleteButton: ImageButton = itemView.findViewById(R.id.imageButtonDelete)
-        var viewHolderId: Int = -1
+        var viewHolderId: String = ""
         lateinit var viewModel: MainViewModel
     }
 
@@ -71,18 +77,10 @@ class CustomDayAdapter(private val containingFragment: DailyFragment, val activi
         }
     }
 
-    private fun removeItem(taskId: Int) {
-        val index = dataList.indexOfFirst { it.taskId == taskId }
-        if (index >= 0) {
-            dataList.removeAt(index)
-        }
-    }
-
-    private fun showDeleteDialog(position: Int) {
+    private fun showDeleteDialog(taskId: String) {
         val builder = AlertDialog.Builder(activity)
         val inflater = LayoutInflater.from(activity)
         val dialogView = inflater.inflate(R.layout.delete_dialog, null)
-
         builder.setView(dialogView)
 
         val buttonCancel = dialogView.findViewById<Button>(R.id.button_cancel)
@@ -90,20 +88,27 @@ class CustomDayAdapter(private val containingFragment: DailyFragment, val activi
 
         val dialog = builder.create()
 
-        buttonCancel.setOnClickListener {
-            dialog.dismiss()
-        }
+        buttonCancel.setOnClickListener { dialog.dismiss() }
 
         buttonDelete.setOnClickListener {
-            viewModel.viewModelScope.launch {
-                viewModel.removeTask(dataList[position].taskId, DailyFragment.Mode.DAILY, containingFragment.getDayId())
-                removeItem(position)
-                notifyItemRemoved(position)
+            val index = dataList.indexOfFirst { it.taskId == taskId }
+            if (index < 0) {
+                dialog.dismiss()
+                return@setOnClickListener
             }
+
+            dataList.removeAt(index)
+            notifyItemRemoved(index)
+
+            viewModel.viewModelScope.launch {
+                viewModel.removeTask(taskId, mode, containingFragment.getDayId())
+            }
+
             dialog.dismiss()
         }
 
         dialog.show()
     }
+
 
 }

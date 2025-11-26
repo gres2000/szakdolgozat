@@ -12,7 +12,6 @@ import com.taskraze.myapplication.view.todo.daily.DailyFragment
 import com.taskraze.myapplication.view.todo.weekly.WeeklyFragment
 import com.taskraze.myapplication.databinding.TodoFragmentBinding
 import com.google.android.material.switchmaterial.SwitchMaterial
-import com.taskraze.myapplication.viewmodel.MainViewModel
 import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
 
 class TodoFragment : Fragment() {
@@ -71,7 +70,7 @@ class TodoFragment : Fragment() {
     private fun switchFragment(showWeekly: Boolean) {
         val fragment = if (showWeekly) WeeklyFragment() else DailyFragment()
         parentFragmentManager.beginTransaction()
-            .replace(R.id.todoFragmentContainer, fragment)
+            .replace(R.id.todo_fragment_container, fragment)
             .commit()
     }
 

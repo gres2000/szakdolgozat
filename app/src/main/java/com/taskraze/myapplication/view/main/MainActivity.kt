@@ -2,7 +2,6 @@ package com.taskraze.myapplication.view.main
 
 import android.os.Bundle
 import android.util.Log
-import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
@@ -18,7 +17,7 @@ import com.taskraze.myapplication.view.calendar.CalendarFragment
 import com.taskraze.myapplication.viewmodel.MainViewModel
 import com.taskraze.myapplication.viewmodel.NotificationViewModel
 import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
-import com.taskraze.myapplication.viewmodel.calendar.FirestoreViewModel
+import com.taskraze.myapplication.viewmodel.calendar.CalendarViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -31,7 +30,7 @@ class MainActivity : AppCompatActivity() {
     private val fragmentManager = supportFragmentManager
     private val fragmentMap = mutableMapOf<String, Fragment>()
     private lateinit var viewModel: MainViewModel
-    private lateinit var firestoreViewModel: FirestoreViewModel
+    private lateinit var calendarViewModel: CalendarViewModel
     private lateinit var notificationViewModel: NotificationViewModel
     private lateinit var authViewModel: AuthViewModel
 
@@ -41,23 +40,19 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         viewModel = ViewModelProvider(this)[MainViewModel::class.java]
-        firestoreViewModel = ViewModelProvider(this)[FirestoreViewModel::class.java]
+        calendarViewModel = ViewModelProvider(this)[CalendarViewModel::class.java]
         notificationViewModel = ViewModelProvider(this)[NotificationViewModel::class.java]
         authViewModel = ViewModelProvider(this)[AuthViewModel::class.java]
 
         lifecycleScope.launch {
             authViewModel.awaitUserId()
-            firestoreViewModel.loadAllEvents()
-            firestoreViewModel.loadCalendars()
-            firestoreViewModel.loadSharedCalendars()
+            calendarViewModel.loadAllEvents()
+            calendarViewModel.loadCalendars()
+            calendarViewModel.loadSharedCalendars()
 
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                firestoreViewModel.events.collect { eventList ->
-                    if (eventList.isNotEmpty()) { // only run after events arrive
-                        // Optional: show a toast
-                        Toast.makeText(this@MainActivity, "Scheduling ${eventList.size} events", Toast.LENGTH_SHORT).show()
-
-                        // Call your NotificationViewModel
+                calendarViewModel.events.collect { eventList ->
+                    if (eventList.isNotEmpty()) {
                         notificationViewModel.scheduleAllNotifications(this@MainActivity, eventList)
 
                         Log.d("NotificationMINE", "Scheduled all events")

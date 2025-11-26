@@ -12,6 +12,6 @@ class DayPagerAdapter(fragmentPiece: Fragment) :
     override fun getItemCount(): Int = daysOfWeek.size
 
     override fun createFragment(position: Int): Fragment {
-        return DailyFragment.newInstance(daysOfWeek[position], position)
+        return DailyFragment.newDailyFragment(daysOfWeek[position], position)
     }
 }

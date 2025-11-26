@@ -51,7 +51,7 @@ import com.taskraze.myapplication.model.calendar.UserData
 import com.taskraze.myapplication.viewmodel.MainViewModel
 import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
 import com.taskraze.myapplication.viewmodel.calendar.CalendarExportViewModel
-import com.taskraze.myapplication.viewmodel.calendar.FirestoreViewModel
+import com.taskraze.myapplication.viewmodel.calendar.CalendarViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
@@ -63,7 +63,6 @@ import com.microsoft.identity.client.IAuthenticationResult
 import com.microsoft.identity.client.IPublicClientApplication
 import com.microsoft.identity.client.ISingleAccountPublicClientApplication
 import com.microsoft.identity.client.PublicClientApplication
-import com.microsoft.identity.client.SilentAuthenticationCallback
 import com.microsoft.identity.client.exception.MsalException
 import java.time.ZoneId
 import androidx.core.graphics.toColorInt
@@ -88,7 +87,7 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
             }
         }
     }
-    private lateinit var firestoreViewModel: FirestoreViewModel
+    private lateinit var calendarViewModel: CalendarViewModel
     private var selectedDate: LocalDate? = null
     private lateinit var toolbar: Toolbar
     private var _binding: CalendarDetailFragmentBinding? = null
@@ -186,7 +185,7 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
         super.onViewCreated(view, savedInstanceState)
 
         viewModel = ViewModelProvider(requireActivity())[MainViewModel::class.java]
-        firestoreViewModel = ViewModelProvider(requireActivity())[FirestoreViewModel::class.java]
+        calendarViewModel = ViewModelProvider(requireActivity())[CalendarViewModel::class.java]
         exportViewModel = ViewModelProvider(requireActivity())[CalendarExportViewModel::class.java]
 
         initMSAL()
@@ -413,7 +412,7 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
             if (index != -1) {
                 calendar.events[index] = event
                 adapter.updateData(calendar.events.filter { it.startTime.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate() == selectedDate })
-                firestoreViewModel.updateCalendar(calendar)
+                calendarViewModel.updateCalendar(calendar)
             }
 
             requireActivity().onBackPressedDispatcher.onBackPressed()
@@ -423,7 +422,7 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
     override fun onItemRemoved(event: EventData) {
         thisCalendar?.let { calendar ->
             calendar.events.remove(event)
-            firestoreViewModel.updateCalendar(calendar)
+            calendarViewModel.updateCalendar(calendar)
 
             val startDate = event.startTime.toInstant()
                 .atZone(java.time.ZoneId.systemDefault())
@@ -478,7 +477,7 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
 
     override fun onUserClickConfirmed(receiverUser: UserData) {
         MainViewModel.viewModelScope.launch {
-            firestoreViewModel.addUserToCalendar(receiverUser, thisCalendar!!.id)
+            calendarViewModel.addUserToCalendar(receiverUser, thisCalendar!!.id)
             (binding.recyclerViewUsers.adapter as CustomUsersAdapter).addItem(receiverUser)
             binding.recyclerViewUsers.adapter!!.notifyItemInserted(thisCalendar!!.sharedPeopleNumber)
         }
@@ -487,7 +486,7 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
 
     override fun onDeleteConfirmed(deletedUser: UserData, position: Int) {
         MainViewModel.viewModelScope.launch {
-            firestoreViewModel.removeUserFromCalendar(deletedUser.userId, thisCalendar!!.id)
+            calendarViewModel.removeUserFromCalendar(deletedUser.userId, thisCalendar!!.id)
             (binding.recyclerViewUsers.adapter as CustomUsersAdapter).removeItem(deletedUser)
             binding.recyclerViewUsers.adapter!!.notifyItemRemoved(position)
         }
@@ -542,7 +541,10 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
             .build()
 
         val client = GoogleSignIn.getClient(requireActivity(), gso)
-        googleSignInLauncher.launch(client.signInIntent)
+
+        client.signOut().addOnCompleteListener {
+            googleSignInLauncher.launch(client.signInIntent)
+        }
     }
 
     private fun initMSAL() {
@@ -579,81 +581,59 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
     }
 
     private fun acquireOutlookTokenAndExport() {
-        val scopes = arrayOf("Calendars.ReadWrite", "User.Read")
+        val scopes = arrayOf("User.Read", "Calendars.ReadWrite")
 
         if (!::msalApp.isInitialized) {
             Toast.makeText(requireContext(), "MSAL not ready yet", Toast.LENGTH_SHORT).show()
             return
         }
 
-        if (msalAccount == null) {
-            Log.d("MSAL", "No account, starting interactive login via signIn()")
-            msalApp.signIn(
-                requireActivity(),
-                null, // optional login hint
-                scopes,
-                object : AuthenticationCallback {
-                    override fun onSuccess(authenticationResult: IAuthenticationResult) {
-                        msalAccount = authenticationResult.account
-                        val token = authenticationResult.accessToken
-                        lifecycleScope.launch(Dispatchers.IO) {
-                            exportViewModel.exportEventsToOutlookGraph(thisCalendar!!.events, token)
-                        }
-                    }
-
-                    override fun onError(exception: MsalException) {
-                        Log.e("MSAL", "SignIn failed: ${exception.message}")
-                        Toast.makeText(requireContext(), "Outlook sign-in failed", Toast.LENGTH_SHORT).show()
-                    }
-
-                    override fun onCancel() {
-                        Log.d("MSAL", "User cancelled login")
-                    }
-                }
-            )
-            return
-        }
-
-        // Already signed in → acquire token silently
-        val authority = msalApp.configuration.defaultAuthority.authorityURL.toString()
-        msalApp.acquireTokenSilentAsync(scopes, authority, object : SilentAuthenticationCallback {
-            override fun onSuccess(result: IAuthenticationResult) {
-                val token = result.accessToken
-                lifecycleScope.launch(Dispatchers.IO) {
-                    exportViewModel.exportEventsToOutlookGraph(thisCalendar!!.events, token)
-                }
-            }
-
-            override fun onError(e: MsalException?) {
-                Log.d("MSAL", "Silent failed → interactive: ${e?.message}")
-                // fallback to interactive acquireToken
-                acquireTokenInteractively(scopes)
-            }
-        })
-    }
-
-
-    private fun acquireTokenInteractively(scopes: Array<String>) {
         msalApp.acquireToken(
             requireActivity(),
             scopes,
             object : AuthenticationCallback {
-                override fun onSuccess(authenticationResult: IAuthenticationResult) {
-                    msalAccount = authenticationResult.account
+                override fun onSuccess(result: IAuthenticationResult) {
+                    msalAccount = result.account
+                    val token = result.accessToken
 
-                    val token = authenticationResult.accessToken
-                    viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+                    lifecycleScope.launch(Dispatchers.IO) {
                         exportViewModel.exportEventsToOutlookGraph(thisCalendar!!.events, token)
                     }
                 }
 
                 override fun onError(exception: MsalException) {
-                    Log.e("MSAL", "Interactive token acquisition failed: ${exception.message}")
-                    // Optional: show a Toast
+                    Log.e("MSAL", "SignIn failed: ${exception.message}")
+                    Toast.makeText(requireContext(), "Outlook sign-in failed", Toast.LENGTH_SHORT).show()
                 }
 
                 override fun onCancel() {
-                    Log.d("MSAL", "User cancelled interactive login")
+                    Log.d("MSAL", "User cancelled login")
+                }
+            }
+        )
+    }
+
+
+    private fun forceInteractiveLogin() {
+        val scopes = arrayOf("User.Read", "Calendars.ReadWrite")
+
+        msalApp.acquireToken(
+            requireActivity(),
+            scopes,
+            object : AuthenticationCallback {
+                override fun onSuccess(result: IAuthenticationResult) {
+                    msalAccount = result.account
+                    val token = result.accessToken
+
+                    // Continue with export using this token
+                }
+
+                override fun onError(exception: MsalException?) {
+                    exception?.printStackTrace()
+                }
+
+                override fun onCancel() {
+                    // User canceled login
                 }
             }
         )
