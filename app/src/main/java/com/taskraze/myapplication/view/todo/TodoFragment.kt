@@ -31,6 +31,7 @@ class TodoFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+
         setupSwitch()
     }
 
@@ -73,5 +74,4 @@ class TodoFragment : Fragment() {
             .replace(R.id.todo_fragment_container, fragment)
             .commit()
     }
-
 }

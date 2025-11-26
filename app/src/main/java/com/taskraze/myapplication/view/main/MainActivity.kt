@@ -54,8 +54,6 @@ class MainActivity : AppCompatActivity() {
                 calendarViewModel.events.collect { eventList ->
                     if (eventList.isNotEmpty()) {
                         notificationViewModel.scheduleAllNotifications(this@MainActivity, eventList)
-
-                        Log.d("NotificationMINE", "Scheduled all events")
                     }
                 }
             }

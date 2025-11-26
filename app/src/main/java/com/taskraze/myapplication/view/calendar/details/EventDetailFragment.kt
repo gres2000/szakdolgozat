@@ -18,6 +18,7 @@ import androidx.appcompat.widget.SwitchCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.taskraze.myapplication.R
+import com.taskraze.myapplication.databinding.EventDetailFragmentBinding
 import com.taskraze.myapplication.model.calendar.CalendarData
 import com.taskraze.myapplication.model.calendar.EventData
 import com.taskraze.myapplication.viewmodel.MainViewModel
@@ -32,6 +33,7 @@ class EventDetailFragment : Fragment() {
         fun onNewEventCreated(event: EventData)
         fun onEditEvent(event: EventData)
     }
+    private lateinit var binding: EventDetailFragmentBinding
     private lateinit var viewModel: MainViewModel
     private lateinit var notificationViewModel: NotificationViewModel
     private lateinit var dateUntilTextView: TextView
@@ -49,8 +51,13 @@ class EventDetailFragment : Fragment() {
     lateinit var eventToEdit: EventData
     lateinit var calendar: CalendarData
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        return inflater.inflate(R.layout.event_detail_fragment, container, false)
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        binding = EventDetailFragmentBinding.inflate(inflater, container, false)
+        return binding.root
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -59,16 +66,16 @@ class EventDetailFragment : Fragment() {
         viewModel = ViewModelProvider(requireActivity())[MainViewModel::class.java]
         notificationViewModel = ViewModelProvider(requireActivity())[NotificationViewModel::class.java]
 
-        wholeDaySwitch = view.findViewById(R.id.switchButtonEventDetail)
-        eventTitle = view.findViewById(R.id.editTextTitleEventDetail)
-        eventDescription = view.findViewById(R.id.editTextDescriptionEventDetail)
+        wholeDaySwitch = binding.switchButtonEventDetail
+        eventTitle = binding.editTextTitleEventDetail
+        eventDescription = binding.editTextDescriptionEventDetail
 
-        dateUntilTextView = view.findViewById(R.id.dateUntilTextView)
-        dateFromTextView = view.findViewById(R.id.dateFromTextView)
+        dateUntilTextView = binding.dateUntilTextView
+        dateFromTextView = binding.dateFromTextView
         //timer from
 
-        hourPickerFrom = view.findViewById(R.id.hourPickerFrom)
-        minutePickerFrom = view.findViewById(R.id.minutePickerFrom)
+        hourPickerFrom = binding.hourPickerFrom
+        minutePickerFrom = binding.minutePickerFrom
         hourPickerFrom.minValue = 0
         hourPickerFrom.maxValue = 23
 
@@ -78,8 +85,8 @@ class EventDetailFragment : Fragment() {
         minutePickerFrom.setFormatter { String.format("%02d", it) }
 
         //timer until
-        hourPickerUntil = view.findViewById(R.id.hourPickerUntil)
-        minutePickerUntil = view.findViewById(R.id.minutePickerUntil)
+        hourPickerUntil = binding.hourPickerUntil
+        minutePickerUntil = binding.minutePickerUntil
 
         hourPickerUntil.minValue = 0
         hourPickerUntil.maxValue = 23
@@ -100,8 +107,8 @@ class EventDetailFragment : Fragment() {
         minutePickerUntil.visibility = if (wholeDaySwitch.isChecked) View.GONE else View.VISIBLE
 
         // notification components
-        notificationSwitch = view.findViewById(R.id.switchNotification)
-        notificationSpinner = view.findViewById(R.id.spinnerNotificationTime)
+        notificationSwitch = binding.switchNotification
+        notificationSpinner = binding.spinnerNotificationTime
 
         val times = listOf("5 min", "10 min", "15 min", "30 min", "1 hour")
         val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, times)
@@ -156,11 +163,11 @@ class EventDetailFragment : Fragment() {
             showDatePickerDialog(dateFromTextView)
         }
 
-        view.findViewById<Button>(R.id.cancelButtonEventDetail).setOnClickListener {
+        binding.cancelButtonEventDetail.setOnClickListener {
             requireActivity().onBackPressedDispatcher.onBackPressed()
         }
 
-        view.findViewById<Button>(R.id.saveButtonEventDetail).setOnClickListener {
+        binding.saveButtonEventDetail.setOnClickListener {
             val dateFormat = SimpleDateFormat("yyyy/MM/dd HH:mm", Locale.getDefault())
             val dateFrom = dateFormat.parse("${dateFromTextView.text} ${hourPickerFrom.value}:${minutePickerFrom.value}")!!
             val dateUntil = dateFormat.parse("${dateUntilTextView.text} ${hourPickerUntil.value}:${minutePickerUntil.value}")!!

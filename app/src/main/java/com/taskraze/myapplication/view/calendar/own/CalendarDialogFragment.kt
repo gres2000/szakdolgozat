@@ -26,7 +26,7 @@ class CalendarDialogFragment : DialogFragment() {
         inflater: LayoutInflater1,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         _binding = CalendarDialogFragmentBinding.inflate(inflater, container, false)
         return binding.root
     }
@@ -35,8 +35,8 @@ class CalendarDialogFragment : DialogFragment() {
         super.onViewCreated(view, savedInstanceState)
 
         nameEditText = view.findViewById(R.id.editTextNewCalendarTitle)
-        val confirmButton = view.findViewById<Button>(R.id.saveButtonCalendar)
-        val cancelButton = view.findViewById<Button>(R.id.cancelButtonCalendar)
+        val confirmButton = binding.saveButtonCalendar
+        val cancelButton = binding.cancelButtonCalendar
 
         showKeyboard(nameEditText)
 

@@ -53,9 +53,7 @@ object MainViewModel : ViewModel() {
         return temp
     }
 
-    suspend fun getFriendRequests(callback: (List<FriendRequestData>) -> Unit) {
-        // authRepository.fetchUserDetails()
-
+    fun getFriendRequests(callback: (List<FriendRequestData>) -> Unit) {
         val receiverQuery = firestoreDB.collection("friend_requests")
             .whereEqualTo("receiverId", AuthViewModel.getUserId())
 
@@ -97,7 +95,6 @@ object MainViewModel : ViewModel() {
 
     fun handleFriendRequest(choice: String, friendRequestData: FriendRequestData, callback: (Boolean) -> Unit) {
         val friendRequestsCollection = firestoreDB.collection("friend_requests")
-
 
         friendRequestsCollection
             .whereEqualTo("senderId", friendRequestData.senderId)
@@ -336,7 +333,6 @@ object MainViewModel : ViewModel() {
     }
 
     fun generateIdFromOwner(ownerEmail: String, calendarId: String): String {
-
         val combinedString = ownerEmail + calendarId
 
         val digest = MessageDigest.getInstance("SHA-256")
@@ -406,9 +402,7 @@ object MainViewModel : ViewModel() {
         return newChat
     }
 
-    suspend fun quitChat(context: Context, chatData: ChatData) {
-        // authRepository.fetchUserDetails()
-
+    fun quitChat(context: Context, chatData: ChatData) {
         val database =
             FirebaseDatabase.getInstance("https://szakdolgozat-7f789-default-rtdb.europe-west1.firebasedatabase.app/")
         val chatsRef = database.getReference("chats")
@@ -432,60 +426,6 @@ object MainViewModel : ViewModel() {
                 }
             }
         }
-    }
-
-    suspend fun getSharedCalendars(requireContext: Context): MutableList<CalendarData> {
-        val firestoreDB = FirebaseFirestore.getInstance()
-        val calendarsCollection = firestoreDB.collection("calendars")
-        val userInCalendarsCollection = firestoreDB.collection("user_in_calendars")
-
-        val userId = AuthViewModel.getUserId()
-        val resultList = mutableListOf<CalendarData>()
-        try {
-            val userSharedCalendarsDoc = userInCalendarsCollection.document(userId).get().await()
-
-            if (userSharedCalendarsDoc.exists()) {
-                val userCalendars = userSharedCalendarsDoc.get("owners") as? List<*>
-
-
-                for (calendar in userCalendars!!) {
-                    val calendarMap = calendar as? Map<*, *>
-                    val calendarId = calendarMap?.get("calendarId") as? Long
-                    val ownerId = calendarMap?.get("userId") as? String
-
-                    if (ownerId != null) {
-
-                        val allData = try {
-                            val userDocument = calendarsCollection.document(ownerId).get().await()
-
-                            if (userDocument.exists()) {
-                                val calendars = userDocument.toObject(UserCalendarsData::class.java)?.calendars
-                                Log.d(TAG, "Calendars retrieved from Firestore for user: $userId")
-                                calendars
-                            } else {
-                                Log.d(TAG, "No calendars found in Firestore for user: $userId")
-                                null
-                            }
-                        } catch (e: Exception) {
-                            Log.e(TAG, "Error retrieving calendars from Firestore: $e")
-                            null
-                        }
-
-                        if (allData != null) {
-                            for (cal in allData) {
-                                if (cal.sharedPeople.contains(AuthViewModel.loggedInUser.value!!)) {
-                                    resultList.add(cal)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            // error
-        }
-
-        return resultList
     }
 
     suspend fun addEventToSharedCalendar(event: EventData, thisCalendar: CalendarData) {

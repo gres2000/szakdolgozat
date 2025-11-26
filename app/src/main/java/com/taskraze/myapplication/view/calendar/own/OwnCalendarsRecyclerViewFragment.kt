@@ -55,7 +55,6 @@ class OwnCalendarsRecyclerViewFragment : Fragment(), CalendarDialogFragment.Cale
         notificationViewModel = ViewModelProvider(requireActivity())[NotificationViewModel::class.java]
 
         addNewCalendar = view.findViewById(R.id.fab_add_calendar)
-        saveCalendars = view.findViewById(R.id.fab_save_calendars)
 
         binding.ownCalendarsRecyclerView.layoutManager = LinearLayoutManager(requireContext())
 

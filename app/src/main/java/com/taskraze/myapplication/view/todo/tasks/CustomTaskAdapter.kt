@@ -15,7 +15,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.taskraze.myapplication.R
 import com.taskraze.myapplication.view.todo.daily.DailyFragment
 import com.taskraze.myapplication.model.todo.TaskData
-import com.taskraze.myapplication.viewmodel.MainViewModel
 import com.taskraze.myapplication.viewmodel.todo.TaskViewModel
 import kotlinx.coroutines.launch
 
@@ -53,7 +52,7 @@ class CustomTaskAdapter(
         viewHolder.taskViewModel = ViewModelProvider(activity)[TaskViewModel::class.java]
 
         viewHolder.itemView.setOnClickListener {
-            val taskData = TaskData(viewHolder.viewHolderId, viewHolder.titleTextView.text.toString(), viewHolder.descriptionTextView.text.toString(), viewHolder.timeTextView.text.toString(), viewHolder.checkBox.isChecked)
+            val taskData = TaskData(viewHolder.viewHolderId, viewHolder.titleTextView.text.toString(), viewHolder.descriptionTextView.text.toString(), viewHolder.timeTextView.text.toString(), viewHolder.checkBox.isChecked, currentItem.notificationMinutesBefore)
             containingFragment.startUpdateTask(taskData)
         }
         viewHolder.checkBox.setOnCheckedChangeListener { _, isChecked ->

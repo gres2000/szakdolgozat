@@ -1,15 +1,21 @@
 package com.taskraze.myapplication.view.todo.tasks
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.Animation
 import android.view.animation.AnimationUtils
+import android.widget.ArrayAdapter
+import android.widget.Spinner
+import androidx.appcompat.widget.SwitchCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.ViewModelProvider
 import com.taskraze.myapplication.R
 import com.taskraze.myapplication.databinding.TaskDetailFragmentBinding
 import com.taskraze.myapplication.model.todo.TaskData
+import com.taskraze.myapplication.viewmodel.NotificationViewModel
 import java.util.UUID
 
 class TaskDetailFragment : Fragment() {
@@ -20,9 +26,11 @@ class TaskDetailFragment : Fragment() {
     }
 
     private lateinit var binding: TaskDetailFragmentBinding
+    private lateinit var notificationSwitch: SwitchCompat
+    private lateinit var notificationSpinner: Spinner
     lateinit var listener: TaskDetailListener
     lateinit var taskToEdit: TaskData
-    private var isEditing = false
+    private lateinit var notificationViewModel: NotificationViewModel
 
     companion object {
         fun newCreateTask() = TaskDetailFragment()
@@ -42,9 +50,25 @@ class TaskDetailFragment : Fragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         binding.timePicker.setIs24HourView(true)
 
+        notificationViewModel = ViewModelProvider(this)[NotificationViewModel::class.java]
+
+        // notification components
+        notificationSwitch = binding.switchNotification
+        notificationSpinner = binding.spinnerNotificationTime
+
+        val times = listOf("5 min", "10 min", "15 min", "30 min", "1 hour")
+        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, times)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        notificationSpinner.adapter = adapter
+
         prefillTaskIfEditing()
+
+        notificationSwitch.setOnCheckedChangeListener { _, isChecked ->
+            notificationSpinner.visibility = if (isChecked) View.VISIBLE else View.GONE
+        }
 
         binding.cancelButton.setOnClickListener {
             requireActivity().onBackPressedDispatcher.onBackPressed()
@@ -55,20 +79,50 @@ class TaskDetailFragment : Fragment() {
             val minute = binding.timePicker.minute
             val timeString = String.format("%02d:%02d", hour, minute)
 
-            if (isEditing) {
+            // Determine notification minutes
+            val notificationMinutes = if (notificationSwitch.isChecked) {
+                when (notificationSpinner.selectedItem.toString()) {
+                    "5 min" -> 5
+                    "10 min" -> 10
+                    "15 min" -> 15
+                    "30 min" -> 30
+                    "1 hour" -> 60
+                    else -> null
+                }
+            } else {
+                if (::taskToEdit.isInitialized) {
+                    notificationViewModel.cancelTaskNotification(requireContext(), taskToEdit)
+                    taskToEdit.notificationMinutesBefore = null
+                }
+                null
+            }
+
+            if (::taskToEdit.isInitialized) {
                 taskToEdit.title = binding.editTextTitle.text.toString()
                 taskToEdit.description = binding.editTextDescription.text.toString()
                 taskToEdit.time = timeString
+                taskToEdit.notificationMinutesBefore = notificationMinutes
+
                 listener.onEditTask(taskToEdit)
+
+                if (notificationMinutes != null) {
+                    notificationViewModel.scheduleTaskNotification(requireContext(), taskToEdit)
+                }
+
             } else {
                 val newTask = TaskData(
                     taskId = UUID.randomUUID().toString(),
                     title = binding.editTextTitle.text.toString(),
                     description = binding.editTextDescription.text.toString(),
                     time = timeString,
-                    isChecked = false
+                    isChecked = false,
+                    notificationMinutesBefore = notificationMinutes
                 )
                 listener.onNewTaskCreated(newTask)
+
+                if (notificationMinutes != null) {
+                    notificationViewModel.scheduleTaskNotification(requireContext(), newTask)
+                }
             }
 
             requireActivity().onBackPressedDispatcher.onBackPressed()
@@ -77,17 +131,34 @@ class TaskDetailFragment : Fragment() {
 
     private fun prefillTaskIfEditing() {
         if (!::taskToEdit.isInitialized) {
-            isEditing = false
             return
         }
+        Log.d("NotificationERROR", "Prefilling task for editing: $taskToEdit")
 
-        isEditing = true
         binding.editTextTitle.setText(taskToEdit.title)
         binding.editTextDescription.setText(taskToEdit.description)
 
         val timeParts = taskToEdit.time?.split(":")
         binding.timePicker.hour = timeParts?.getOrNull(0)?.toInt() ?: 0
         binding.timePicker.minute = timeParts?.getOrNull(1)?.toInt() ?: 0
+
+        // Prefill notification
+        if (taskToEdit.notificationMinutesBefore != null) {
+            notificationSwitch.isChecked = true
+            notificationSpinner.visibility = View.VISIBLE
+            val index = when (taskToEdit.notificationMinutesBefore) {
+                5 -> 0
+                10 -> 1
+                15 -> 2
+                30 -> 3
+                60 -> 4
+                else -> 0
+            }
+            notificationSpinner.setSelection(index)
+        } else {
+            notificationSwitch.isChecked = false
+            notificationSpinner.visibility = View.GONE
+        }
     }
 
     override fun onCreateAnimation(transit: Int, enter: Boolean, nextAnim: Int): Animation? {

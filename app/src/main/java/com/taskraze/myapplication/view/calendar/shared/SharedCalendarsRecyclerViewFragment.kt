@@ -24,9 +24,7 @@ import kotlinx.coroutines.launch
 class SharedCalendarsRecyclerViewFragment : Fragment() {
     private var _binding: SharedCalendarsRecyclerViewBinding? = null
     private val binding get() = _binding!!
-    private lateinit var saveCalendars: FloatingActionButton
     private lateinit var calendarViewModel: CalendarViewModel
-    private lateinit var notificationViewModel: NotificationViewModel
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -41,8 +39,6 @@ class SharedCalendarsRecyclerViewFragment : Fragment() {
 
         calendarViewModel = ViewModelProvider(requireActivity())[CalendarViewModel::class.java]
 
-        saveCalendars = view.findViewById(R.id.fab_save_calendars)
-
         binding.sharedCalendarsRecyclerView.layoutManager = LinearLayoutManager(requireContext())
 
         val adapter = CustomSharedCalendarAdapter(requireActivity() as AppCompatActivity, mutableListOf())
@@ -52,21 +48,6 @@ class SharedCalendarsRecyclerViewFragment : Fragment() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 calendarViewModel.sharedCalendars.collect { calendarList ->
                     adapter.updateData(calendarList)
-                }
-            }
-        }
-
-
-        saveCalendars.setOnClickListener{
-            MainViewModel.viewModelScope.launch {
-                if (this@SharedCalendarsRecyclerViewFragment.isAdded) {
-                    val adapter = CustomSharedCalendarAdapter(
-                        requireActivity() as AppCompatActivity,
-                        MainViewModel.getSharedCalendars(requireContext())
-                    )
-                    binding.sharedCalendarsRecyclerView.adapter = adapter
-                    binding.sharedCalendarsRecyclerView.adapter?.notifyDataSetChanged()
-                    //MyItemTouchHelperCallback.attachDragAndDrop(adapter, calendarsRecyclerView)
                 }
             }
         }

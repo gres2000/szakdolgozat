@@ -66,11 +66,11 @@ class HomeFragment : Fragment() {
 
         }
 
-        logoutButton = view.findViewById(R.id.buttonLogOut)
-        currentUserTextView = view.findViewById(R.id.textViewCurrentUser)
-        openChatButton = view.findViewById(R.id.openChatButton)
-        openFriendsButton = view.findViewById(R.id.openFriendsButton)
-        suggestedEventsRecyclerView = view.findViewById(R.id.suggestedEventsRecyclerView)
+        logoutButton = binding.buttonLogOut
+        currentUserTextView = binding.textViewCurrentUser
+        openChatButton = binding.openChatButton
+        openFriendsButton = binding.openFriendsButton
+        suggestedEventsRecyclerView = binding.suggestedEventsRecyclerView
 
         if (MainViewModel.auth.currentUser != null) {
             currentUserTextView.text = MainViewModel.auth.currentUser!!.email
