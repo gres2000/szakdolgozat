@@ -1,5 +1,7 @@
 package com.taskraze.myapplication.view.calendar.own
 
+import AuthViewModelFactory
+import CalendarViewModelFactory
 import android.os.Build
 import android.view.LayoutInflater
 import android.view.View
@@ -38,7 +40,14 @@ class CustomOwnCalendarAdapter(private val activity: AppCompatActivity, private 
 
     override fun onCreateViewHolder(view: ViewGroup, viewType: Int): CalendarItemViewHolder {
         val itemView = LayoutInflater.from(view.context).inflate(R.layout.calendar_item_view, view, false)
-        calendarViewModel = ViewModelProvider(activity)[CalendarViewModel::class.java]
+        val authViewModel = ViewModelProvider(
+            activity,
+            AuthViewModelFactory(activity)
+        )[com.taskraze.myapplication.viewmodel.auth.AuthViewModel::class.java]
+        calendarViewModel = ViewModelProvider(
+            activity,
+            CalendarViewModelFactory(authViewModel)
+        )[CalendarViewModel::class.java]
         return CalendarItemViewHolder(itemView)
     }
 
@@ -111,10 +120,9 @@ class CustomOwnCalendarAdapter(private val activity: AppCompatActivity, private 
 
         buttonDelete.setOnClickListener {
             val viewModel = ViewModelProvider(activity)[MainViewModel::class.java]
-            viewModel.viewModelScope.launch { // Launch a coroutine
-                viewModel.deleteSharedUsersFromCalendar(dataList[position].sharedPeople, dataList[position])
+            viewModel.viewModelScope.launch {
+                calendarViewModel.deleteSharedUsersFromCalendar(dataList[position].sharedPeople, dataList[position].id)
                 calendarViewModel.deleteCalendar(dataList[position])
-                calendarViewModel.updateCalendar(dataList[position])
                 dataList.removeAt(position)
                 notifyItemRemoved(position)
             }

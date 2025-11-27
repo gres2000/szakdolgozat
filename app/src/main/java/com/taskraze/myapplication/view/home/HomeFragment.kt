@@ -1,5 +1,6 @@
 package com.taskraze.myapplication.view.home
 
+import AuthViewModelFactory
 import android.content.Context
 import android.content.Intent
 import android.net.ConnectivityManager
@@ -30,7 +31,9 @@ import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
 import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.launch
 import androidx.core.net.toUri
+import androidx.lifecycle.ViewModelProvider
 import com.taskraze.myapplication.view.overlay_widget.OverlayService
+import com.taskraze.myapplication.viewmodel.MainViewModelFactory
 
 class HomeFragment : Fragment() {
     private var _binding: HomeFragmentBinding? = null
@@ -41,6 +44,8 @@ class HomeFragment : Fragment() {
     private lateinit var overlayMenuSwitch: SwitchCompat
     private lateinit var suggestedEventsRecyclerView: RecyclerView
     private lateinit var connectivityCallback: InternetConnectivityCallback
+    private lateinit var authViewModel: AuthViewModel
+    private lateinit var viewModel: MainViewModel
 
     private val binding get() = _binding!!
 
@@ -55,6 +60,14 @@ class HomeFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        authViewModel = ViewModelProvider(
+            this,
+            AuthViewModelFactory(requireActivity())
+        )[AuthViewModel::class.java]
+
+
+        val factory = MainViewModelFactory(authViewModel.getUserId(), authViewModel.loggedInUser.value!!)
+        viewModel = ViewModelProvider(this, factory)[MainViewModel::class.java]
 
         //check for internet connection
         if (!isInternetAvailable(requireContext())) {
@@ -79,16 +92,16 @@ class HomeFragment : Fragment() {
         suggestedEventsRecyclerView = binding.suggestedEventsRecyclerView
         overlayMenuSwitch = binding.switchOverlayMenu
 
-        if (MainViewModel.auth.currentUser != null) {
-            currentUserTextView.text = MainViewModel.auth.currentUser!!.email
+        if (viewModel.auth.currentUser != null) {
+            currentUserTextView.text = viewModel.auth.currentUser!!.email
         }
         else {
             currentUserTextView.text = getString(R.string.not_logged_in)
         }
 
         logoutButton.setOnClickListener {
-            AuthViewModel.loggedInUser.value = UserData("","empty", "empty")
-            MainViewModel.auth.signOut()
+            authViewModel.loggedInUser.value = UserData("","empty", "empty")
+            viewModel.auth.signOut()
             UserPreferences.logoutUser(requireContext())
             val intent = Intent(requireContext(), LoginActivity::class.java)
             startActivity(intent)

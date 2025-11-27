@@ -1,6 +1,9 @@
 package com.taskraze.myapplication.view.calendar.details
 
+import AuthViewModelFactory
+import CalendarViewModelFactory
 import android.app.Dialog
+import android.content.Intent
 import android.content.res.Resources
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
@@ -66,6 +69,7 @@ import com.microsoft.identity.client.PublicClientApplication
 import com.microsoft.identity.client.exception.MsalException
 import java.time.ZoneId
 import androidx.core.graphics.toColorInt
+import com.taskraze.myapplication.view.chat.ChatActivity
 
 class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListener,
     CustomEventAdapter.OnEventActionListener, CustomUsersAdapter.ChatActionListener, CustomUsersAdapter.DeleteActionListener {
@@ -96,6 +100,7 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
     private var thisCalendar: CalendarData? = null
     private val binding get() = _binding!!
     private lateinit var exportViewModel: CalendarExportViewModel
+    private lateinit var authViewModel: AuthViewModel
     private lateinit var msalApp: ISingleAccountPublicClientApplication
     private var msalAccount = null as com.microsoft.identity.client.IAccount?
 
@@ -185,8 +190,15 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
         super.onViewCreated(view, savedInstanceState)
 
         viewModel = ViewModelProvider(requireActivity())[MainViewModel::class.java]
-        calendarViewModel = ViewModelProvider(requireActivity())[CalendarViewModel::class.java]
         exportViewModel = ViewModelProvider(requireActivity())[CalendarExportViewModel::class.java]
+        authViewModel = ViewModelProvider(
+            this,
+            AuthViewModelFactory(requireActivity())
+        )[AuthViewModel::class.java]
+        calendarViewModel = ViewModelProvider(
+            this,
+            CalendarViewModelFactory(authViewModel)
+        )[CalendarViewModel::class.java]
 
         initMSAL()
 
@@ -219,6 +231,8 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
             )
             binding.recyclerViewEvents.adapter = adapter
 
+            adapter.setOnEventActionListener(this@CalendarDetailFragment)
+
             selectedDate = LocalDate.now()
             binding.textViewSelectedDate.text = "${selectedDate!!.year}-${selectedDate!!.monthValue}-${selectedDate!!.dayOfMonth}"
 
@@ -230,7 +244,7 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
                 thisCalendar!!.sharedPeople,
                 null,
                 this@CalendarDetailFragment,
-                AuthViewModel.getUserId() == thisCalendar!!.owner.email // TODO this should be owner.userId
+                authViewModel.getUserId() == thisCalendar!!.owner.email // TODO this should be owner.userId
             )
             binding.recyclerViewUsers.adapter = usersAdapter
         }
@@ -379,8 +393,6 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
                 .addToBackStack(null)
                 .commit()
         }
-
-        (binding.recyclerViewEvents.adapter as CustomEventAdapter).setOnEventActionListener(this)
     }
 
 
@@ -391,18 +403,19 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
     }
 
     override fun onNewEventCreated(event: EventData) {
-        viewModel.viewModelScope.launch {
+        thisCalendar?.let { calendar ->
+            calendar.events.add(event)
+            calendarViewModel.updateCalendar(calendar)
 
-            if (AuthViewModel.getUserId() == thisCalendar!!.owner.email) {
-                MainViewModel.addEventToSharedCalendar(event, thisCalendar!!)
+            if (authViewModel.getUserId() == thisCalendar!!.owner.email) {
+                calendarViewModel.addEventToCalendar(event, thisCalendar!!.id)
             }
             else {
-                MainViewModel.addEventToSharedCalendar(event, thisCalendar!!)
+                calendarViewModel.addEventToSharedCalendar(event, thisCalendar!!.id)
 
             }
 
             requireActivity().onBackPressedDispatcher.onBackPressed()
-
         }
     }
 
@@ -411,8 +424,17 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
             val index = calendar.events.indexOfFirst { it.id == event.id }
             if (index != -1) {
                 calendar.events[index] = event
-                adapter.updateData(calendar.events.filter { it.startTime.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate() == selectedDate })
-                calendarViewModel.updateCalendar(calendar)
+                adapter.updateData(
+                    calendar.events.filter {
+                        it.startTime.toInstant().atZone(ZoneId.systemDefault()).toLocalDate() == selectedDate
+                    }
+                )
+
+                if (calendar.owner.userId == authViewModel.getUserId()) {
+                    calendarViewModel.updateCalendar(calendar)
+                } else {
+                    calendarViewModel.updateSharedCalendar(calendar)
+                }
             }
 
             requireActivity().onBackPressedDispatcher.onBackPressed()
@@ -425,10 +447,10 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
             calendarViewModel.updateCalendar(calendar)
 
             val startDate = event.startTime.toInstant()
-                .atZone(java.time.ZoneId.systemDefault())
+                .atZone(ZoneId.systemDefault())
                 .toLocalDate()
             val endDate = event.endTime.toInstant()
-                .atZone(java.time.ZoneId.systemDefault())
+                .atZone(ZoneId.systemDefault())
                 .toLocalDate()
 
             var date = startDate
@@ -459,7 +481,7 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
         val chooseFriendRecyclerView = dialog.findViewById<RecyclerView>(R.id.chooseFriendRecyclerView)
         chooseFriendRecyclerView.layoutManager = GridLayoutManager(requireContext(), 3)
 
-        MainViewModel.getFriends { friendList: MutableList<UserData> ->
+        viewModel.getFriends { friendList: MutableList<UserData> ->
 
             for (user in thisCalendar!!.sharedPeople){
                 friendList.remove(user)
@@ -476,7 +498,7 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
     }
 
     override fun onUserClickConfirmed(receiverUser: UserData) {
-        MainViewModel.viewModelScope.launch {
+        viewModel.viewModelScope.launch {
             calendarViewModel.addUserToCalendar(receiverUser, thisCalendar!!.id)
             (binding.recyclerViewUsers.adapter as CustomUsersAdapter).addItem(receiverUser)
             binding.recyclerViewUsers.adapter!!.notifyItemInserted(thisCalendar!!.sharedPeopleNumber)
@@ -485,12 +507,13 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
 
 
     override fun onDeleteConfirmed(deletedUser: UserData, position: Int) {
-        MainViewModel.viewModelScope.launch {
+        viewModel.viewModelScope.launch {
             calendarViewModel.removeUserFromCalendar(deletedUser.userId, thisCalendar!!.id)
             (binding.recyclerViewUsers.adapter as CustomUsersAdapter).removeItem(deletedUser)
             binding.recyclerViewUsers.adapter!!.notifyItemRemoved(position)
         }
     }
+
     private fun createMenuToolbar() {
         val menuHost: MenuHost = requireActivity()
         menuHost.addMenuProvider(object : MenuProvider {
@@ -500,21 +523,32 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
 
             override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
                 return when (menuItem.itemId) {
+
                     R.id.startGroupChatAction -> {
-                        Log.d("CalendarDetailFragment", "startGroupChatAction selected")
-                        viewModel.viewModelScope.launch {
-                            MainViewModel.startGroupChat(thisCalendar!!)
+                        viewLifecycleOwner.lifecycleScope.launch {
+                            val result = viewModel.startGroupChat(thisCalendar!!)
+
+                            if (result != null) {
+                                val intent = Intent(requireContext(), ChatActivity::class.java).apply {
+                                    putExtra("chatId", result.id)
+                                    putExtra("chatName", result.title)
+                                }
+                                startActivity(intent)
+                            }
                         }
-                        Log.d("CalendarDetailFragment", "startGroupChatAction selected")
+
                         true
                     }
+
                     R.id.exportEventsAction -> {
                         showExportDialog()
                         true
                     }
+
                     else -> false
                 }
             }
+
         }, viewLifecycleOwner, Lifecycle.State.CREATED)
     }
 

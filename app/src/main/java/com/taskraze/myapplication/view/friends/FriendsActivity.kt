@@ -1,5 +1,6 @@
 package com.taskraze.myapplication.view.friends
 
+import AuthViewModelFactory
 import android.content.Intent
 import android.os.Bundle
 import android.widget.ImageButton
@@ -19,14 +20,15 @@ import com.taskraze.myapplication.databinding.FriendsActivityBinding
 import com.taskraze.myapplication.model.auth.AuthRepository
 import com.taskraze.myapplication.model.calendar.UserData
 import com.taskraze.myapplication.viewmodel.MainViewModel
+import com.taskraze.myapplication.viewmodel.MainViewModelFactory
 import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
 import kotlinx.coroutines.launch
 
 class FriendsActivity : AppCompatActivity(), CustomFriendRequestAdapter.OnAcceptButtonClickedListener, CustomUsersAdapter.ChatActionListener, CustomUsersAdapter.DeleteActionListener {
 
-    private val authRepository = AuthRepository()
     private lateinit var binding: FriendsActivityBinding
     private lateinit var viewModel: MainViewModel
+    private lateinit var authViewModel: AuthViewModel
     private lateinit var searchBarSearchView: SearchView
     private lateinit var searchButtonImageButton: ImageButton
     private lateinit var friendRequestsRecyclerView: RecyclerView
@@ -34,19 +36,16 @@ class FriendsActivity : AppCompatActivity(), CustomFriendRequestAdapter.OnAccept
     private lateinit var friendRequestNumberTextView: TextView
     private val searchViewQueryListener = object : SearchView.OnQueryTextListener {
         override fun onQueryTextSubmit(query: String?): Boolean {
-            // Called when the user submits the query (e.g., presses Enter)
             if (!query.isNullOrEmpty()) {
                 val intent = Intent(this@FriendsActivity, FoundUsersActivity::class.java)
                 intent.putExtra("searchQuery", query)
                 startActivity(intent)
             }
-            return true // Return true to indicate that the query has been handled
+            return true
         }
 
         override fun onQueryTextChange(newText: String?): Boolean {
-            // Called when the query text changes (e.g., user types)
-            // You can perform search action dynamically as the user types, if desired
-            return true // Return true to indicate that the query change has been handled
+            return true
         }
     }
 
@@ -54,7 +53,12 @@ class FriendsActivity : AppCompatActivity(), CustomFriendRequestAdapter.OnAccept
         super.onCreate(savedInstanceState)
         binding = FriendsActivityBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        viewModel = ViewModelProvider(this)[MainViewModel::class.java]
+        authViewModel = ViewModelProvider(
+            this,
+            AuthViewModelFactory(this)
+        )[AuthViewModel::class.java]
+        val factory = MainViewModelFactory(authViewModel.getUserId(), authViewModel.loggedInUser.value!!)
+        viewModel = ViewModelProvider(this, factory)[MainViewModel::class.java]
 
         friendRequestsRecyclerView = findViewById(R.id.friendRequestsRecyclerView)
         friendsRecyclerView = findViewById(R.id.friendsRecyclerView)
@@ -64,17 +68,14 @@ class FriendsActivity : AppCompatActivity(), CustomFriendRequestAdapter.OnAccept
         searchButtonImageButton = findViewById(R.id.searchButton)
 
         lifecycleScope.launch {
-            // authRepository.fetchUserDetails()
         }
-        // Initialize your views or perform any other setup here
         searchBarSearchView.setOnQueryTextListener(searchViewQueryListener)
 
         friendRequestsRecyclerView.layoutManager = LinearLayoutManager(this)
         friendsRecyclerView.layoutManager = GridLayoutManager(this, 3)
 
         lifecycleScope.launch {
-            // authRepository.fetchUserDetails()
-            MainViewModel.getFriendRequests { friendRequests ->
+            viewModel.getFriendRequests { friendRequests ->
                 val adapter = CustomFriendRequestAdapter(this@FriendsActivity, this@FriendsActivity, friendRequests.toMutableList())
                 friendRequestsRecyclerView.adapter = adapter
                 (friendRequestsRecyclerView.adapter as CustomFriendRequestAdapter).notifyDataSetChanged()
@@ -84,8 +85,7 @@ class FriendsActivity : AppCompatActivity(), CustomFriendRequestAdapter.OnAccept
         }
 
         lifecycleScope.launch {
-            // authRepository.fetchUserDetails()
-            MainViewModel.getFriends { friends ->
+            viewModel.getFriends { friends ->
                 val adapter = CustomUsersAdapter(this@FriendsActivity, friends.toMutableList(), this@FriendsActivity, this@FriendsActivity, true)
                 adapter.setItemClickedPrompt(getString(R.string.start_chat_with_selected_user))
                 friendsRecyclerView.adapter = adapter
@@ -108,7 +108,6 @@ class FriendsActivity : AppCompatActivity(), CustomFriendRequestAdapter.OnAccept
 
     override fun onButtonClicked(position: Int) {
         lifecycleScope.launch {
-            // authRepository.fetchUserDetails()
             viewModel.getFriends { friends ->
                 val adapter = CustomUsersAdapter(this@FriendsActivity, friends.toMutableList(), this@FriendsActivity, null, true)
                 adapter.setItemClickedPrompt(getString(R.string.start_chat_with_selected_user))
@@ -123,8 +122,8 @@ class FriendsActivity : AppCompatActivity(), CustomFriendRequestAdapter.OnAccept
     }
 
     override fun onUserClickConfirmed(receiverUser: UserData) {
-        MainViewModel.viewModelScope.launch {
-            val newChat = MainViewModel.startNewChat(receiverUser)
+        viewModel.viewModelScope.launch {
+            val newChat = viewModel.startNewChat(receiverUser)
 
             if (newChat != null) {
                 val intent = Intent(this@FriendsActivity, ChatActivity::class.java)
@@ -136,7 +135,7 @@ class FriendsActivity : AppCompatActivity(), CustomFriendRequestAdapter.OnAccept
             }
             else {
                 val intent = Intent(this@FriendsActivity, ChatActivity::class.java)
-                val id = '-' + MainViewModel.generateIdFromEmails(receiverUser.email, AuthViewModel.getUserId())
+                val id = '-' + viewModel.generateIdFromEmails(receiverUser.email, authViewModel.getUserId())
                 intent.putExtra("chatId", id)
                 intent.putExtra("chatName", receiverUser.email)
 
@@ -147,8 +146,8 @@ class FriendsActivity : AppCompatActivity(), CustomFriendRequestAdapter.OnAccept
     }
 
     override fun onDeleteConfirmed(deletedUser: UserData, position: Int) {
-        MainViewModel.viewModelScope.launch {
-            MainViewModel.removeUserFromFriends(this@FriendsActivity, deletedUser)
+        viewModel.viewModelScope.launch {
+            viewModel.removeUserFromFriends(this@FriendsActivity, deletedUser)
             (binding.friendsRecyclerView.adapter as CustomUsersAdapter).removeItem(deletedUser)
             binding.friendsRecyclerView.adapter!!.notifyItemRemoved(position)
         }

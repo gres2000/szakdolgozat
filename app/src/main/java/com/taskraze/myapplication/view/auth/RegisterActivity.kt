@@ -9,7 +9,6 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.ViewModelProvider
 import com.taskraze.myapplication.R
 import com.taskraze.myapplication.databinding.RegisterActivityBinding
 import com.taskraze.myapplication.viewmodel.MainViewModel
@@ -27,11 +26,9 @@ class RegisterActivity: AppCompatActivity() {
     private lateinit var confirmPasswordEditText: EditText
     private lateinit var usernameEditText: EditText
     private val firestoreDB = Firebase.firestore
-    private lateinit var viewModel: MainViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        viewModel = ViewModelProvider(this)[MainViewModel::class.java]
 
 
         binding = RegisterActivityBinding.inflate(layoutInflater)

@@ -6,10 +6,10 @@ import android.util.Log
 import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.android.gms.tasks.Tasks
 import com.taskraze.myapplication.model.calendar.UserData
 import com.taskraze.myapplication.model.chat.ChatData
 import com.taskraze.myapplication.model.chat.FriendlyMessage
-import com.google.android.gms.tasks.Tasks
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.firestore.FirebaseFirestore
@@ -31,18 +31,12 @@ import kotlinx.coroutines.tasks.await
 import java.security.MessageDigest
 import java.util.Calendar
 
-object MainViewModel : ViewModel() {
+class MainViewModel(private val userId: String, val userData: UserData) : ViewModel() {
     private val firestoreDB = FirebaseFirestore.getInstance()
     var auth = Firebase.auth
     private var _CalendarDataToPass: CalendarData? = null
     var newEventStartingDay: Calendar? = null
 
-    init {
-        viewModelScope.launch {
-
-            AuthViewModel
-        }
-    }
     fun passCalendarToFragment(calendarData: CalendarData) {
         _CalendarDataToPass = calendarData
     }
@@ -55,10 +49,10 @@ object MainViewModel : ViewModel() {
 
     fun getFriendRequests(callback: (List<FriendRequestData>) -> Unit) {
         val receiverQuery = firestoreDB.collection("friend_requests")
-            .whereEqualTo("receiverId", AuthViewModel.getUserId())
+            .whereEqualTo("receiverId", userId)
 
         val senderQuery = firestoreDB.collection("friend_requests")
-            .whereEqualTo("senderId", AuthViewModel.getUserId())
+            .whereEqualTo("senderId", userId)
 
         val friendRequestDataList = mutableListOf<FriendRequestData>()
         receiverQuery.get()
@@ -120,42 +114,40 @@ object MainViewModel : ViewModel() {
     }
 
     fun getFriends(callback: (MutableList<UserData>) -> Unit) {
-        if (AuthViewModel.loggedInUser != null) {
-            firestoreDB.collection("friend_requests")
-                .whereEqualTo("receiverId", AuthViewModel.getUserId())
-                .get()
-                .addOnSuccessListener { result ->
-                    val acceptedFriends = mutableListOf<FriendRequestData>()
-                    val rejectedFriends = mutableListOf<FriendRequestData>()
-                    for (document in result) {
-                        val receiverId = document.getString("receiverId") ?: ""
-                        val senderId = document.getString("senderId") ?: ""
-                        val status = document.getString("status") ?: ""
-                        val friendRequestData = FriendRequestData(receiverId, senderId, status)
-                        if (status == "accepted") {
-                            acceptedFriends.add(friendRequestData)
-                        } else if (status == "rejected") {
-                            rejectedFriends.add(friendRequestData)
-                        }
+        firestoreDB.collection("friend_requests")
+            .whereEqualTo("receiverId", userId)
+            .get()
+            .addOnSuccessListener { result ->
+                val acceptedFriends = mutableListOf<FriendRequestData>()
+                val rejectedFriends = mutableListOf<FriendRequestData>()
+                for (document in result) {
+                    val receiverId = document.getString("receiverId") ?: ""
+                    val senderId = document.getString("senderId") ?: ""
+                    val status = document.getString("status") ?: ""
+                    val friendRequestData = FriendRequestData(receiverId, senderId, status)
+                    if (status == "accepted") {
+                        acceptedFriends.add(friendRequestData)
+                    } else if (status == "rejected") {
+                        rejectedFriends.add(friendRequestData)
                     }
-                    CoroutineScope(Dispatchers.Default).launch {
-                        updateOrCreateUserFriendsDocument(acceptedFriends).await()
-                        deleteRejectedFriendRequests(rejectedFriends)
-                        deleteAcceptedFriendRequests(acceptedFriends)
-
-                        fetchUsersFromFriendsList(callback)
-                    }
-
                 }
-                .addOnFailureListener { _ ->
-                    Log.d(TAG, "failed to retrieve friend requests")
+                CoroutineScope(Dispatchers.Default).launch {
+                    updateOrCreateUserFriendsDocument(acceptedFriends).await()
+                    deleteRejectedFriendRequests(rejectedFriends)
+                    deleteAcceptedFriendRequests(acceptedFriends)
+
+                    fetchUsersFromFriendsList(callback)
                 }
-        }
+
+            }
+            .addOnFailureListener { _ ->
+                Log.d(TAG, "failed to retrieve friend requests")
+            }
     }
 
     fun fetchUsersFromFriendsList(callback: (MutableList<UserData>) -> Unit) {
         firestoreDB.collection("user_friends")
-            .document(AuthViewModel.getUserId())
+            .document(userId)
             .get()
             .addOnSuccessListener { documentSnapshot ->
                 val friendsList = documentSnapshot.toObject(UserFriendsData::class.java)?.friends ?: emptyList()
@@ -186,8 +178,8 @@ object MainViewModel : ViewModel() {
             }
     }
 
-    private suspend fun updateOrCreateUserFriendsDocument(acceptedFriends: List<FriendRequestData>): Deferred<Unit> {
-        val currentId = AuthViewModel.awaitUserId()
+    private fun updateOrCreateUserFriendsDocument(acceptedFriends: List<FriendRequestData>): Deferred<Unit> {
+        val currentId = userId
         val deferred = CompletableDeferred<Unit>()
 
         firestoreDB.collection("user_friends")
@@ -226,14 +218,13 @@ object MainViewModel : ViewModel() {
                         .addOnSuccessListener { documentSnapshot ->
                             val friendFriends = documentSnapshot.toObject(UserFriendsData::class.java)
                             val updatedFriends = friendFriends?.friends?.toMutableList() ?: mutableListOf()
-                            if (!updatedFriends.contains(AuthViewModel.getUserId())) {
-                                updatedFriends.add(AuthViewModel.getUserId())
+                            if (!updatedFriends.contains(userId)) {
+                                updatedFriends.add(userId)
                                 val data = mapOf("friends" to updatedFriends)
                                 firestoreDB.collection("user_friends")
                                     .document(friendEmail)
                                     .set(data, SetOptions.merge())
                                     .addOnSuccessListener {
-                                        Log.d(TAG, "User $friendEmail friends document updated successfully.")
                                         deferred.complete(Unit)
                                     }
                                     .addOnFailureListener { e ->
@@ -243,14 +234,14 @@ object MainViewModel : ViewModel() {
                             }
                         }
                         .addOnFailureListener { e ->
-                            Log.w(TAG, "Error getting user $friendEmail friends document", e)
+                            Log.e(TAG, "Error getting user $friendEmail friends document", e)
                             deferred.completeExceptionally(e)
                         }
                 }
                 deferred.complete(Unit)
             }
             .addOnFailureListener { e ->
-                Log.w(TAG, "Error fetching user friends document", e)
+                Log.e(TAG, "Error fetching user friends document", e)
                 deferred.completeExceptionally(e)
             }
         return deferred
@@ -273,14 +264,13 @@ object MainViewModel : ViewModel() {
 
                     batch.commit()
                         .addOnSuccessListener {
-                            Log.d(TAG, "Rejected friend requests deleted successfully.")
                         }
                         .addOnFailureListener { e ->
-                            Log.w(TAG, "Error deleting rejected friend requests", e)
+                            Log.e(TAG, "Error deleting rejected friend requests", e)
                         }
                 }
                 .addOnFailureListener { e ->
-                    Log.w(TAG, "Error getting rejected friend requests to delete", e)
+                    Log.e(TAG, "Error getting rejected friend requests to delete", e)
                 }
         }
     }
@@ -302,15 +292,12 @@ object MainViewModel : ViewModel() {
 
                     // Commit the batch delete operation
                     batch.commit()
-                        .addOnSuccessListener {
-                            Log.d(TAG, "Accepted friend requests deleted successfully.")
-                        }
                         .addOnFailureListener { e ->
-                            Log.w(TAG, "Error deleting accepted friend requests", e)
+                            Log.e(TAG, "Error deleting accepted friend requests", e)
                         }
                 }
                 .addOnFailureListener { e ->
-                    Log.w(TAG, "Error getting accepted friend requests to delete", e)
+                    Log.e(TAG, "Error getting accepted friend requests to delete", e)
                 }
         }
     }
@@ -332,7 +319,7 @@ object MainViewModel : ViewModel() {
         return stringBuilder.toString()
     }
 
-    fun generateIdFromOwner(ownerEmail: String, calendarId: String): String {
+    private fun generateIdFromOwner(ownerEmail: String, calendarId: String): String {
         val combinedString = ownerEmail + calendarId
 
         val digest = MessageDigest.getInstance("SHA-256")
@@ -358,28 +345,17 @@ object MainViewModel : ViewModel() {
         return chatSnapshot.exists()
     }
 
-    private suspend fun checkExistingChat(calendar: CalendarData): Boolean {
-        val chatId = generateIdFromOwner(calendar.owner.email, calendar.id.toString())
-
-        val database =
-            FirebaseDatabase.getInstance("https://szakdolgozat-7f789-default-rtdb.europe-west1.firebasedatabase.app/")
-        val chatsRef = database.getReference("chats")
-
-        val chatSnapshot = chatsRef.child(chatId).get().await()
-        return chatSnapshot.exists()
-    }
-
     suspend fun startNewChat(chosenFriend: UserData): ChatData? {
-        val existingChat = checkExistingChat(AuthViewModel.getUserId(), chosenFriend.userId)
+        val existingChat = checkExistingChat(userId, chosenFriend.userId)
         if (existingChat) {
             return null
         }
 
         val newChat = ChatData()
-        val chatId = "-" + generateIdFromEmails(AuthViewModel.getUserId(), chosenFriend.email)
+        val chatId = "-" + generateIdFromEmails(userId, chosenFriend.email)
         newChat.id = chatId
-        newChat.title = chosenFriend.email + "&" + AuthViewModel.getUserId()
-        newChat.users.add(AuthViewModel.loggedInUser.value!!)
+        newChat.title = chosenFriend.email + "&" + userId
+        newChat.users.add(userData)
         newChat.users.add(chosenFriend)
         newChat.users.sortWith(compareByDescending { it.email })
 
@@ -390,14 +366,11 @@ object MainViewModel : ViewModel() {
 
 
         chatRef.setValue(newChat)
-            .addOnSuccessListener {
-                Log.d(TAG, "New chat created: $chatId")
-            }
             .addOnFailureListener { e ->
                 Log.e(TAG, "Error saving chat", e)
             }
 
-        chatRef.child("messages").push().setValue(FriendlyMessage("This is the start of your chat.", "", "", ""))
+        chatRef.child("messages").push().setValue(FriendlyMessage("This is the start of your chat.", "", ""))
 
         return newChat
     }
@@ -408,86 +381,39 @@ object MainViewModel : ViewModel() {
         val chatsRef = database.getReference("chats")
         val usersRef = chatsRef.child(chatData.id).child("users")
 
-        chatData.users.sortWith(compareByDescending { it.email })
+        val currentUserEmail = userId
 
-        val index = chatData.users.indexOfFirst { it.email == AuthViewModel.getUserId() }
+        val index = chatData.users.indexOfFirst { it.email == currentUserEmail }
+
+        if (index == -1) {
+            Toast.makeText(context, "You are not in this chat.", Toast.LENGTH_SHORT).show()
+            return
+        }
+
         chatData.users.removeAt(index)
+
         usersRef.setValue(chatData.users).addOnCompleteListener { task ->
             if (task.isSuccessful) {
                 Toast.makeText(context, "Quit chat successfully", Toast.LENGTH_SHORT).show()
 
-                val leaveMessage =
-                    FriendlyMessage("# # # # # #\n${AuthViewModel.getUserId()} has left the chat\n# # # # # #", "System")
+                val leaveMessage = FriendlyMessage(
+                    "# # # # # #\n${currentUserEmail} has left the chat\n# # # # # #",
+                    "System"
+                )
+
                 val messagesRef = chatsRef.child(chatData.id).child("messages")
                 messagesRef.push().setValue(leaveMessage)
 
-                if (chatData.users.size == 0) {
+                if (chatData.users.isEmpty()) {
                     chatsRef.child(chatData.id).removeValue()
                 }
             }
         }
     }
 
-    suspend fun addEventToSharedCalendar(event: EventData, thisCalendar: CalendarData) {
-        val firestoreDB = FirebaseFirestore.getInstance()
-        val calendarsCollection = firestoreDB.collection("calendars")
-        try {
-            val existingDoc =
-                calendarsCollection.document(thisCalendar.owner.email).get().await()
-
-            val calendarList = existingDoc.toObject(UserCalendarsData::class.java)?.calendars
-            if (calendarList != null) {
-                for (calendar in calendarList) {
-                    if (calendar.id == thisCalendar.id) {
-                        calendar.events.add(event)
-                        thisCalendar.events.add(event)
-                    }
-                }
-
-                calendarsCollection.document(thisCalendar.owner.email).update("calendars", calendarList)
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error adding event shared calendar: $e")
-        }
-    }
-
-    suspend fun deleteSharedUsersFromCalendar(sharedUsers: MutableList<UserData>, calendar: CalendarData) {
-        val firestoreDB = FirebaseFirestore.getInstance()
-        val userInCalendarsCollection = firestoreDB.collection("user_in_calendars")
-        try {
-
-            for (myUser in sharedUsers) {
-                val existingDoc = userInCalendarsCollection.document(myUser.email).get().await()
-
-                if (existingDoc.exists()) {
-                    val ownerList = existingDoc.get("owners") as? List<*>
-                    val userData = hashMapOf(
-                        "userId" to calendar.owner.email,
-                        "calendarId" to calendar.id
-                    )
-
-                    val mutableOwnerList = ownerList!!.toMutableList()
-
-                    mutableOwnerList.remove(userData)
-
-                    if (mutableOwnerList.isNotEmpty()) {
-                        userInCalendarsCollection.document(myUser.email)
-                            .update("owners", mutableOwnerList)
-                            .await()
-                    } else {
-                        userInCalendarsCollection.document(myUser.email)
-                            .delete()
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error saving calendars to Firestore: $e")
-        }
-    }
-
     fun removeUserFromFriends(context: Context, deletedUser: UserData) {
         firestoreDB.collection("user_friends")
-            .document(AuthViewModel.getUserId())
+            .document(userId)
             .get()
             .addOnSuccessListener { documentSnapshot ->
                 //current user
@@ -497,7 +423,7 @@ object MainViewModel : ViewModel() {
                 val newFriendsList = existingFriends.toMutableList()
                 newFriendsList.remove(deletedUser.email)
                 firestoreDB.collection("user_friends")
-                    .document(AuthViewModel.getUserId()).update("friends", newFriendsList)
+                    .document(userId).update("friends", newFriendsList)
 
                 //other user
                 firestoreDB.collection("user_friends")
@@ -508,7 +434,7 @@ object MainViewModel : ViewModel() {
                         val otherExistingFriends = otherUserFriendsData?.friends ?: emptyList()
 
                         val otherNewFriendsList = otherExistingFriends.toMutableList()
-                        otherNewFriendsList.remove(AuthViewModel.getUserId())
+                        otherNewFriendsList.remove(userId)
 
                         firestoreDB.collection("user_friends")
                             .document(deletedUser.email).update("friends", otherNewFriendsList)
@@ -525,28 +451,48 @@ object MainViewModel : ViewModel() {
     }
 
     suspend fun startGroupChat(calendar: CalendarData): ChatData? {
-        // authRepository.fetchUserDetails()
 
-        val existingChat = checkExistingChat(calendar)
-        if (existingChat) {
-            return null
-        }
-
-        val newChat = ChatData()
         val chatId = generateIdFromOwner(calendar.owner.email, calendar.id.toString())
-        newChat.id = chatId
-        newChat.title = calendar.name
-        newChat.users.add(AuthViewModel.loggedInUser.value!!)
-        for (user in calendar.sharedPeople) {
-            newChat.users.add(user)
-        }
-        newChat.users.sortWith(compareByDescending { it.email })
-
-        val database =
-            FirebaseDatabase.getInstance("https://szakdolgozat-7f789-default-rtdb.europe-west1.firebasedatabase.app/")
+        val database = FirebaseDatabase.getInstance("https://szakdolgozat-7f789-default-rtdb.europe-west1.firebasedatabase.app/")
         val chatsRef = database.getReference("chats")
         val chatRef = chatsRef.child(chatId)
 
+        val loggedInUser = userData
+        if (loggedInUser == null) {
+            Log.e(TAG, "Logged in user is not valid. Cannot start group chat.")
+            return null
+        }
+
+        val existingChatSnapshot = chatRef.get().await()
+        if (existingChatSnapshot.exists()) {
+            val existingChat = existingChatSnapshot.getValue(ChatData::class.java) ?: return null
+
+            val userExists = existingChat.users.any { it.email == loggedInUser.email }
+
+            if (!userExists) {
+                existingChat.users.add(loggedInUser)
+                existingChat.users.sortWith(compareByDescending { it.email })
+
+                chatRef.setValue(existingChat)
+                    .addOnFailureListener { e ->
+                        Log.e(TAG, "Error updating existing chat", e)
+                    }
+            }
+
+            return existingChat
+        }
+
+        Log.d(TAG, "Creating new chat: $chatId")
+
+        val newChat = ChatData().apply {
+            id = chatId
+            title = calendar.name
+            users.add(loggedInUser)
+            for (user in calendar.sharedPeople) {
+                users.add(user)
+            }
+            users.sortWith(compareByDescending { it.email })
+        }
 
         chatRef.setValue(newChat)
             .addOnSuccessListener {
@@ -556,8 +502,11 @@ object MainViewModel : ViewModel() {
                 Log.e(TAG, "Error saving chat", e)
             }
 
-        chatRef.child("messages").push().setValue(FriendlyMessage("This is the start of your chat.", "", "", ""))
+        chatRef.child("messages")
+            .push()
+            .setValue(FriendlyMessage("This is the start of your chat.", "", ""))
 
         return newChat
     }
+
 }

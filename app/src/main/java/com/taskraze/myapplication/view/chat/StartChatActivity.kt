@@ -1,11 +1,13 @@
 package com.taskraze.myapplication.view.chat
 
+import AuthViewModelFactory
 import android.app.Dialog
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewModelScope
 import androidx.recyclerview.widget.GridLayoutManager
@@ -23,6 +25,7 @@ import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.taskraze.myapplication.model.calendar.UserData
 import com.taskraze.myapplication.model.chat.ChatData
+import com.taskraze.myapplication.viewmodel.MainViewModelFactory
 import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
 import kotlinx.coroutines.launch
 
@@ -31,11 +34,20 @@ class StartChatActivity: AppCompatActivity(), CustomUsersAdapter.ChatActionListe
     private lateinit var chatsRecyclerView: RecyclerView
     private lateinit var startNewChat: FloatingActionButton
     private lateinit var chooseFriendRecyclerView: RecyclerView
+    private lateinit var authViewModel: AuthViewModel
+    private lateinit var viewModel: MainViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = StartChatActivityBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        authViewModel = ViewModelProvider(
+            this,
+            AuthViewModelFactory(this)
+        )[AuthViewModel::class.java]
+        val factory = MainViewModelFactory(authViewModel.getUserId(), authViewModel.loggedInUser.value!!)
+        val viewModel = ViewModelProvider(this, factory)[MainViewModel::class.java]
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
@@ -58,7 +70,7 @@ class StartChatActivity: AppCompatActivity(), CustomUsersAdapter.ChatActionListe
                 override fun onDataChange(dataSnapshot: DataSnapshot) {
                     dataSnapshot.children.forEach { chatSnapshot ->
                         val chatData = chatSnapshot.getValue(ChatData::class.java)
-                        if (chatData != null && MainViewModel.auth.currentUser!!.email!! in chatData.users.map { it.email }) {
+                        if (chatData != null && viewModel.auth.currentUser!!.email!! in chatData.users.map { it.email }) {
                             chatDataList.add(chatData)
                         }
                         val adapter = CustomChatsAdapter(this@StartChatActivity, chatDataList.toMutableList())
@@ -79,7 +91,7 @@ class StartChatActivity: AppCompatActivity(), CustomUsersAdapter.ChatActionListe
         }
 
         startNewChat.setOnClickListener{
-            MainViewModel.viewModelScope.launch {
+            viewModel.viewModelScope.launch {
                 showChooseFriendDialog()
 
             }
@@ -93,7 +105,7 @@ class StartChatActivity: AppCompatActivity(), CustomUsersAdapter.ChatActionListe
         chooseFriendRecyclerView = dialog.findViewById(R.id.chooseFriendRecyclerView)
         chooseFriendRecyclerView.layoutManager = GridLayoutManager(this, 3)
 
-        MainViewModel.getFriends { friendList ->
+        viewModel.getFriends { friendList ->
             val adapter = CustomUsersAdapter(this, friendList.toMutableList(), this, null,false)
             adapter.setItemClickedPrompt(getString(R.string.start_chat_with_selected_user))
             chooseFriendRecyclerView.adapter = adapter
@@ -106,9 +118,9 @@ class StartChatActivity: AppCompatActivity(), CustomUsersAdapter.ChatActionListe
     }
 
     override fun onUserClickConfirmed(receiverUser: UserData) {
-        MainViewModel.viewModelScope.launch {
-            MainViewModel.viewModelScope.launch {
-                val newChat = MainViewModel.startNewChat(receiverUser)
+        viewModel.viewModelScope.launch {
+            viewModel.viewModelScope.launch {
+                val newChat = viewModel.startNewChat(receiverUser)
 
                 if (newChat != null) {
                     val intent = Intent(this@StartChatActivity, ChatActivity::class.java)
@@ -120,7 +132,7 @@ class StartChatActivity: AppCompatActivity(), CustomUsersAdapter.ChatActionListe
                 }
                 else {
                     val intent = Intent(this@StartChatActivity, ChatActivity::class.java)
-                    val id = '-' + MainViewModel.generateIdFromEmails(receiverUser.email, AuthViewModel.loggedInUser.value!!.email)
+                    val id = '-' + viewModel.generateIdFromEmails(receiverUser.email, authViewModel.loggedInUser.value!!.email)
                     intent.putExtra("chatId", id)
                     intent.putExtra("chatName", receiverUser.email)
 

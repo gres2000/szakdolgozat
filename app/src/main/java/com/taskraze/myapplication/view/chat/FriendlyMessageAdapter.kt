@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.bitmap.CircleCrop
@@ -23,22 +24,10 @@ import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
 
 class FriendlyMessageAdapter(
     private val options: FirebaseRecyclerOptions<FriendlyMessage>,
-    private val currentUserName: String?
+    private val currentUserName: String?,
+    private val authViewModel: AuthViewModel
 ) : FirebaseRecyclerAdapter<FriendlyMessage, RecyclerView.ViewHolder>(options) {
 
-    inner class ImageMessageViewHolder(private val binding: ImageMessageBinding) :
-        RecyclerView.ViewHolder(binding.root) {
-        fun bind(item: FriendlyMessage) {
-            loadImageIntoView(binding.messageImageView, item.imageUrl!!, false)
-
-            binding.messengerTextView.text = item.name ?: ANONYMOUS
-            if (item.photoUrl != null) {
-                loadImageIntoView(binding.messengerImageView, item.photoUrl)
-            } else {
-                binding.messengerImageView.setImageResource(R.drawable.ic_account_circle_black_36dp)
-            }
-        }
-    }
 
     inner class MessageViewHolder(private val binding: MessageBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(item: FriendlyMessage) {
@@ -74,11 +63,6 @@ class FriendlyMessageAdapter(
                 val binding = MessageBinding.bind(view)
                 MessageViewHolder(binding)
             }
-            VIEW_TYPE_IMAGE -> {
-                val view = inflater.inflate(R.layout.image_message, parent, false)
-                val binding = ImageMessageBinding.bind(view)
-                ImageMessageViewHolder(binding)
-            }
             else -> {
                 val view = inflater.inflate(R.layout.message_own, parent, false)
                 val binding = MessageBinding.bind(view)
@@ -90,14 +74,12 @@ class FriendlyMessageAdapter(
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int, model: FriendlyMessage) {
         if (options.snapshots[position].text != null || options.snapshots[position].text != "") {
             (holder as MessageViewHolder).bind(model)
-        } else {
-            (holder as ImageMessageViewHolder).bind(model)
         }
     }
 
     override fun getItemViewType(position: Int): Int {
         return if (options.snapshots[position].text != null) {
-            if (options.snapshots[position].name == AuthViewModel.loggedInUser.value!!.username) {
+            if (options.snapshots[position].name == authViewModel.loggedInUser.value!!.username) {
                 VIEW_TYPE_TEXT_OWN
             }
             else {

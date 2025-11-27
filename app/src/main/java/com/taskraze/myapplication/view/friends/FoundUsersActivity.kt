@@ -1,5 +1,6 @@
 package com.taskraze.myapplication.view.friends
 
+import AuthViewModelFactory
 import android.os.Bundle
 import android.util.Log
 import android.widget.TextView
@@ -12,8 +13,8 @@ import com.taskraze.myapplication.R
 import com.taskraze.myapplication.databinding.FoundUsersActivityBinding
 import com.taskraze.myapplication.viewmodel.MainViewModel
 import com.google.firebase.firestore.FirebaseFirestore
-import com.taskraze.myapplication.model.auth.AuthRepository
 import com.taskraze.myapplication.model.calendar.UserData
+import com.taskraze.myapplication.viewmodel.MainViewModelFactory
 import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
 import kotlinx.coroutines.launch
 
@@ -21,18 +22,24 @@ class FoundUsersActivity : AppCompatActivity() {
 
     private lateinit var binding: FoundUsersActivityBinding
     private lateinit var foundUsersRecyclerView: RecyclerView
-    private lateinit var searchResutltsTextView: TextView
+    private lateinit var searchResultsTextView: TextView
     private lateinit var viewModel: MainViewModel
+    private lateinit var authViewModel: AuthViewModel
     private val TAG = "FoundUsersActivity"
-    private val authRepository = AuthRepository()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = FoundUsersActivityBinding.inflate(layoutInflater)
         setContentView(binding.root)
         foundUsersRecyclerView = findViewById(R.id.recyclerViewFoundUsers)
-        searchResutltsTextView = findViewById(R.id.textViewSearchResults)
-        viewModel = ViewModelProvider(this)[MainViewModel::class.java]
+        searchResultsTextView = findViewById(R.id.textViewSearchResults)
+        authViewModel = ViewModelProvider(
+            this,
+            AuthViewModelFactory(this)
+        )[AuthViewModel::class.java]
+
+        val factory = MainViewModelFactory(authViewModel.getUserId(), authViewModel.loggedInUser.value!!)
+        viewModel = ViewModelProvider(this, factory)[MainViewModel::class.java]
         val dataList:MutableList<UserData> = mutableListOf()
 
         val searchQuery = intent.getStringExtra("searchQuery")
@@ -41,7 +48,7 @@ class FoundUsersActivity : AppCompatActivity() {
 
         val usersRef  = firestoreDB.collection("registered_users")
         val searchResultString = getString(R.string.search_results) + " \"" + searchQuery + "\":"
-        searchResutltsTextView.text = searchResultString
+        searchResultsTextView.text = searchResultString
 
 
         foundUsersRecyclerView.layoutManager = GridLayoutManager(this, 3)
@@ -65,8 +72,8 @@ class FoundUsersActivity : AppCompatActivity() {
                                     dataList.remove(data)
                                 }
                             }
-                            if (dataList.contains(AuthViewModel.loggedInUser.value)) {
-                                dataList.remove(AuthViewModel.loggedInUser.value)
+                            if (dataList.contains(authViewModel.loggedInUser.value)) {
+                                dataList.remove(authViewModel.loggedInUser.value)
                             }
 
                             foundUsersRecyclerView.adapter = CustomFoundUsersAdapter(this@FoundUsersActivity, dataList)
@@ -100,8 +107,8 @@ class FoundUsersActivity : AppCompatActivity() {
                                     dataList.remove(data)
                                 }
                             }
-                            if (dataList.contains(AuthViewModel.loggedInUser.value)) {
-                                dataList.remove(AuthViewModel.loggedInUser.value)
+                            if (dataList.contains(authViewModel.loggedInUser.value)) {
+                                dataList.remove(authViewModel.loggedInUser.value)
                             }
 
                             foundUsersRecyclerView.adapter = CustomFoundUsersAdapter(this@FoundUsersActivity, dataList)

@@ -6,12 +6,13 @@ import com.taskraze.myapplication.model.calendar.CalendarData
 import com.taskraze.myapplication.model.calendar.EventData
 import com.taskraze.myapplication.model.calendar.UserData
 import com.taskraze.myapplication.model.calendar.CalendarRepository
+import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-class CalendarViewModel : ViewModel() {
-    private val repository = CalendarRepository()
+class CalendarViewModel(authViewModel: AuthViewModel) : ViewModel() {
+    private val repository = CalendarRepository(authViewModel)
     private val _calendars = MutableStateFlow<List<CalendarData>>(emptyList())
     private val _sharedCalendars = MutableStateFlow<List<CalendarData>>(emptyList())
     private val _events = MutableStateFlow<List<EventData>>(emptyList())
@@ -22,6 +23,7 @@ class CalendarViewModel : ViewModel() {
     fun loadCalendars() {
         viewModelScope.launch {
             val list = repository.getOwnCalendars()
+
             _calendars.value = list
         }
     }
@@ -54,8 +56,16 @@ class CalendarViewModel : ViewModel() {
 
     fun updateCalendar(calendar: CalendarData) {
         viewModelScope.launch {
-            repository.updateCalendar(calendar)
+            repository.updateOwnCalendar(calendar)
             loadCalendars()
+        }
+    }
+
+    fun updateSharedCalendar(calendar: CalendarData) {
+        viewModelScope.launch {
+            repository.updateSharedCalendar(calendar)
+            loadSharedCalendars()
+            loadAllEvents()
         }
     }
 
@@ -78,6 +88,28 @@ class CalendarViewModel : ViewModel() {
         viewModelScope.launch {
             repository.removeSharedUserFromCalendar(userId, calendarId)
             loadCalendars()
+        }
+    }
+
+    fun addEventToCalendar(event: EventData, calendarId: Long) {
+        viewModelScope.launch {
+            repository.addEventToCalendar(event, calendarId)
+            loadCalendars()
+            loadAllEvents()
+        }
+    }
+
+    fun addEventToSharedCalendar(event: EventData, calendarId: Long) {
+        viewModelScope.launch {
+            repository.addEventToSharedCalendar(event, calendarId)
+            loadSharedCalendars()
+            loadAllEvents()
+        }
+    }
+
+    fun deleteSharedUsersFromCalendar (sharedUsers: MutableList<UserData>, calendarId: Long) {
+        viewModelScope.launch {
+            repository.deleteSharedUsersFromCalendar(sharedUsers, calendarId)
         }
     }
 }

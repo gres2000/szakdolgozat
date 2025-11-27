@@ -1,5 +1,6 @@
 package com.taskraze.myapplication.view.todo.tasks
 
+import AuthViewModelFactory
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -15,6 +16,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.taskraze.myapplication.R
 import com.taskraze.myapplication.view.todo.daily.DailyFragment
 import com.taskraze.myapplication.model.todo.TaskData
+import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
 import com.taskraze.myapplication.viewmodel.todo.TaskViewModel
 import kotlinx.coroutines.launch
 
@@ -23,7 +25,6 @@ class CustomTaskAdapter(
     val activity: AppCompatActivity,
     data: List<TaskData>,
     private val mode: DailyFragment.Mode,
-    private val dayId: Int? = null
 ) : RecyclerView.Adapter<CustomTaskAdapter.TaskItemViewHolder>() {
     inner class TaskItemViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val titleTextView: TextView = itemView.findViewById(R.id.textViewTitle)
@@ -33,6 +34,7 @@ class CustomTaskAdapter(
         val deleteButton: ImageButton = itemView.findViewById(R.id.imageButtonDelete)
         var viewHolderId: String = ""
         lateinit var taskViewModel: TaskViewModel
+        lateinit var authViewModel: AuthViewModel
     }
 
     private val dataList = data.toMutableList()
@@ -50,6 +52,11 @@ class CustomTaskAdapter(
         viewHolder.timeTextView.text = currentItem.time
         viewHolder.checkBox.isChecked = currentItem.isChecked
         viewHolder.taskViewModel = ViewModelProvider(activity)[TaskViewModel::class.java]
+        viewHolder.authViewModel = ViewModelProvider(
+            activity,
+            AuthViewModelFactory(activity)
+        )[AuthViewModel::class.java]
+        viewHolder.taskViewModel.userId = viewHolder.authViewModel.getUserId()
 
         viewHolder.itemView.setOnClickListener {
             val taskData = TaskData(viewHolder.viewHolderId, viewHolder.titleTextView.text.toString(), viewHolder.descriptionTextView.text.toString(), viewHolder.timeTextView.text.toString(), viewHolder.checkBox.isChecked, currentItem.notificationMinutesBefore)

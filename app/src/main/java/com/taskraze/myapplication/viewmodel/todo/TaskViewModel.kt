@@ -13,7 +13,7 @@ import kotlinx.coroutines.launch
 
 class TaskViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = TaskRepository()
-
+    lateinit var userId: String
     private val _dailyTasksList = MutableStateFlow<List<TaskData>>(emptyList())
     private val _weeklyTasksList = MutableStateFlow(List(7) { mutableListOf<TaskData>() })
     val dailyTasksList: StateFlow<List<TaskData>> = _dailyTasksList
@@ -21,7 +21,7 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
 
     fun loadTasks() {
         viewModelScope.launch {
-            val (daily, weekly) = repository.getTasks()
+            val (daily, weekly) = repository.getTasks(userId)
             _dailyTasksList.value  = daily
             _weeklyTasksList.value  = weekly as List<MutableList<TaskData>>
         }
@@ -84,7 +84,7 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun uploadTasks() {
         viewModelScope.launch {
-            repository.updateTasks(_dailyTasksList.value, _weeklyTasksList.value)
+            repository.updateTasks(_dailyTasksList.value, _weeklyTasksList.value, userId)
         }
     }
 

@@ -99,7 +99,7 @@ class CustomChatsAdapter(private val activity: AppCompatActivity, private val da
             // For example, call a method to delete the item from your data source
             val viewModel = ViewModelProvider(activity)[MainViewModel::class.java]
             viewModel.viewModelScope.launch { // Launch a coroutine
-                MainViewModel.quitChat(activity, dataList[position])
+                viewModel.quitChat(activity, dataList[position])
                 dataList.removeAt(position)
                 notifyItemRemoved(position)
             }

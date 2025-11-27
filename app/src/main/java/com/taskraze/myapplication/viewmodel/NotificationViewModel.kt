@@ -16,9 +16,8 @@ import java.util.Locale
 class NotificationViewModel : ViewModel() {
 
     fun scheduleAllNotifications(context: Context, events: List<EventData>) {
-        Log.d("NotificationMINE", "Scheduled notification for event $events")
         events.forEach { event ->
-            Log.d("NotificationMINE", "Scheduled notification for event $event")
+            Log.d("SCHEDULEDasd", "Scheduling LOOOP for $event")
             if (event.notificationMinutesBefore != null) {
                 scheduleEventNotification(context, event)
             }
@@ -26,7 +25,7 @@ class NotificationViewModel : ViewModel() {
     }
 
     fun scheduleEventNotification(context: Context, event: EventData) {
-
+        Log.d("SCHEDULEDasd", "Scheduling notifications for $event")
         val minutesBefore = event.notificationMinutesBefore ?: return
 
         val alarmTime = event.startTime.time - minutesBefore * 60 * 1000

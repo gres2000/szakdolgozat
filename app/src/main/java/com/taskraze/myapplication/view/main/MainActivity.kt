@@ -1,5 +1,7 @@
 package com.taskraze.myapplication.view.main
 
+import AuthViewModelFactory
+import CalendarViewModelFactory
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -16,6 +18,7 @@ import com.taskraze.myapplication.view.todo.TodoFragment
 import com.taskraze.myapplication.view.home.HomeFragment
 import com.taskraze.myapplication.view.calendar.CalendarFragment
 import com.taskraze.myapplication.viewmodel.MainViewModel
+import com.taskraze.myapplication.viewmodel.MainViewModelFactory
 import com.taskraze.myapplication.viewmodel.NotificationViewModel
 import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
 import com.taskraze.myapplication.viewmodel.calendar.CalendarViewModel
@@ -41,26 +44,19 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        viewModel = ViewModelProvider(this)[MainViewModel::class.java]
-        calendarViewModel = ViewModelProvider(this)[CalendarViewModel::class.java]
+
         notificationViewModel = ViewModelProvider(this)[NotificationViewModel::class.java]
-        authViewModel = ViewModelProvider(this)[AuthViewModel::class.java]
+        authViewModel = ViewModelProvider(
+            this,
+            AuthViewModelFactory(this)
+        )[AuthViewModel::class.java]
+        calendarViewModel = ViewModelProvider(
+            this,
+            CalendarViewModelFactory(authViewModel)
+        )[CalendarViewModel::class.java]
 
-        lifecycleScope.launch {
-            authViewModel.awaitUserId()
-            calendarViewModel.loadAllEvents()
-            calendarViewModel.loadCalendars()
-            calendarViewModel.loadSharedCalendars()
-
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                calendarViewModel.events.collect { eventList ->
-                    if (eventList.isNotEmpty()) {
-                        notificationViewModel.scheduleAllNotifications(this@MainActivity, eventList)
-                    }
-                }
-            }
-        }
-
+        val factory = MainViewModelFactory(authViewModel.getUserId(), authViewModel.loggedInUser.value!!)
+        viewModel = ViewModelProvider(this, factory)[MainViewModel::class.java]
 
         setupFragments()
         setupBottomNavigationView()
@@ -78,6 +74,31 @@ class MainActivity : AppCompatActivity() {
         handleOverlayIntent(intent)
     }
 
+    override fun onStart() {
+        super.onStart()
+        loadAllDataAndScheduleNotifications()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        loadAllDataAndScheduleNotifications()
+    }
+
+    private fun loadAllDataAndScheduleNotifications() {
+        lifecycleScope.launch {
+            authViewModel.awaitUserId()
+            calendarViewModel.loadCalendars()
+            calendarViewModel.loadSharedCalendars()
+            calendarViewModel.loadAllEvents()
+
+            calendarViewModel.events.collect { events ->
+                Log.d("SCHEDULEDasd", "Scheduling notifications for ${events.size} events")
+                if (events.isNotEmpty()) {
+                    notificationViewModel.scheduleAllNotifications(this@MainActivity, events)
+                }
+            }
+        }
+    }
 
 
     private fun setupBottomNavigationView() {

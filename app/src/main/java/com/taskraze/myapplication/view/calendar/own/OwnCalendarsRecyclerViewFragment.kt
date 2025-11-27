@@ -1,7 +1,10 @@
 package com.taskraze.myapplication.view.calendar.own
 
+import AuthViewModelFactory
+import CalendarViewModelFactory
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -29,6 +32,7 @@ import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.ZoneId
 import java.util.Date
+import java.util.UUID
 
 class OwnCalendarsRecyclerViewFragment : Fragment(), CalendarDialogFragment.CalendarDialogListener {
     private var _binding: OwnCalendarsRecyclerViewBinding? = null
@@ -38,6 +42,7 @@ class OwnCalendarsRecyclerViewFragment : Fragment(), CalendarDialogFragment.Cale
     private lateinit var viewModel: MainViewModel
     private lateinit var calendarViewModel: CalendarViewModel
     private lateinit var notificationViewModel: NotificationViewModel
+    private lateinit var authViewModel: AuthViewModel
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -51,8 +56,17 @@ class OwnCalendarsRecyclerViewFragment : Fragment(), CalendarDialogFragment.Cale
         super.onViewCreated(view, savedInstanceState)
 
         viewModel = ViewModelProvider(requireActivity())[MainViewModel::class.java]
-        calendarViewModel = ViewModelProvider(requireActivity())[CalendarViewModel::class.java]
+
         notificationViewModel = ViewModelProvider(requireActivity())[NotificationViewModel::class.java]
+        authViewModel = ViewModelProvider(
+            this,
+            AuthViewModelFactory(requireActivity())
+        )[AuthViewModel::class.java]
+        calendarViewModel = ViewModelProvider(
+            this,
+            CalendarViewModelFactory(authViewModel)
+        )[CalendarViewModel::class.java]
+
 
         addNewCalendar = view.findViewById(R.id.fab_add_calendar)
 
@@ -63,7 +77,10 @@ class OwnCalendarsRecyclerViewFragment : Fragment(), CalendarDialogFragment.Cale
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                calendarViewModel.loadCalendars()
                 calendarViewModel.calendars.collect { calendarList ->
+                    Log.d("SCHEDULEDasd", "Events loaded: ${calendarViewModel.events.value}")
+
                     adapter.updateData(calendarList)
                 }
             }
@@ -86,11 +103,12 @@ class OwnCalendarsRecyclerViewFragment : Fragment(), CalendarDialogFragment.Cale
             LocalDate.now().atStartOfDay(
             ZoneId.systemDefault()).toInstant())
         val userList = mutableListOf<UserData>()
-        val owner = UserData("", AuthViewModel.getUserId(), AuthViewModel.getUserId())
+        val owner = UserData("", authViewModel.getUserId(), authViewModel.getUserId())
         val eventList: MutableList<EventData> = mutableListOf()
+        val uniqueId = UUID.randomUUID().mostSignificantBits and Long.MAX_VALUE
 
-        val cal = CalendarData(-1, name, 0, userList, owner, eventList, date)
-        MainViewModel.viewModelScope.launch {
+        val cal = CalendarData(uniqueId, name, 0, userList, owner, eventList, date)
+        viewModel.viewModelScope.launch {
             calendarViewModel.addCalendar(cal)
         }
     }

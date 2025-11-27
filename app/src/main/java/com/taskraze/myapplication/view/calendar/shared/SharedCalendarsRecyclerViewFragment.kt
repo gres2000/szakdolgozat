@@ -1,5 +1,7 @@
 package com.taskraze.myapplication.view.calendar.shared
 
+import AuthViewModelFactory
+import CalendarViewModelFactory
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -37,7 +39,14 @@ class SharedCalendarsRecyclerViewFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        calendarViewModel = ViewModelProvider(requireActivity())[CalendarViewModel::class.java]
+        val authViewModel = ViewModelProvider(
+            this,
+            AuthViewModelFactory(requireActivity())
+        )[com.taskraze.myapplication.viewmodel.auth.AuthViewModel::class.java]
+        calendarViewModel = ViewModelProvider(
+            this,
+            CalendarViewModelFactory(authViewModel)
+        )[CalendarViewModel::class.java]
 
         binding.sharedCalendarsRecyclerView.layoutManager = LinearLayoutManager(requireContext())
 
@@ -46,6 +55,7 @@ class SharedCalendarsRecyclerViewFragment : Fragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                calendarViewModel.loadSharedCalendars()
                 calendarViewModel.sharedCalendars.collect { calendarList ->
                     adapter.updateData(calendarList)
                 }

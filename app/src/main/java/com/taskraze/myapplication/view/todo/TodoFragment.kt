@@ -1,11 +1,13 @@
 package com.taskraze.myapplication.view.todo
 
+import AuthViewModelFactory
 import android.content.Context.MODE_PRIVATE
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.ViewModelProvider
 import com.taskraze.myapplication.R
 import com.taskraze.myapplication.view.main.MainActivity
 import com.taskraze.myapplication.view.todo.daily.DailyFragment
@@ -36,13 +38,18 @@ class TodoFragment : Fragment() {
     }
 
     private fun setupSwitch() {
+        val authViewModel = ViewModelProvider(
+            this,
+            AuthViewModelFactory(requireActivity())
+        )[AuthViewModel::class.java]
+
 
         switchButton = binding.taskSwitch
         val dailyEditText = binding.dailyLabel
         val weeklyEditText = binding.weeklyLabel
 
         // get saved switch state
-        val sharedPref = (requireActivity() as MainActivity).getSharedPreferences(AuthViewModel.getUserId(), MODE_PRIVATE)
+        val sharedPref = (requireActivity() as MainActivity).getSharedPreferences(authViewModel.getUserId(), MODE_PRIVATE)
         switchButton.isChecked = sharedPref.getBoolean("switch_state", false)
 
         switchFragment(switchButton.isChecked)

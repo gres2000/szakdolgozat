@@ -9,7 +9,6 @@ import android.view.ViewGroup
 import android.view.animation.Animation
 import android.view.animation.AnimationUtils
 import android.widget.ArrayAdapter
-import android.widget.Button
 import android.widget.NumberPicker
 import android.widget.Spinner
 import android.widget.TextView
@@ -156,7 +155,11 @@ class EventDetailFragment : Fragment() {
         }
 
         dateUntilTextView.setOnClickListener {
-            showDatePickerDialog(dateUntilTextView)
+            val minCalendar = Calendar.getInstance()
+            val dateFormat = SimpleDateFormat("yyyy/MM/dd", Locale.getDefault())
+            minCalendar.time = dateFormat.parse(dateFromTextView.text.toString())!!
+
+            showDatePickerDialog(dateUntilTextView, minCalendar)
         }
 
         dateFromTextView.setOnClickListener {
@@ -227,7 +230,7 @@ class EventDetailFragment : Fragment() {
         return AnimationUtils.loadAnimation(requireContext(), animId)
     }
 
-    private fun showDatePickerDialog(dateTextView: TextView) {
+    private fun showDatePickerDialog(dateTextView: TextView, minDate: Calendar? = null) {
         val dateStr = dateTextView.text.toString()
         val dateFormat = SimpleDateFormat("yyyy/MM/dd", Locale.getDefault())
         val selectedDate = dateFormat.parse(dateStr)
@@ -246,6 +249,11 @@ class EventDetailFragment : Fragment() {
             calendar.get(Calendar.MONTH),
             calendar.get(Calendar.DAY_OF_MONTH)
         )
+
+        minDate?.let {
+            datePickerDialog.datePicker.minDate = it.timeInMillis
+        }
+
         datePickerDialog.show()
     }
 

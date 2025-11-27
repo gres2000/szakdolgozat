@@ -1,5 +1,6 @@
 package com.taskraze.myapplication.view.todo.daily
 
+import AuthViewModelFactory
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -14,6 +15,7 @@ import com.taskraze.myapplication.view.todo.tasks.CustomTaskAdapter
 import com.taskraze.myapplication.model.todo.TaskData
 import com.taskraze.myapplication.databinding.DailyFragmentBinding
 import com.taskraze.myapplication.view.todo.tasks.TaskDetailFragment
+import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
 import com.taskraze.myapplication.viewmodel.todo.TaskViewModel
 import kotlinx.coroutines.launch
 
@@ -36,6 +38,7 @@ class DailyFragment : Fragment() {
     private var _binding: DailyFragmentBinding? = null
     private val binding get() = _binding!!
     private lateinit var taskViewModel: TaskViewModel
+    private lateinit var authViewModel: AuthViewModel
 
     enum class Mode { DAILY, WEEKLY }
 
@@ -51,6 +54,13 @@ class DailyFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         taskViewModel = ViewModelProvider(requireActivity())[TaskViewModel::class.java]
+        authViewModel = ViewModelProvider(
+            this,
+            AuthViewModelFactory(requireActivity())
+        )[AuthViewModel::class.java]
+
+
+        taskViewModel.userId = authViewModel.getUserId()
 
         val recyclerView = binding.dayRecyclerView
         recyclerView.layoutManager = LinearLayoutManager(context)
@@ -78,7 +88,7 @@ class DailyFragment : Fragment() {
             }
         } else {
             dataList = taskViewModel.weeklyTasksList.value[dayId].toMutableList()
-            adapter = CustomTaskAdapter(this, requireActivity() as AppCompatActivity, dataList, Mode.WEEKLY, dayId)
+            adapter = CustomTaskAdapter(this, requireActivity() as AppCompatActivity, dataList, Mode.WEEKLY)
 
             viewLifecycleOwner.lifecycleScope.launch {
                 taskViewModel.weeklyTasksList.collect { newList ->

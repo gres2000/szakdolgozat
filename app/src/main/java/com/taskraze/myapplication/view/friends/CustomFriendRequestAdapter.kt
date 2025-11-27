@@ -1,5 +1,6 @@
 package com.taskraze.myapplication.view.friends
 
+import AuthViewModelFactory
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -25,7 +26,11 @@ class CustomFriendRequestAdapter (private val onButtonClickListener: OnAcceptBut
         fun onButtonClicked(position: Int)
     }
     override fun getItemViewType(position: Int): Int {
-        return if (dataList[position].receiverId == AuthViewModel.getUserId()) {
+        val authViewModel = ViewModelProvider(
+            activity,
+            AuthViewModelFactory(activity)
+        )[AuthViewModel::class.java]
+        return if (dataList[position].receiverId == authViewModel.getUserId()) {
             0
         } else {
             1

@@ -8,13 +8,13 @@ import com.taskraze.myapplication.model.auth.AuthRepository
 import com.taskraze.myapplication.model.calendar.CalendarData
 import com.taskraze.myapplication.model.calendar.UserData
 import com.taskraze.myapplication.viewmodel.MainViewModel
+import java.security.MessageDigest
 
 class ChatRepository {
     private val authRepository = AuthRepository()
-    suspend fun deleteUserFromRealtimeSharedChat(myUser: UserData, calendarData: CalendarData) {
-        // authRepository.fetchUserDetails()
+    fun deleteUserFromRealtimeSharedChat(myUser: UserData, calendarData: CalendarData) {
 
-        val chatId = MainViewModel.generateIdFromOwner(calendarData.owner.email, calendarData.id.toString())
+        val chatId = generateIdFromOwner(calendarData.owner.email, calendarData.id.toString())
 
         val database =
             FirebaseDatabase.getInstance("https://szakdolgozat-7f789-default-rtdb.europe-west1.firebasedatabase.app/")
@@ -57,10 +57,8 @@ class ChatRepository {
         })
     }
 
-    suspend fun addUserToRealtimeSharedChat(myUser: UserData, calendarData: CalendarData) {
-        // authRepository.fetchUserDetails()
-
-        val chatId = MainViewModel.generateIdFromOwner(calendarData.owner.email, calendarData.id.toString())
+    fun addUserToRealtimeSharedChat(myUser: UserData, calendarData: CalendarData) {
+        val chatId = generateIdFromOwner(calendarData.owner.email, calendarData.id.toString())
 
         val database =
             FirebaseDatabase.getInstance("https://szakdolgozat-7f789-default-rtdb.europe-west1.firebasedatabase.app/")
@@ -99,6 +97,21 @@ class ChatRepository {
                 // error
             }
         })
+    }
+
+    private fun generateIdFromOwner(ownerEmail: String, calendarId: String): String {
+        val combinedString = ownerEmail + calendarId
+
+        val digest = MessageDigest.getInstance("SHA-256")
+
+        val hashedBytes = digest.digest(combinedString.toByteArray())
+
+        val stringBuilder = StringBuilder()
+        for (byte in hashedBytes) {
+            stringBuilder.append(String.format("%02x", byte))
+        }
+
+        return stringBuilder.toString()
     }
 
 }

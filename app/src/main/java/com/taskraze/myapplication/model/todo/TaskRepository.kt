@@ -19,8 +19,7 @@ class TaskRepository {
     private val dailyTasksCollection = firestoreDB.collection("todo_tasks")
     private val weeklyTasksCollection = firestoreDB.collection("todo_tasks")
 
-    suspend fun updateTasks(dailyList: List<TaskData>, weeklyList: List<List<TaskData>>) {
-        val userId = AuthViewModel.awaitUserId()
+    fun updateTasks(dailyList: List<TaskData>, weeklyList: List<List<TaskData>>, userId: String) {
         dailyTasksCollection.document(userId + "_daily_tasks").set(mapOf("tasks" to dailyList))
             .addOnSuccessListener { Log.d("Firebase", "Daily tasks uploaded") }
             .addOnFailureListener { e -> Log.e("Firebase", "Error uploading daily tasks", e) }
@@ -31,8 +30,7 @@ class TaskRepository {
             .addOnFailureListener { e -> Log.e("Firebase", "Error uploading weekly tasks", e) }
     }
 
-    suspend fun getTasks(): Pair<List<TaskData>, List<List<TaskData>>> {
-        val userId = AuthViewModel.awaitUserId()
+    suspend fun getTasks(userId: String): Pair<List<TaskData>, List<List<TaskData>>> {
         return try {
             val dailySnapshot = dailyTasksCollection.document(userId + "_daily_tasks").get().await()
             val weeklySnapshot = weeklyTasksCollection.document(userId + "_weekly_tasks").get().await()
