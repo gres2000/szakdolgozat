@@ -24,7 +24,6 @@ class CustomChatsAdapter(private val activity: AppCompatActivity, private val da
         val deleteImageButton: ImageButton = itemView.findViewById(R.id.imageButtonDelete)
         val placeholderTextView: TextView = itemView.findViewById(R.id.textViewLastUpdated)
         var id = ""
-        var viewHolderId: Int = -1
         lateinit var viewModel: MainViewModel
     }
 

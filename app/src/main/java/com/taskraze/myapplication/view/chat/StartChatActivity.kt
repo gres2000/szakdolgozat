@@ -4,6 +4,7 @@ import AuthViewModelFactory
 import android.app.Dialog
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
@@ -47,7 +48,7 @@ class StartChatActivity: AppCompatActivity(), CustomUsersAdapter.ChatActionListe
             AuthViewModelFactory(this)
         )[AuthViewModel::class.java]
         val factory = MainViewModelFactory(authViewModel.getUserId(), authViewModel.loggedInUser.value!!)
-        val viewModel = ViewModelProvider(this, factory)[MainViewModel::class.java]
+        viewModel = ViewModelProvider(this, factory)[MainViewModel::class.java]
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
@@ -65,29 +66,25 @@ class StartChatActivity: AppCompatActivity(), CustomUsersAdapter.ChatActionListe
         lifecycleScope.launch {
             val database = FirebaseDatabase.getInstance("https://szakdolgozat-7f789-default-rtdb.europe-west1.firebasedatabase.app/")
             val chatsRef = database.getReference("chats")
-            val chatDataList = mutableListOf<ChatData>()
             chatsRef.addListenerForSingleValueEvent(object : ValueEventListener {
                 override fun onDataChange(dataSnapshot: DataSnapshot) {
+                    val chatDataList = mutableListOf<ChatData>()
                     dataSnapshot.children.forEach { chatSnapshot ->
                         val chatData = chatSnapshot.getValue(ChatData::class.java)
-                        if (chatData != null && viewModel.auth.currentUser!!.email!! in chatData.users.map { it.email }) {
+
+                        if (chatData != null && viewModel.auth.currentUser!!.email!! in chatData.users.map { it.userId }) {
                             chatDataList.add(chatData)
                         }
-                        val adapter = CustomChatsAdapter(this@StartChatActivity, chatDataList.toMutableList())
-                        chatsRecyclerView.adapter = adapter
-                        chatsRecyclerView.adapter?.notifyDataSetChanged()
                     }
+
+                    val adapter = CustomChatsAdapter(this@StartChatActivity, chatDataList)
+                    chatsRecyclerView.adapter = adapter
                 }
 
                 override fun onCancelled(error: DatabaseError) {
                     Toast.makeText(this@StartChatActivity, "An error occured with fatabase", Toast.LENGTH_SHORT).show()
                 }
             })
-
-
-
-
-
         }
 
         startNewChat.setOnClickListener{
@@ -97,11 +94,10 @@ class StartChatActivity: AppCompatActivity(), CustomUsersAdapter.ChatActionListe
             }
         }
     }
-    private suspend fun showChooseFriendDialog() {
+    private fun showChooseFriendDialog() {
         val dialog = Dialog(this)
         dialog.setContentView(R.layout.choose_friend_dialog)
 
-        // Find views in the dialog layout
         chooseFriendRecyclerView = dialog.findViewById(R.id.chooseFriendRecyclerView)
         chooseFriendRecyclerView.layoutManager = GridLayoutManager(this, 3)
 
