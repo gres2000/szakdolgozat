@@ -1,6 +1,5 @@
 package com.taskraze.myapplication.view.todo.tasks
 
-import AuthViewModelFactory
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -14,101 +13,87 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.recyclerview.widget.RecyclerView
 import com.taskraze.myapplication.R
-import com.taskraze.myapplication.view.todo.daily.DailyFragment
 import com.taskraze.myapplication.model.todo.TaskData
-import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
+import com.taskraze.myapplication.view.todo.daily.DailyFragment
 import com.taskraze.myapplication.viewmodel.todo.TaskViewModel
 import kotlinx.coroutines.launch
 
 class CustomTaskAdapter(
-    private val containingFragment: DailyFragment,
-    val activity: AppCompatActivity,
-    data: List<TaskData>,
+    private val fragment: DailyFragment,
+    private val activity: AppCompatActivity,
     private val mode: DailyFragment.Mode,
-) : RecyclerView.Adapter<CustomTaskAdapter.TaskItemViewHolder>() {
-    inner class TaskItemViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        val titleTextView: TextView = itemView.findViewById(R.id.textViewTitle)
-        val descriptionTextView: TextView = itemView.findViewById(R.id.textViewDescription)
-        val timeTextView: TextView = itemView.findViewById(R.id.textViewTime)
+    private val tasks: MutableList<TaskData> // directly pass the ViewModel list
+) : RecyclerView.Adapter<CustomTaskAdapter.TaskViewHolder>() {
+
+    private val taskViewModel = ViewModelProvider(activity)[TaskViewModel::class.java]
+
+    init {
+        setHasStableIds(true)
+    }
+
+    inner class TaskViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        val title: TextView = itemView.findViewById(R.id.textViewTitle)
+        val description: TextView = itemView.findViewById(R.id.textViewDescription)
+        val time: TextView = itemView.findViewById(R.id.textViewTime)
         val checkBox: CheckBox = itemView.findViewById(R.id.check_box)
         val deleteButton: ImageButton = itemView.findViewById(R.id.imageButtonDelete)
-        var viewHolderId: String = ""
-        lateinit var taskViewModel: TaskViewModel
-        lateinit var authViewModel: AuthViewModel
     }
 
-    private val dataList = data.toMutableList()
-    private val viewModel = ViewModelProvider(activity)[TaskViewModel::class.java]
-    override fun onCreateViewHolder(view: ViewGroup, viewType: Int): TaskItemViewHolder {
-        val itemView = LayoutInflater.from(view.context).inflate(R.layout.task_item_view, view, false)
+    override fun getItemId(position: Int): Long = tasks[position].taskId.hashCode().toLong()
+    override fun getItemCount(): Int = tasks.size
 
-        return TaskItemViewHolder(itemView)
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TaskViewHolder {
+        val view = LayoutInflater.from(parent.context)
+            .inflate(R.layout.task_item_view, parent, false)
+        return TaskViewHolder(view)
     }
-    override fun onBindViewHolder(viewHolder: TaskItemViewHolder, position: Int) {
-        val currentItem = dataList[position]
-        viewHolder.viewHolderId = currentItem.taskId
-        viewHolder.titleTextView.text = currentItem.title
-        viewHolder.descriptionTextView.text = currentItem.description
-        viewHolder.timeTextView.text = currentItem.time
-        viewHolder.checkBox.isChecked = currentItem.isChecked
-        viewHolder.taskViewModel = ViewModelProvider(activity)[TaskViewModel::class.java]
-        viewHolder.authViewModel = ViewModelProvider(
-            activity,
-            AuthViewModelFactory(activity)
-        )[AuthViewModel::class.java]
-        viewHolder.taskViewModel.userId = viewHolder.authViewModel.getUserId()
 
-        viewHolder.itemView.setOnClickListener {
-            val taskData = TaskData(viewHolder.viewHolderId, viewHolder.titleTextView.text.toString(), viewHolder.descriptionTextView.text.toString(), viewHolder.timeTextView.text.toString(), viewHolder.checkBox.isChecked, currentItem.notificationMinutesBefore)
-            containingFragment.startUpdateTask(taskData)
-        }
-        viewHolder.checkBox.setOnCheckedChangeListener { _, isChecked ->
-            currentItem.isChecked = isChecked
-            viewModel.toggleChecked(currentItem.taskId, isChecked, mode, containingFragment.getDayId())
+    override fun onBindViewHolder(holder: TaskViewHolder, position: Int) {
+        val task = tasks[position]
+
+        holder.title.text = task.title
+        holder.description.text = task.description
+        holder.time.text = task.time
+
+        // Safe checkbox binding
+        holder.checkBox.setOnCheckedChangeListener(null)
+        holder.checkBox.isChecked = task.isChecked
+        holder.checkBox.setOnCheckedChangeListener { _, isChecked ->
+            task.isChecked = isChecked
+            taskViewModel.toggleChecked(task.taskId, isChecked, mode, fragment.getDayId())
         }
 
-        viewHolder.deleteButton.setOnClickListener {
-            showDeleteDialog(currentItem.taskId)
+        holder.itemView.setOnClickListener {
+            fragment.startUpdateTask(task.copy(
+                title = holder.title.text.toString(),
+                description = holder.description.text.toString(),
+                time = holder.time.text.toString(),
+                isChecked = holder.checkBox.isChecked
+            ))
         }
-    }
-    override fun getItemCount() = dataList.size
 
-    fun insertItem(newTask: TaskData) {
-        dataList.add(newTask)
-    }
-
-    fun updateItem(task: TaskData) {
-        val index = dataList.indexOfFirst { it.taskId == task.taskId }
-        if (index >= 0) {
-            dataList[index] = task
+        holder.deleteButton.setOnClickListener {
+            showDeleteDialog(task, position)
         }
     }
 
-    private fun showDeleteDialog(taskId: String) {
+    private fun showDeleteDialog(task: TaskData, position: Int) {
         val builder = AlertDialog.Builder(activity)
-        val inflater = LayoutInflater.from(activity)
-        val dialogView = inflater.inflate(R.layout.delete_dialog, null)
-        builder.setView(dialogView)
-
-        val buttonCancel = dialogView.findViewById<Button>(R.id.button_cancel)
-        val buttonDelete = dialogView.findViewById<Button>(R.id.button_delete)
-
+        val view = LayoutInflater.from(activity).inflate(R.layout.delete_dialog, null)
+        builder.setView(view)
         val dialog = builder.create()
+
+        val buttonCancel = view.findViewById<Button>(R.id.button_cancel)
+        val buttonDelete = view.findViewById<Button>(R.id.button_delete)
 
         buttonCancel.setOnClickListener { dialog.dismiss() }
 
         buttonDelete.setOnClickListener {
-            val index = dataList.indexOfFirst { it.taskId == taskId }
-            if (index < 0) {
-                dialog.dismiss()
-                return@setOnClickListener
-            }
+            tasks.removeAt(position)
+            notifyItemRemoved(position)
 
-            dataList.removeAt(index)
-            notifyItemRemoved(index)
-
-            viewModel.viewModelScope.launch {
-                viewModel.removeTask(taskId, mode, containingFragment.getDayId())
+            taskViewModel.viewModelScope.launch {
+                taskViewModel.removeTask(task.taskId, mode, fragment.getDayId())
             }
 
             dialog.dismiss()
@@ -117,5 +102,23 @@ class CustomTaskAdapter(
         dialog.show()
     }
 
+    // Call these when ViewModel updates
+    fun addTask(task: TaskData) {
+        tasks.add(task)
+        notifyItemInserted(tasks.size - 1)
+    }
 
+    fun updateTask(task: TaskData) {
+        val index = tasks.indexOfFirst { it.taskId == task.taskId }
+        if (index != -1) {
+            tasks[index] = task
+            notifyItemChanged(index)
+        }
+    }
+
+    fun updateAllTasks(newTasks: MutableList<TaskData>) {
+        tasks.clear()
+        tasks.addAll(newTasks)
+        notifyDataSetChanged()
+    }
 }

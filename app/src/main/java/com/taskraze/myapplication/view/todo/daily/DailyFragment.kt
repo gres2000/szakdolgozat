@@ -17,6 +17,7 @@ import com.taskraze.myapplication.databinding.DailyFragmentBinding
 import com.taskraze.myapplication.view.todo.tasks.TaskDetailFragment
 import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
 import com.taskraze.myapplication.viewmodel.todo.TaskViewModel
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
 class DailyFragment : Fragment() {
@@ -42,6 +43,9 @@ class DailyFragment : Fragment() {
 
     enum class Mode { DAILY, WEEKLY }
 
+    private lateinit var adapter: CustomTaskAdapter
+    private val tasks = mutableListOf<TaskData>()
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -59,59 +63,34 @@ class DailyFragment : Fragment() {
             AuthViewModelFactory(requireActivity())
         )[AuthViewModel::class.java]
 
-
         taskViewModel.userId = authViewModel.getUserId()
+        taskViewModel.loadTasks()
 
         val recyclerView = binding.dayRecyclerView
         recyclerView.layoutManager = LinearLayoutManager(context)
 
-        taskViewModel.loadTasks()
+        val mode = if (dayId == -1) Mode.DAILY else Mode.WEEKLY
+        adapter = CustomTaskAdapter(this, requireActivity() as AppCompatActivity, mode, tasks)
+        recyclerView.adapter = adapter
 
-        val dataList: MutableList<TaskData>
-        val adapter: CustomTaskAdapter
-        if (dayId == -1) {
-            dataList = taskViewModel.dailyTasksList.value.toMutableList()
-            adapter = CustomTaskAdapter(this, requireActivity() as AppCompatActivity, dataList, Mode.DAILY)
-
-            viewLifecycleOwner.lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
+            if (dayId == -1) {
                 taskViewModel.dailyTasksList.collect { newList ->
-                    val ind = findNewElementIndex(dataList, newList)
-                    if (ind != null && dataList.size != newList.size) {
-                        adapter.insertItem(newList[ind])
-                        adapter.notifyItemInserted(ind)
-                        dataList.add(newList[ind])
-                    } else if (ind != null) {
-                        adapter.updateItem(newList[ind])
-                        adapter.notifyItemChanged(ind)
-                    }
+                    tasks.clear()
+                    tasks.addAll(newList)
+                    adapter.notifyDataSetChanged()
                 }
-            }
-        } else {
-            dataList = taskViewModel.weeklyTasksList.value[dayId].toMutableList()
-            adapter = CustomTaskAdapter(this, requireActivity() as AppCompatActivity, dataList, Mode.WEEKLY)
-
-            viewLifecycleOwner.lifecycleScope.launch {
-                taskViewModel.weeklyTasksList.collect { newList ->
-                    val ind = findNewElementIndex(dataList, newList[dayId])
-                    if (ind != null && dataList.size != newList[dayId].size) {
-                        adapter.insertItem(newList[dayId][ind])
-                        adapter.notifyItemInserted(ind)
-                        dataList.add(newList[dayId][ind])
-                    } else if (ind != null) {
-                        adapter.updateItem(newList[dayId][ind])
-                        adapter.notifyItemChanged(ind)
-                    }
+            } else {
+                taskViewModel.weeklyTasksList.collect { newWeekly ->
+                    val newList = newWeekly[dayId]
+                    tasks.clear()
+                    tasks.addAll(newList)
+                    adapter.notifyDataSetChanged()
                 }
             }
         }
 
-        recyclerView.adapter = adapter
-
         setupAddButton()
-    }
-
-    private fun findNewElementIndex(oldList: List<TaskData>, newList: List<TaskData>): Int? {
-        return newList.indexOfFirst { it !in oldList }.takeIf { it >= 0 }
     }
 
     private fun setupAddButton() {

@@ -48,12 +48,10 @@ class TodoFragment : Fragment() {
         val dailyEditText = binding.dailyLabel
         val weeklyEditText = binding.weeklyLabel
 
-        // get saved switch state
         val sharedPref = (requireActivity() as MainActivity).getSharedPreferences(authViewModel.getUserId(), MODE_PRIVATE)
         switchButton.isChecked = sharedPref.getBoolean("switch_state", false)
 
         switchFragment(switchButton.isChecked)
-        // set highlight
         if (switchButton.isChecked) {
             weeklyEditText.setBackgroundResource(R.drawable.highlight_text_background)
             dailyEditText.background = null
