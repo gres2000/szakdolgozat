@@ -5,7 +5,7 @@ import java.util.Date
 import java.util.UUID
 
 data class EventData(
-    val id: String = UUID.randomUUID().toString(),
+    val eventId: String = UUID.randomUUID().toString(),
     var title: String,
     var description: String? = null,
     var startTime: Date,

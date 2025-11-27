@@ -70,6 +70,7 @@ import com.microsoft.identity.client.exception.MsalException
 import java.time.ZoneId
 import androidx.core.graphics.toColorInt
 import com.taskraze.myapplication.view.chat.ChatActivity
+import com.taskraze.myapplication.viewmodel.MainViewModelFactory
 
 class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListener,
     CustomEventAdapter.OnEventActionListener, CustomUsersAdapter.ChatActionListener, CustomUsersAdapter.DeleteActionListener {
@@ -189,16 +190,19 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        viewModel = ViewModelProvider(requireActivity())[MainViewModel::class.java]
         exportViewModel = ViewModelProvider(requireActivity())[CalendarExportViewModel::class.java]
         authViewModel = ViewModelProvider(
-            this,
+            requireActivity(),
             AuthViewModelFactory(requireActivity())
         )[AuthViewModel::class.java]
+
         calendarViewModel = ViewModelProvider(
-            this,
+            requireActivity(),
             CalendarViewModelFactory(authViewModel)
         )[CalendarViewModel::class.java]
+
+        val factory = MainViewModelFactory(authViewModel.getUserId(), authViewModel.loggedInUser.value!!)
+        viewModel = ViewModelProvider(requireActivity(), factory)[MainViewModel::class.java]
 
         initMSAL()
 
@@ -317,19 +321,19 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
                                     for (i in 0 until drawable.numberOfLayers - 1) {
                                         val layer = drawable.getDrawable(i)
                                         if (layer is GradientDrawable) {
-                                            layer.setStroke(2.dpToPx(), getEventColor(event.id))
+                                            layer.setStroke(2.dpToPx(), getEventColor(event.eventId))
                                         }
                                     }
                                     background = drawable
                                 }
 
                                 is GradientDrawable -> {
-                                    drawable.setStroke(2.dpToPx(), getEventColor(event.id))
+                                    drawable.setStroke(2.dpToPx(), getEventColor(event.eventId))
                                     background = drawable
                                 }
 
                                 else -> {
-                                    setBackgroundColor(getEventColor(event.id))
+                                    setBackgroundColor(getEventColor(event.eventId))
                                 }
                             }
                         }
@@ -380,13 +384,18 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
         binding.fabAddEvent.setOnClickListener {
             viewModel.passCalendarToFragment(thisCalendar!!)
 
-            viewModel.newEventStartingDay = selectedDate?.let { date ->
+            val startingDay = selectedDate?.let { date ->
                 Calendar.getInstance().apply {
                     set(date.year, date.monthValue - 1, date.dayOfMonth)
                 }
             }
 
-            val fragment = EventDetailFragment().apply { listener = this@CalendarDetailFragment }
+            viewModel.newEventStartingDay = startingDay
+
+            val fragment = EventDetailFragment().apply {
+                listener = this@CalendarDetailFragment
+                this.startingDay = startingDay
+            }
 
             requireActivity().supportFragmentManager.beginTransaction()
                 .replace(R.id.constraint_container, fragment)
@@ -421,7 +430,7 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
 
     override fun onEditEvent(event: EventData) {
         thisCalendar?.let { calendar ->
-            val index = calendar.events.indexOfFirst { it.id == event.id }
+            val index = calendar.events.indexOfFirst { it.eventId == event.eventId }
             if (index != -1) {
                 calendar.events[index] = event
                 adapter.updateData(

@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
@@ -34,6 +33,8 @@ import androidx.core.net.toUri
 import androidx.lifecycle.ViewModelProvider
 import com.taskraze.myapplication.view.overlay_widget.OverlayService
 import com.taskraze.myapplication.viewmodel.MainViewModelFactory
+import com.taskraze.myapplication.viewmodel.recommendation.RecommendationsViewModel
+import com.taskraze.myapplication.viewmodel.recommendation.RecommendationsViewModelFactory
 
 class HomeFragment : Fragment() {
     private var _binding: HomeFragmentBinding? = null
@@ -42,10 +43,12 @@ class HomeFragment : Fragment() {
     private lateinit var openChatButton: Button
     private lateinit var openFriendsButton: Button
     private lateinit var overlayMenuSwitch: SwitchCompat
+    private lateinit var recommendationsSwitch: SwitchCompat
     private lateinit var suggestedEventsRecyclerView: RecyclerView
     private lateinit var connectivityCallback: InternetConnectivityCallback
     private lateinit var authViewModel: AuthViewModel
     private lateinit var viewModel: MainViewModel
+    private lateinit var recommendationsViewModel: RecommendationsViewModel
 
     private val binding get() = _binding!!
 
@@ -65,11 +68,15 @@ class HomeFragment : Fragment() {
             AuthViewModelFactory(requireActivity())
         )[AuthViewModel::class.java]
 
+        recommendationsViewModel = ViewModelProvider(
+            this,
+            RecommendationsViewModelFactory(authViewModel.getUserId())
+        )[RecommendationsViewModel::class.java]
 
         val factory = MainViewModelFactory(authViewModel.getUserId(), authViewModel.loggedInUser.value!!)
         viewModel = ViewModelProvider(this, factory)[MainViewModel::class.java]
 
-        //check for internet connection
+        // check for internet connection
         if (!isInternetAvailable(requireContext())) {
             binding.noInternetTextView.visibility = TextView.VISIBLE
         }
@@ -91,6 +98,7 @@ class HomeFragment : Fragment() {
         openFriendsButton = binding.openFriendsButton
         suggestedEventsRecyclerView = binding.suggestedEventsRecyclerView
         overlayMenuSwitch = binding.switchOverlayMenu
+        recommendationsSwitch = binding.switchRecommendations
 
         if (viewModel.auth.currentUser != null) {
             currentUserTextView.text = viewModel.auth.currentUser!!.email
@@ -140,6 +148,11 @@ class HomeFragment : Fragment() {
             } else {
                 stopOverlayService()
             }
+        }
+
+        recommendationsSwitch.setOnCheckedChangeListener { _, isChecked ->
+            UserPreferences.setRecommendationsEnabled(requireContext(), isChecked)
+            // TODO trigger recommendations
         }
 
     }

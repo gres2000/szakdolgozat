@@ -11,6 +11,7 @@ class MainViewModelFactory(
 
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
             return MainViewModel(userId, userData) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")

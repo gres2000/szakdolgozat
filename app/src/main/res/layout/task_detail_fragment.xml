@@ -71,11 +71,34 @@
         android:layout_marginStart="16dp"
         android:visibility="gone"/>
 
+    <LinearLayout
+        android:id="@+id/tagLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/tag"
+            android:textSize="20sp" />
+
+        <Spinner
+            android:id="@+id/tagSpinner"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+
+
     <Space
         android:layout_width="match_parent"
         android:layout_height="0dp"
         app:layout_constraintBottom_toBottomOf="parent"
         android:layout_weight="1"/>
+
 
     <LinearLayout
         android:id="@+id/action_buttons_layout"

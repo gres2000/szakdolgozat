@@ -1,5 +1,6 @@
 package com.taskraze.myapplication.view.calendar.details
 
+import AuthViewModelFactory
 import android.app.DatePickerDialog
 import android.os.Build
 import android.os.Bundle
@@ -9,6 +10,7 @@ import android.view.ViewGroup
 import android.view.animation.Animation
 import android.view.animation.AnimationUtils
 import android.widget.ArrayAdapter
+import android.widget.LinearLayout
 import android.widget.NumberPicker
 import android.widget.Spinner
 import android.widget.TextView
@@ -16,12 +18,19 @@ import androidx.annotation.RequiresApi
 import androidx.appcompat.widget.SwitchCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import com.taskraze.myapplication.R
+import com.taskraze.myapplication.common.UserPreferences
 import com.taskraze.myapplication.databinding.EventDetailFragmentBinding
 import com.taskraze.myapplication.model.calendar.CalendarData
 import com.taskraze.myapplication.model.calendar.EventData
 import com.taskraze.myapplication.viewmodel.MainViewModel
+import com.taskraze.myapplication.viewmodel.MainViewModelFactory
 import com.taskraze.myapplication.viewmodel.NotificationViewModel
+import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
+import com.taskraze.myapplication.viewmodel.recommendation.RecommendationsViewModel
+import com.taskraze.myapplication.viewmodel.recommendation.RecommendationsViewModelFactory
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.time.LocalDateTime
 import java.util.Calendar
@@ -35,6 +44,8 @@ class EventDetailFragment : Fragment() {
     private lateinit var binding: EventDetailFragmentBinding
     private lateinit var viewModel: MainViewModel
     private lateinit var notificationViewModel: NotificationViewModel
+    private lateinit var recommendationsViewModel: RecommendationsViewModel
+    private lateinit var authViewModel: AuthViewModel
     private lateinit var dateUntilTextView: TextView
     private lateinit var dateFromTextView: TextView
     private lateinit var hourPickerFrom: NumberPicker
@@ -44,11 +55,14 @@ class EventDetailFragment : Fragment() {
     private lateinit var wholeDaySwitch: SwitchCompat
     private lateinit var notificationSwitch: SwitchCompat
     private lateinit var notificationSpinner: Spinner
+    private lateinit var tagLayout: LinearLayout
+    private lateinit var tagSpinner: Spinner
     lateinit var listener: EventDetailListener
     private lateinit var eventTitle: TextView
     private lateinit var eventDescription: TextView
     lateinit var eventToEdit: EventData
     lateinit var calendar: CalendarData
+    var startingDay: Calendar? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -62,7 +76,21 @@ class EventDetailFragment : Fragment() {
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        viewModel = ViewModelProvider(requireActivity())[MainViewModel::class.java]
+
+
+        authViewModel = ViewModelProvider(
+            this,
+            AuthViewModelFactory(requireActivity())
+        )[AuthViewModel::class.java]
+
+        recommendationsViewModel = ViewModelProvider(
+            this,
+            RecommendationsViewModelFactory(authViewModel.getUserId())
+        )[RecommendationsViewModel::class.java]
+
+        val factory = MainViewModelFactory(authViewModel.getUserId(), authViewModel.loggedInUser.value!!)
+        viewModel = ViewModelProvider(this, factory)[MainViewModel::class.java]
+
         notificationViewModel = ViewModelProvider(requireActivity())[NotificationViewModel::class.java]
 
         wholeDaySwitch = binding.switchButtonEventDetail
@@ -94,8 +122,10 @@ class EventDetailFragment : Fragment() {
         minutePickerUntil.maxValue = 59
 
         minutePickerUntil.setFormatter { String.format("%02d", it) }
-        updateDateInView(viewModel.newEventStartingDay!!, dateUntilTextView)
-        updateDateInView(viewModel.newEventStartingDay!!, dateFromTextView)
+        startingDay?.let { day ->
+            updateDateInView(day, dateFromTextView)
+            updateDateInView(day, dateUntilTextView)
+        }
         hourPickerFrom.value = LocalDateTime.now().hour
         hourPickerUntil.value = LocalDateTime.now().hour + 1
 
@@ -117,6 +147,21 @@ class EventDetailFragment : Fragment() {
         notificationSwitch.setOnCheckedChangeListener { _, isChecked ->
             notificationSpinner.visibility = if (isChecked) View.VISIBLE else View.GONE
         }
+
+        tagLayout = binding.tagLayout
+        tagSpinner = binding.tagSpinner
+
+        val tags = listOf(
+            "Work", "Personal", "Health", "Fitness", "Entertainment",
+            "Education", "Chores", "Shopping", "Finance", "Social"
+        )
+
+        val tagAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, tags)
+        tagAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        tagSpinner.adapter = tagAdapter
+
+        val tagEnabled = UserPreferences.isRecommendationsEnabled(requireContext())
+        tagLayout.visibility = if (tagEnabled) View.VISIBLE else View.GONE
 
         prefillEventIfEditing()
 
@@ -200,6 +245,12 @@ class EventDetailFragment : Fragment() {
                 eventToEdit.wholeDayEvent = wholeDaySwitch.isChecked
                 eventToEdit.notificationMinutesBefore = notificationMinutes
 
+                // save tag
+                if (tagEnabled) {
+                    val selectedTag = tagSpinner.selectedItem.toString()
+                    recommendationsViewModel.saveTag(eventToEdit.eventId, selectedTag,  1)
+                }
+
                 listener.onEditEvent(eventToEdit)
 
                 if (notificationMinutes != null) {
@@ -215,6 +266,13 @@ class EventDetailFragment : Fragment() {
                     wholeDayEvent = wholeDaySwitch.isChecked,
                     notificationMinutesBefore = notificationMinutes
                 )
+
+                // save tag
+                if (tagEnabled) {
+                    val selectedTag = tagSpinner.selectedItem.toString()
+                    recommendationsViewModel.saveTag(newEvent.eventId, selectedTag,  1)
+                }
+
                 listener.onNewEventCreated(newEvent)
 
                 if (notificationMinutes != null) {
@@ -304,6 +362,16 @@ class EventDetailFragment : Fragment() {
         } else {
             notificationSwitch.isChecked = false
             notificationSpinner.visibility = View.GONE
+        }
+
+        if (UserPreferences.isRecommendationsEnabled(requireContext())) {
+            viewLifecycleOwner.lifecycleScope.launch {
+                val tagName = recommendationsViewModel.getTagForId(eventToEdit.eventId)
+                tagName?.let {
+                    val index = (tagSpinner.adapter as ArrayAdapter<String>).getPosition(it)
+                    if (index >= 0) tagSpinner.setSelection(index)
+                }
+            }
         }
     }
 

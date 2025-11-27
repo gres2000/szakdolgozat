@@ -36,10 +36,10 @@ class NotificationViewModel : ViewModel() {
 
         val intent = Intent(context, EventNotificationReceiver::class.java).apply {
             putExtra("title", event.title)
-            putExtra("id", event.id)
+            putExtra("id", event.eventId)
         }
 
-        val requestCode = event.id.hashCode()
+        val requestCode = event.eventId.hashCode()
 
         val pendingIntent = PendingIntent.getBroadcast(
             context,
@@ -59,10 +59,10 @@ class NotificationViewModel : ViewModel() {
     fun cancelEventNotification(context: Context, event: EventData) {
         val intent = Intent(context, EventNotificationReceiver::class.java).apply {
             putExtra("title", event.title)
-            putExtra("id", event.id)
+            putExtra("id", event.eventId)
         }
 
-        val requestCode = event.id.hashCode()
+        val requestCode = event.eventId.hashCode()
 
         val pendingIntent = PendingIntent.getBroadcast(
             context,

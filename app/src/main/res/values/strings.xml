@@ -83,6 +83,8 @@
     <string name="notification">Notification</string>
     <string name="month">Month</string>
     <string name="overlay_menu">Overlay Menu</string>
+    <string name="recommendations">Automatic recommendations based on events and tasks</string>
+    <string name="tag">Tag</string>
 
 
 </resources>
