@@ -10,6 +10,8 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
+import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import com.taskraze.myapplication.R
@@ -78,17 +80,17 @@ class LoginActivity : AppCompatActivity() {
                         val userId = auth.currentUser?.uid ?: return@addOnCompleteListener
 
                         authViewModel.fetchAndCacheUser(userId) {
-                            // Start MainActivity after cache is ready
                             startActivity(Intent(this, MainActivity::class.java))
                             finish()
                         }
 
                     } else {
-                        Toast.makeText(
-                            this,
-                            "Authentication failed: ${task.exception?.message}",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        emailEditText.error = null
+                        passwordEditText.error = null
+
+                        val genericError = "Wrong email or password"
+                        emailEditText.error = genericError
+                        passwordEditText.error = genericError
                     }
                 }
         }
