@@ -1,10 +1,8 @@
 <resources>
     <string name="app_name">TaskRaze</string>
     <string name="action_settings">Settings</string>
-    <!-- Strings used for fragments for navigation -->
     <string name="first_fragment_label">First Fragment</string>
     <string name="second_fragment_label">Second Fragment</string>
-
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="task_button_text">Done</string>
     <string name="test_capital_letter">TEST_CAPITAL_LETTER</string>
@@ -46,7 +44,7 @@
     <string name="reject">Reject</string>
     <string name="profile_picture_of_user">Profile picture of user</string>
     <string name="friend_requests">Friend requests:</string>
-    <string name="find_other_people_by_seraching_their_email_addresses_or_usernames">Find other people by seraching their email addresses or usernames</string>
+    <string name="find_other_people_by_searching_their_email_addresses_or_usernames">Find other people by searching their email addresses or usernames</string>
     <string name="available_chats">Available chats</string>
     <string name="quit_chat">Are you sure you want to quit this chat?</string>
     <string name="choose_the_friend_to_start_a_new_chat_with">Choose the friend to start a new chat with</string>
