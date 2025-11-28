@@ -126,14 +126,12 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
             val task = GoogleSignIn.getSignedInAccountFromIntent(data)
             val account = task.result
             if (account != null && account.account != null) {
-                // Launch coroutine to get token and export
                 viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
                     try {
                         val scope = "oauth2:https://www.googleapis.com/auth/calendar"
                         val token = com.google.android.gms.auth.GoogleAuthUtil.getToken(requireContext(), account.account!!, scope)
 
                         launch(Dispatchers.Main) {
-                            // Export events using ViewModel
                             exportViewModel.exportEventsToGoogleCalendar(
                                 events = thisCalendar!!.events,
                                 accessToken = token
@@ -228,7 +226,7 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
         binding.textViewDetailCalendarTitle.text = thisCalendar?.name
         binding.textViewDetailCalendarOwner.text = "${getString(R.string.owner_double_dots)} ${thisCalendar?.owner?.username}"
 
-        viewModel.viewModelScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             adapter = CustomEventAdapter(
                 requireActivity() as AppCompatActivity,
                 thisCalendar!!.events.toMutableList(),
@@ -240,7 +238,6 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
             selectedDate = LocalDate.now()
             binding.textViewSelectedDate.text = "${selectedDate!!.year}-${selectedDate!!.monthValue}-${selectedDate!!.dayOfMonth}"
 
-            // Update events for today
             updateEventsForSelectedDay(selectedDate!!)
 
             val usersAdapter = CustomUsersAdapter(
@@ -272,12 +269,14 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
                     container.textView.setTextColor(Color.GRAY)
                 }
 
+                val textColor = ContextCompat.getColor(requireContext(), R.color.black)
                 // highlight selected day
                 if (data.date == selectedDate) {
                     container.textView.setBackgroundResource(R.drawable.selected_day_bg)
-                    container.textView.setTextColor(Color.BLACK)
+                    container.textView.setTextColor(textColor)
                 } else {
                     container.textView.background = null
+                    container.textView.setTextColor(textColor)
                 }
 
                 val eventsForDay = thisCalendar?.events?.filter { event ->

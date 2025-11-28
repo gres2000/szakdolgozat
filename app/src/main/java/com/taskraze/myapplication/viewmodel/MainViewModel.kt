@@ -131,7 +131,7 @@ class MainViewModel(private val userId: String, val userData: UserData) : ViewMo
                         rejectedFriends.add(friendRequestData)
                     }
                 }
-                CoroutineScope(Dispatchers.Default).launch {
+                viewModelScope.launch(Dispatchers.IO) {
                     updateOrCreateUserFriendsDocument(acceptedFriends).await()
                     deleteRejectedFriendRequests(rejectedFriends)
                     deleteAcceptedFriendRequests(acceptedFriends)

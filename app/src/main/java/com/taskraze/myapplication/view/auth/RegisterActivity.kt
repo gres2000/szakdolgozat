@@ -4,20 +4,18 @@ import android.content.ContentValues.TAG
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
-import android.util.Patterns
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.taskraze.myapplication.R
 import com.taskraze.myapplication.databinding.RegisterActivityBinding
-import com.taskraze.myapplication.viewmodel.MainViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 
-class RegisterActivity: AppCompatActivity() {
+class RegisterActivity : AppCompatActivity() {
     private lateinit var binding: RegisterActivityBinding
     private lateinit var registerButton: Button
     private lateinit var auth: FirebaseAuth
@@ -29,108 +27,76 @@ class RegisterActivity: AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-
         binding = RegisterActivityBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
         registerButton = findViewById(R.id.buttonRegister)
         emailEditText = findViewById(R.id.editTextEmail)
         emailEditText.setText(intent.getStringExtra("Email"))
         passwordEditText = findViewById(R.id.editTextPassword)
         confirmPasswordEditText = findViewById(R.id.editTextConfirmPassword)
         usernameEditText = findViewById(R.id.editTextUserName)
+
         auth = Firebase.auth
 
         registerButton.setOnClickListener {
-            val emailInput = emailEditText.text.toString().trim()
-            val passwordInput = passwordEditText.text.toString().trim()
-            val confirmPasswordInput = confirmPasswordEditText.text.toString().trim()
-            val usernameInput = usernameEditText.text.toString().trim()
-            if (isUsernameTaken(usernameInput)) {
-                Toast.makeText(
-                    baseContext,
-                    "Username already taken",
-                    Toast.LENGTH_SHORT,
-                ).show()
-                usernameEditText.error = "Username already taken"
-                emailEditText.error = if (emailInput.isEmpty()) "Field cannot be empty" else null
-                passwordEditText.error = if (passwordInput.isEmpty()) "Field cannot be empty" else null
-                confirmPasswordEditText.error = if (confirmPasswordInput.isEmpty()) "Field cannot be empty" else null
-            }
-            else if (usernameInput.isEmpty()) {
-                usernameEditText.error = "Field cannot be empty"
-                emailEditText.error = if (emailInput.isEmpty()) "Field cannot be empty" else null
-                passwordEditText.error = if (passwordInput.isEmpty()) "Field cannot be empty" else null
-                confirmPasswordEditText.error = if (confirmPasswordInput.isEmpty()) "Field cannot be empty" else null
-            }
-            if (emailInput.isEmpty()) {
-                emailEditText.error = "Field cannot be empty"
-                passwordEditText.error = if (passwordInput.isEmpty()) "Field cannot be empty" else null
-                confirmPasswordEditText.error = if (confirmPasswordInput.isEmpty()) "Field cannot be empty" else null
-            }
-            else if(passwordInput.isEmpty()) {
-                passwordEditText.error = "Field cannot be empty"
-                confirmPasswordEditText.error = if (confirmPasswordInput.isEmpty()) "Field cannot be empty" else null
-            }
-            else if(confirmPasswordInput.isEmpty()) {
-                confirmPasswordEditText.error = "Field cannot be empty"
-            }
-            else if(passwordInput != confirmPasswordInput) {
+            clearErrors()
+
+            val email = emailEditText.text.toString().trim()
+            val password = passwordEditText.text.toString().trim()
+            val confirmPassword = confirmPasswordEditText.text.toString().trim()
+            val username = usernameEditText.text.toString().trim()
+
+            // Validate empty fields
+            var hasError = false
+            if (username.isEmpty()) { usernameEditText.error = "Field cannot be empty"; hasError = true }
+            if (email.isEmpty()) { emailEditText.error = "Field cannot be empty"; hasError = true }
+            if (password.isEmpty()) { passwordEditText.error = "Field cannot be empty"; hasError = true }
+            if (confirmPassword.isEmpty()) { confirmPasswordEditText.error = "Field cannot be empty"; hasError = true }
+            if (hasError) return@setOnClickListener
+
+            // Validate password match
+            if (password != confirmPassword) {
                 confirmPasswordEditText.error = "Passwords don't match"
+                return@setOnClickListener
             }
-            else {
-                auth.createUserWithEmailAndPassword(emailInput, confirmPasswordInput)
-                    .addOnCompleteListener(this) { task ->
-                        if (task.isSuccessful) {
-                            val userDoc = hashMapOf(
-                                "email" to emailInput,
-                                "username" to usernameInput
-                            )
-                            firestoreDB.collection("registered_users").document(emailInput)
-                                .set(userDoc)
-                                .addOnSuccessListener { Log.d(TAG, "DocumentSnapshot successfully written!") }
-                                .addOnFailureListener { e -> Log.w(TAG, "Error writing document", e) }
 
+            // Create user in Firebase
+            auth.createUserWithEmailAndPassword(email, password)
+                .addOnCompleteListener(this) { task ->
+                    if (task.isSuccessful) {
+                        // Save additional info in Firestore
+                        val userDoc = hashMapOf(
+                            "email" to email,
+                            "username" to username
+                        )
+                        firestoreDB.collection("registered_users").document(email)
+                            .set(userDoc)
+                            .addOnSuccessListener { Log.d(TAG, "User document written") }
+                            .addOnFailureListener { e -> Log.w(TAG, "Error writing document", e) }
 
-                            Log.d(TAG, "createUserWithEmail:success")
-                            val user = auth.currentUser
-                            val intent = Intent(this, LoginActivity::class.java)
-                            startActivity(intent)
-                            finish()
-                        } else {
-                            if (!Patterns.EMAIL_ADDRESS.matcher(emailInput).matches()) {
-                                emailEditText.error = "Invalid email format"
-                                Toast.makeText(
-                                    baseContext,
-                                    "Invalid email format",
-                                    Toast.LENGTH_SHORT,
-                                ).show()
-                            } else {
-                                Log.w(TAG, "createUserWithEmail:failure", task.exception)
-                                Toast.makeText(
-                                    baseContext,
-                                    "Authentication failed",
-                                    Toast.LENGTH_SHORT,
-                                ).show()
-                            }
-                        }
+                        Toast.makeText(this, "Registration successful", Toast.LENGTH_SHORT).show()
+                        startActivity(Intent(this, LoginActivity::class.java))
+                        finish()
+                    } else {
+                        handleFirebaseAuthError(task.exception?.message)
                     }
-            }
+                }
         }
     }
 
-    private fun isUsernameTaken(username: String): Boolean {
-        val docRef = firestoreDB.collection("registered_users").document(username)
-        var docRefExists = false
-        docRef.get()
-            .addOnSuccessListener { document ->
-                if (document != null) {
-                    docRefExists = true
-                }
-            }
-            .addOnFailureListener { exception ->
-                Log.d(TAG, "get failed with ", exception)
-            }
-        return docRefExists
+    private fun clearErrors() {
+        usernameEditText.error = null
+        emailEditText.error = null
+        passwordEditText.error = null
+        confirmPasswordEditText.error = null
+    }
+
+    private fun handleFirebaseAuthError(message: String?) {
+        when {
+            message?.contains("email") == true -> emailEditText.error = "Invalid email format"
+            message?.contains("weak-password") == true -> passwordEditText.error = "Password too weak"
+            else -> Toast.makeText(this, "Authentication failed", Toast.LENGTH_SHORT).show()
+        }
     }
 }

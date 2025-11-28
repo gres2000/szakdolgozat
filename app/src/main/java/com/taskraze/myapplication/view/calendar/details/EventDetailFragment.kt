@@ -216,7 +216,15 @@ class EventDetailFragment : Fragment() {
         }
 
         binding.saveButtonEventDetail.setOnClickListener {
-            val dateFormat = SimpleDateFormat("yyyy/MM/dd HH:mm", Locale.getDefault())
+
+            if (eventTitle.text.toString().trim().isEmpty()) {
+                eventTitle.error = "Title cannot be empty"
+                eventTitle.requestFocus()
+                return@setOnClickListener
+            }
+
+
+                val dateFormat = SimpleDateFormat("yyyy/MM/dd HH:mm", Locale.getDefault())
             val dateFrom = dateFormat.parse("${dateFromTextView.text} ${hourPickerFrom.value}:${minutePickerFrom.value}")!!
             val dateUntil = dateFormat.parse("${dateUntilTextView.text} ${hourPickerUntil.value}:${minutePickerUntil.value}")!!
 

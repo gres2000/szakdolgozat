@@ -38,7 +38,6 @@ class OwnCalendarsRecyclerViewFragment : Fragment(), CalendarDialogFragment.Cale
     private var _binding: OwnCalendarsRecyclerViewBinding? = null
     private val binding get() = _binding!!
     private lateinit var addNewCalendar: FloatingActionButton
-    private lateinit var saveCalendars: FloatingActionButton
     private lateinit var viewModel: MainViewModel
     private lateinit var calendarViewModel: CalendarViewModel
     private lateinit var notificationViewModel: NotificationViewModel
@@ -103,7 +102,11 @@ class OwnCalendarsRecyclerViewFragment : Fragment(), CalendarDialogFragment.Cale
             LocalDate.now().atStartOfDay(
             ZoneId.systemDefault()).toInstant())
         val userList = mutableListOf<UserData>()
-        val owner = UserData("", authViewModel.getUserId(), authViewModel.getUserId())
+        val owner = UserData(
+            authViewModel.getUserId(),
+            authViewModel.loggedInUser.value?.username ?: authViewModel.getUserId(),
+            authViewModel.loggedInUser.value?.email ?: authViewModel.getUserId()
+        )
         val eventList: MutableList<EventData> = mutableListOf()
         val uniqueId = UUID.randomUUID().mostSignificantBits and Long.MAX_VALUE
 

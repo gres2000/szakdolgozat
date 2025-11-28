@@ -111,6 +111,12 @@ class TaskDetailFragment : Fragment() {
         }
 
         binding.saveButton.setOnClickListener {
+            if (binding.editTextTitle.text.toString().trim().isEmpty()) {
+                binding.editTextTitle.error = "Title cannot be empty"
+                binding.editTextTitle.requestFocus()
+                return@setOnClickListener
+            }
+
             val hour = binding.timePicker.hour
             val minute = binding.timePicker.minute
             val timeString = String.format("%02d:%02d", hour, minute)
