@@ -70,12 +70,6 @@ class CustomChatsAdapter(private val activity: AppCompatActivity, private val da
     }
     override fun getItemCount() = dataList.size
 
-    fun updateData(newData: List<ChatData>) {
-        dataList.clear()
-        dataList.addAll(newData)
-        notifyItemInserted(dataList.size)
-    }
-
     private fun showQuitDialog(position: Int) {
         val builder = AlertDialog.Builder(activity)
         val inflater = LayoutInflater.from(activity)
@@ -94,10 +88,8 @@ class CustomChatsAdapter(private val activity: AppCompatActivity, private val da
         }
 
         buttonDelete.setOnClickListener {
-            // Perform the delete action here
-            // For example, call a method to delete the item from your data source
             val viewModel = ViewModelProvider(activity)[MainViewModel::class.java]
-            viewModel.viewModelScope.launch { // Launch a coroutine
+            viewModel.viewModelScope.launch {
                 viewModel.quitChat(activity, dataList[position])
                 dataList.removeAt(position)
                 notifyItemRemoved(position)
