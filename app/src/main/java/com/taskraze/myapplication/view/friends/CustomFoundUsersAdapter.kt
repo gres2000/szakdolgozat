@@ -35,7 +35,7 @@ class CustomFoundUsersAdapter(private val activity: AppCompatActivity, private v
     override fun onBindViewHolder(viewHolder: FoundUsersItemViewHolder, position: Int) {
         viewHolder.viewModel = ViewModelProvider(activity)[MainViewModel::class.java]
         val currentItem = dataList[position]
-        viewHolder.usernameTextView.text = currentItem.email
+        viewHolder.usernameTextView.text = currentItem.username
         viewHolder.profilePictureImageView.setImageResource(R.drawable.ic_account_circle_black_36dp)
 
         viewHolder.itemView.setOnClickListener {
@@ -76,6 +76,8 @@ class CustomFoundUsersAdapter(private val activity: AppCompatActivity, private v
                 .addOnSuccessListener { documentReference ->
                     Log.d(TAG, "Friend request sent with ID: ${documentReference.id}")
                     Toast.makeText(activity, "Friend request sent", Toast.LENGTH_SHORT).show()
+
+                    activity.onBackPressedDispatcher.onBackPressed()
                 }
                 .addOnFailureListener { e ->
                     Log.w(TAG, "Error sending friend request", e)

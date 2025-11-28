@@ -65,17 +65,17 @@ class HomeFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         authViewModel = ViewModelProvider(
-            this,
+            requireActivity(),
             AuthViewModelFactory(requireActivity())
         )[AuthViewModel::class.java]
 
         recommendationsViewModel = ViewModelProvider(
-            this,
+            requireActivity(),
             RecommendationsViewModelFactory(authViewModel.getUserId())
         )[RecommendationsViewModel::class.java]
 
         val factory = MainViewModelFactory(authViewModel.getUserId(), authViewModel.loggedInUser.value!!)
-        viewModel = ViewModelProvider(this, factory)[MainViewModel::class.java]
+        viewModel = ViewModelProvider(requireActivity(), factory)[MainViewModel::class.java]
 
         // check for internet connection
         if (!isInternetAvailable(requireContext())) {
@@ -101,11 +101,10 @@ class HomeFragment : Fragment() {
         overlayMenuSwitch = binding.switchOverlayMenu
         recommendationsSwitch = binding.switchRecommendations
 
-        if (viewModel.auth.currentUser != null) {
-            currentUserTextView.text = viewModel.auth.currentUser!!.email
-        }
-        else {
-            currentUserTextView.text = getString(R.string.not_logged_in)
+        lifecycleScope.launch {
+            authViewModel.loggedInUser.collect { user ->
+                currentUserTextView.text = user?.username ?: getString(R.string.not_logged_in)
+            }
         }
 
         logoutButton.setOnClickListener {
@@ -130,7 +129,6 @@ class HomeFragment : Fragment() {
         val isEnabled = UserPreferences.isOverlayEnabled(requireContext())
         overlayMenuSwitch.isChecked = isEnabled
 
-        // If previously enabled AND permission is already granted
         if (isEnabled && Settings.canDrawOverlays(requireContext())) {
             startOverlayService()
         }

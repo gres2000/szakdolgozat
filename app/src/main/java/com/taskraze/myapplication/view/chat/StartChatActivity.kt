@@ -69,10 +69,18 @@ class StartChatActivity: AppCompatActivity(), CustomUsersAdapter.ChatActionListe
             chatsRef.addListenerForSingleValueEvent(object : ValueEventListener {
                 override fun onDataChange(dataSnapshot: DataSnapshot) {
                     val chatDataList = mutableListOf<ChatData>()
-                    dataSnapshot.children.forEach { chatSnapshot ->
-                        val chatData = chatSnapshot.getValue(ChatData::class.java)
+                    val currentUserEmail = viewModel.auth.currentUser!!.email!!
 
-                        if (chatData != null && viewModel.auth.currentUser!!.email!! in chatData.users.map { it.userId }) {
+                    dataSnapshot.children.forEach { chatSnapshot ->
+                        val chatData = chatSnapshot.getValue(ChatData::class.java) ?: return@forEach
+
+                        val userEmails = chatData.users.mapNotNull {
+                            it.userId.takeIf { id -> id.isNotEmpty() } ?: it.email.takeIf { email -> email.isNotEmpty() }
+                        }
+
+                        val inTitle = chatData.title.contains(currentUserEmail)
+
+                        if (currentUserEmail in userEmails || inTitle) {
                             chatDataList.add(chatData)
                         }
                     }

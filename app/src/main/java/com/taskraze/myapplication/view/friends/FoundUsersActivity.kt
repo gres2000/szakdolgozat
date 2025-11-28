@@ -25,7 +25,6 @@ class FoundUsersActivity : AppCompatActivity() {
     private lateinit var searchResultsTextView: TextView
     private lateinit var viewModel: MainViewModel
     private lateinit var authViewModel: AuthViewModel
-    private val TAG = "FoundUsersActivity"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,88 +39,52 @@ class FoundUsersActivity : AppCompatActivity() {
 
         val factory = MainViewModelFactory(authViewModel.getUserId(), authViewModel.loggedInUser.value!!)
         viewModel = ViewModelProvider(this, factory)[MainViewModel::class.java]
-        val dataList:MutableList<UserData> = mutableListOf()
 
         val searchQuery = intent.getStringExtra("searchQuery")
 
         val firestoreDB = FirebaseFirestore.getInstance()
 
-        val usersRef  = firestoreDB.collection("registered_users")
         val searchResultString = getString(R.string.search_results) + " \"" + searchQuery + "\":"
         searchResultsTextView.text = searchResultString
 
-
         foundUsersRecyclerView.layoutManager = GridLayoutManager(this, 3)
-        if (searchQuery != null && searchQuery.contains("@")) {
-            usersRef
-                .orderBy("email")
-                .startAt(searchQuery)
-                .endAt(searchQuery + "\uf8ff")
-                .get()
-                .addOnSuccessListener { querySnapshot ->
-                    for (document in querySnapshot.documents) {
-                        // Access the user data from the document
-                        val user = document.toObject(UserData::class.java)
-                        dataList.add(user!!)
-                    }
-                    viewModel.viewModelScope.launch {
-                        // authRepository.fetchUserDetails()
-                        viewModel.fetchUsersFromFriendsList { alreadyFriends ->
-                            for (data in dataList) {
-                                if (alreadyFriends.contains(data)) {
-                                    dataList.remove(data)
-                                }
-                            }
-                            if (dataList.contains(authViewModel.loggedInUser.value)) {
-                                dataList.remove(authViewModel.loggedInUser.value)
-                            }
 
-                            foundUsersRecyclerView.adapter = CustomFoundUsersAdapter(this@FoundUsersActivity, dataList)
+        val dataList: MutableList<UserData> = mutableListOf()
+        val searchQueryLower = searchQuery?.lowercase() ?: ""
+        val usersRef = firestoreDB.collection("registered_users")
+
+        usersRef.get()
+            .addOnSuccessListener { snapshot ->
+                for (doc in snapshot.documents) {
+                    val user = doc.toObject(UserData::class.java) ?: continue
+
+                    val usernameLower = user.username.lowercase()
+                    val emailLower = user.email.lowercase()
+                    if (usernameLower.contains(searchQueryLower) || emailLower.contains(searchQueryLower)) {
+                        dataList.add(user)
+                    }
+                }
+
+                viewModel.viewModelScope.launch {
+                    viewModel.fetchUsersFromFriendsList { alreadyFriends ->
+
+                        viewModel.getFriendRequests { friendRequests ->
+                            val pendingReceiverIds = friendRequests
+                                .filter { it.senderId == authViewModel.getUserId() && it.status == "pending" }
+                                .map { it.receiverId }
+                                .toSet()
+                            Log.d("FoundUsersActivitytag", "Pending receiver IDs: $pendingReceiverIds")
+                            dataList.removeAll(alreadyFriends)
+                            dataList.remove(authViewModel.loggedInUser.value)
+                            dataList.removeAll { pendingReceiverIds.contains(it.email) }
+                            Log.d("FoundUsersActivitytag", "final receiver IDs: $dataList")
+
+                            foundUsersRecyclerView.adapter =
+                                CustomFoundUsersAdapter(this@FoundUsersActivity, dataList)
                             (foundUsersRecyclerView.adapter as CustomFoundUsersAdapter).notifyDataSetChanged()
                         }
                     }
-//                    foundUsersRecyclerView.adapter = CustomFoundUsersAdapter(this, dataList)
-//                    (foundUsersRecyclerView.adapter as CustomFoundUsersAdapter).notifyDataSetChanged()
                 }
-                .addOnFailureListener { exception ->
-                    // Handle any errors
-                    Log.e(TAG, "Error searching users: $exception")
-                }
-        }
-        else {
-            usersRef
-                .orderBy("username")
-                .startAt(searchQuery)
-                .endAt(searchQuery + "\uf8ff")
-                .get()
-                .addOnSuccessListener { querySnapshot ->
-                    for (document in querySnapshot.documents) {
-                        // Access the user data from the document
-                        val user = document.toObject(UserData::class.java)
-                        dataList.add(user!!)
-                    }
-                    viewModel.viewModelScope.launch {
-                        viewModel.fetchUsersFromFriendsList { alreadyFriends ->
-                            for (data in dataList) {
-                                if (alreadyFriends.contains(data)) {
-                                    dataList.remove(data)
-                                }
-                            }
-                            if (dataList.contains(authViewModel.loggedInUser.value)) {
-                                dataList.remove(authViewModel.loggedInUser.value)
-                            }
-
-                            foundUsersRecyclerView.adapter = CustomFoundUsersAdapter(this@FoundUsersActivity, dataList)
-                            (foundUsersRecyclerView.adapter as CustomFoundUsersAdapter).notifyDataSetChanged()
-                        }
-                    }
-//                    foundUsersRecyclerView.adapter = CustomFoundUsersAdapter(this, dataList)
-//                    (foundUsersRecyclerView.adapter as CustomFoundUsersAdapter).notifyDataSetChanged()
-                }
-                .addOnFailureListener { exception ->
-                    // Handle any errors
-                    Log.e(TAG, "Error searching users: $exception")
-                }
-        }
+            }
     }
 }

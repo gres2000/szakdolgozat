@@ -46,6 +46,11 @@ object UserPreferences {
     }
 
     fun isRecommendationsEnabled(context: Context): Boolean {
-        return getSharedPref(context).getBoolean(KEY_RECOMMENDATIONS_ENABLED, false)
+        val prefs = getSharedPref(context)
+        if (!prefs.contains(KEY_RECOMMENDATIONS_ENABLED)) {
+            prefs.edit { putBoolean(KEY_RECOMMENDATIONS_ENABLED, false) }
+            return false
+        }
+        return prefs.getBoolean(KEY_RECOMMENDATIONS_ENABLED, false)
     }
 }

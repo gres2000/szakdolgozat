@@ -82,9 +82,7 @@ class FriendsActivity : AppCompatActivity(), CustomFriendRequestAdapter.OnAccept
                 val tempString = getString(R.string.friend_requests) + " " +adapter.itemCount
                 friendRequestNumberTextView.text = tempString
             }
-        }
 
-        lifecycleScope.launch {
             viewModel.getFriends { friends ->
                 val adapter = CustomUsersAdapter(this@FriendsActivity, friends.toMutableList(), this@FriendsActivity, this@FriendsActivity, true)
                 adapter.setItemClickedPrompt(getString(R.string.start_chat_with_selected_user))
@@ -93,17 +91,32 @@ class FriendsActivity : AppCompatActivity(), CustomFriendRequestAdapter.OnAccept
             }
         }
 
-
         searchButtonImageButton.setOnClickListener {
             val query = searchBarSearchView.query.toString()
             searchBarSearchView.onActionViewExpanded()
             searchBarSearchView.clearFocus()
             searchBarSearchView.setQuery(query, true)
         }
+    }
 
+    override fun onPostResume() {
+        super.onPostResume()
+        lifecycleScope.launch {
+            viewModel.getFriendRequests { friendRequests ->
+                val adapter = CustomFriendRequestAdapter(this@FriendsActivity, this@FriendsActivity, friendRequests.toMutableList())
+                friendRequestsRecyclerView.adapter = adapter
+                (friendRequestsRecyclerView.adapter as CustomFriendRequestAdapter).notifyDataSetChanged()
+                val tempString = getString(R.string.friend_requests) + " " +adapter.itemCount
+                friendRequestNumberTextView.text = tempString
+            }
 
-
-
+            viewModel.getFriends { friends ->
+                val adapter = CustomUsersAdapter(this@FriendsActivity, friends.toMutableList(), this@FriendsActivity, this@FriendsActivity, true)
+                adapter.setItemClickedPrompt(getString(R.string.start_chat_with_selected_user))
+                friendsRecyclerView.adapter = adapter
+                (friendsRecyclerView.adapter as CustomUsersAdapter).notifyDataSetChanged()
+            }
+        }
     }
 
     override fun onButtonClicked(position: Int) {

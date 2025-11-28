@@ -45,7 +45,7 @@ class CustomUsersAdapter(private val activity: AppCompatActivity, private val da
     override fun onBindViewHolder(viewHolder: FriendsItemViewHolder, position: Int) {
         viewHolder.viewModel = ViewModelProvider(activity)[MainViewModel::class.java]
         val currentItem = dataList[position]
-        viewHolder.usernameTextView.text = currentItem.email
+        viewHolder.usernameTextView.text = currentItem.username
         viewHolder.profilePictureImageView.setImageResource(R.drawable.ic_account_circle_black_36dp)
 
         if (!deleteButtonVisibility) {
