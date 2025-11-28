@@ -120,7 +120,7 @@ class CustomSharedCalendarAdapter(private val activity: AppCompatActivity, priva
         buttonDelete.setOnClickListener {
             val viewModel = ViewModelProvider(activity)[MainViewModel::class.java]
             viewModel.viewModelScope.launch {
-                calendarViewModel.removeUserFromCalendar(authViewModel.getUserId(), dataList[position].id)
+                calendarViewModel.removeUserFromCalendar(authViewModel.getUserId(), dataList[position].id, dataList[position].owner.userId)
                 dataList.removeAt(position)
                 notifyItemRemoved(position)
             }

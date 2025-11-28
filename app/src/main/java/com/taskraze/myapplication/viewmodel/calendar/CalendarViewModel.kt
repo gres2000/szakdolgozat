@@ -76,17 +76,17 @@ class CalendarViewModel(authViewModel: AuthViewModel) : ViewModel() {
         }
     }
 
-    fun addUserToCalendar(user: UserData, calendarId: Long) {
+    fun addUserToCalendar(user: UserData, calendarId: Long, ownerId: String) {
         viewModelScope.launch {
-            repository.addSharedUserToCalendar(user, calendarId)
+            repository.addSharedUserToCalendar(user, calendarId, ownerId)
             loadCalendars()
             loadSharedCalendars()
         }
     }
 
-    fun removeUserFromCalendar(userId: String, calendarId: Long) {
+    fun removeUserFromCalendar(userId: String, calendarId: Long, ownerId: String) {
         viewModelScope.launch {
-            repository.removeSharedUserFromCalendar(userId, calendarId)
+            repository.removeSharedUserFromCalendar(userId, calendarId, ownerId)
             loadCalendars()
         }
     }

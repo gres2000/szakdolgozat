@@ -117,33 +117,65 @@ class CalendarRepository(private val authViewModel: AuthViewModel) {
         return sharedCalendars
     }
 
-    suspend fun addSharedUserToCalendar(sharedUser: UserData, calendarId: Long) {
+    suspend fun addSharedUserToCalendar(sharedUser: UserData, calendarId: Long, ownerId: String) {
         try {
-            val doc = userInCalendarsCollection.document(sharedUser.email).get().await()
-            val owners = (doc.get("owners") as? MutableList<Map<String, Any>>) ?: mutableListOf()
-            owners.add(mapOf("userId" to authViewModel.getUserId(), "calendarId" to calendarId))
-            userInCalendarsCollection.document(sharedUser.email).set(mapOf("owners" to owners)).await()
+            val userDocRef = userInCalendarsCollection.document(sharedUser.email)
+            val existingDoc = userDocRef.get().await()
+            val owners = (existingDoc.get("owners") as? MutableList<Map<String, Any>>) ?: mutableListOf()
+            owners.add(mapOf("userId" to ownerId, "calendarId" to calendarId))
+            userDocRef.set(mapOf("owners" to owners)).await()
+
+            val ownerDocRef = calendarsCollection.document(ownerId)
+            val ownerCalendars = ownerDocRef.get().await()
+                .toObject(UserCalendarsData::class.java)?.calendars?.toMutableList() ?: mutableListOf()
+
+            val targetCalendar = ownerCalendars.firstOrNull { it.id == calendarId }
+            if (targetCalendar != null) {
+
+                // avoid duplicates
+                if (targetCalendar.sharedPeople.none { it.userId == sharedUser.userId }) {
+                    targetCalendar.sharedPeople.add(sharedUser)
+                    ownerDocRef.update("calendars", ownerCalendars).await()
+                }
+            }
+
         } catch (e: Exception) {
             Log.e(TAG, "Error adding shared user: $e")
         }
     }
 
-    suspend fun removeSharedUserFromCalendar(sharedUserId: String, calendarId: Long) {
+    suspend fun removeSharedUserFromCalendar(sharedUserId: String, calendarId: Long, ownerId: String) {
         try {
-            val doc = userInCalendarsCollection.document(sharedUserId).get().await()
-            if (doc.exists()) {
-                val owners = (doc.get("owners") as? MutableList<Map<String, Any>>) ?: mutableListOf()
-                owners.removeIf { it["calendarId"] == calendarId }
+            val userDocRef = userInCalendarsCollection.document(sharedUserId)
+            val existingDoc = userDocRef.get().await()
+            if (existingDoc.exists()) {
+                val owners = (existingDoc.get("owners") as? MutableList<Map<String, Any>>) ?: mutableListOf()
+                owners.removeIf { (it["calendarId"] as? Number)?.toLong() == calendarId }
                 if (owners.isNotEmpty()) {
-                    userInCalendarsCollection.document(sharedUserId).update("owners", owners).await()
+                    userDocRef.update("owners", owners).await()
                 } else {
-                    userInCalendarsCollection.document(sharedUserId).delete().await()
+                    userDocRef.delete().await()
                 }
             }
+
+            val ownerDocRef = calendarsCollection.document(ownerId)
+            val ownerCalendars = ownerDocRef.get().await()
+                .toObject(UserCalendarsData::class.java)?.calendars?.toMutableList() ?: mutableListOf()
+
+            val targetCalendar = ownerCalendars.firstOrNull { it.id == calendarId }
+
+            targetCalendar?.let {
+                val removed = it.sharedPeople.removeIf { user -> user.userId == sharedUserId || user.email == sharedUserId }
+                if (removed) {
+                    ownerDocRef.update("calendars", ownerCalendars).await()
+                }
+            }
+
         } catch (e: Exception) {
             Log.e(TAG, "Error removing shared user: $e")
         }
     }
+
 
     suspend fun addEventToCalendar(event: EventData, calendarId: Long) {
         try {

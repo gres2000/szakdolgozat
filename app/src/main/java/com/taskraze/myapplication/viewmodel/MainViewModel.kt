@@ -17,13 +17,9 @@ import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.ktx.Firebase
 import com.taskraze.myapplication.model.calendar.CalendarData
-import com.taskraze.myapplication.model.calendar.EventData
-import com.taskraze.myapplication.model.calendar.UserCalendarsData
 import com.taskraze.myapplication.model.friends.FriendRequestData
 import com.taskraze.myapplication.model.friends.UserFriendsData
-import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -83,7 +79,7 @@ class MainViewModel(private val userId: String, val userData: UserData) : ViewMo
 
             }
             .addOnFailureListener { _ ->
-                Log.d(TAG, "failed to retrieve friend requests")
+                Log.e(TAG, "failed to retrieve friend requests")
             }
     }
 
@@ -141,7 +137,7 @@ class MainViewModel(private val userId: String, val userData: UserData) : ViewMo
 
             }
             .addOnFailureListener { _ ->
-                Log.d(TAG, "failed to retrieve friend requests")
+                Log.e(TAG, "failed to retrieve friend requests")
             }
     }
 
@@ -170,11 +166,11 @@ class MainViewModel(private val userId: String, val userData: UserData) : ViewMo
                         callback(users)
                     }
                     .addOnFailureListener { exception ->
-                        Log.w(TAG, "Error fetching user data for friends", exception)
+                        Log.e(TAG, "Error fetching user data for friends", exception)
                     }
             }
             .addOnFailureListener { exception ->
-                Log.w(TAG, "Error fetching user friends document", exception)
+                Log.e(TAG, "Error fetching user friends document", exception)
             }
     }
 
@@ -204,10 +200,9 @@ class MainViewModel(private val userId: String, val userData: UserData) : ViewMo
                     .document(currentId)
                     .set(userFriendsMap)
                     .addOnSuccessListener {
-                        Log.d(TAG, "User friends document updated successfully.")
                     }
                     .addOnFailureListener { e ->
-                        Log.w(TAG, "Error updating user friends document", e)
+                        Log.e(TAG, "Error updating user friends document", e)
                     }
 
                 for (friendRequest in acceptedFriends) {
@@ -228,7 +223,7 @@ class MainViewModel(private val userId: String, val userData: UserData) : ViewMo
                                         deferred.complete(Unit)
                                     }
                                     .addOnFailureListener { e ->
-                                        Log.w(TAG, "Error updating user $friendEmail friends document", e)
+                                        Log.e(TAG, "Error updating user $friendEmail friends document", e)
                                         deferred.completeExceptionally(e)
                                     }
                             }

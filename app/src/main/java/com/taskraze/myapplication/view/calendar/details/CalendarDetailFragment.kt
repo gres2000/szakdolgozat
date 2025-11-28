@@ -260,7 +260,7 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
                 thisCalendar!!.sharedPeople,
                 null,
                 this@CalendarDetailFragment,
-                authViewModel.getUserId() == thisCalendar!!.owner.email // TODO this should be owner.userId
+                authViewModel.getUserId() == thisCalendar!!.owner.userId // TODO this should be owner.userId
             )
             binding.recyclerViewUsers.adapter = usersAdapter
         }
@@ -522,7 +522,7 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
 
     override fun onUserClickConfirmed(receiverUser: UserData) {
         viewModel.viewModelScope.launch {
-            calendarViewModel.addUserToCalendar(receiverUser, thisCalendar!!.id)
+            calendarViewModel.addUserToCalendar(receiverUser, thisCalendar!!.id, thisCalendar!!.owner.userId)
             (binding.recyclerViewUsers.adapter as CustomUsersAdapter).addItem(receiverUser)
             binding.recyclerViewUsers.adapter!!.notifyItemInserted(thisCalendar!!.sharedPeopleNumber)
         }
@@ -531,7 +531,8 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
 
     override fun onDeleteConfirmed(deletedUser: UserData, position: Int) {
         viewModel.viewModelScope.launch {
-            calendarViewModel.removeUserFromCalendar(deletedUser.userId, thisCalendar!!.id)
+            val userIdentifier = deletedUser.userId.ifBlank { deletedUser.email }
+            calendarViewModel.removeUserFromCalendar(userIdentifier, thisCalendar!!.id, thisCalendar!!.owner.userId)
             (binding.recyclerViewUsers.adapter as CustomUsersAdapter).removeItem(deletedUser)
             binding.recyclerViewUsers.adapter!!.notifyItemRemoved(position)
         }
