@@ -171,6 +171,7 @@ class HomeFragment : Fragment() {
     }
 
     private fun startOverlayService() {
+        Log.d("OVERLAYSERVICETAG", "Starting overlay service")
         val intent = Intent(requireContext(), OverlayService::class.java)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

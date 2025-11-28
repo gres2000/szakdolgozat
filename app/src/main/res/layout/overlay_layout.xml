@@ -1,22 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/rootLayout"
     android:layout_width="wrap_content"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="10dp"
+    android:clipChildren="false"
+    android:clipToPadding="false" >
 
     <ImageView
         android:id="@+id/bubbleIcon"
         android:layout_width="60dp"
         android:layout_height="60dp"
-        android:src="@drawable/ic_launcher_foreground"
-        android:background="@drawable/baseline_circle_notifications_24"
+        android:src="@drawable/ic_launcher_round"
+        android:background="@drawable/white_circle"
         android:padding="10dp" />
 
     <LinearLayout
         android:id="@+id/optionsContainer"
         android:orientation="vertical"
         android:layout_width="wrap_content"
-        android:layout_marginStart="55dp"
         android:layout_height="wrap_content"
         android:visibility="gone">
 
@@ -38,5 +41,4 @@
             android:layout_height="wrap_content"
             android:text="@string/calendar" />
     </LinearLayout>
-
-</FrameLayout>
+</LinearLayout>

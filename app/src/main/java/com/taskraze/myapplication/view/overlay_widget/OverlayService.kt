@@ -16,7 +16,7 @@ import com.taskraze.myapplication.view.main.MainActivity
 class OverlayService : Service() {
 
     private lateinit var windowManager: WindowManager
-    private lateinit var rootView: FrameLayout
+    private lateinit var rootView: LinearLayout
     private lateinit var bubbleIcon: ImageView
     private lateinit var optionsContainer: LinearLayout
 
@@ -29,7 +29,7 @@ class OverlayService : Service() {
 
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
         rootView = LayoutInflater.from(this)
-            .inflate(R.layout.overlay_layout, null) as FrameLayout
+            .inflate(R.layout.overlay_layout, null) as LinearLayout
 
         bubbleIcon = rootView.findViewById(R.id.bubbleIcon)
         optionsContainer = rootView.findViewById(R.id.optionsContainer)
@@ -58,13 +58,26 @@ class OverlayService : Service() {
 
     private fun setupBubbleClick() {
         bubbleIcon.setOnClickListener {
+            // Animate bubble
+            bubbleIcon.animate()
+                .scaleX(1.2f)
+                .scaleY(1.2f)
+                .setDuration(100)
+                .withEndAction {
+                    bubbleIcon.animate()
+                        .scaleX(1f)
+                        .scaleY(1f)
+                        .setDuration(100)
+                        .start()
+                }
+                .start()
+
             if (optionsContainer.visibility == View.VISIBLE)
                 optionsContainer.visibility = View.GONE
             else
                 optionsContainer.visibility = View.VISIBLE
         }
     }
-
     private fun setupDrag(params: WindowManager.LayoutParams) {
         bubbleIcon.setOnTouchListener(object : View.OnTouchListener {
             var startX = 0
@@ -90,7 +103,7 @@ class OverlayService : Service() {
                         val dy = (event.rawY - touchY).toInt()
 
                         // if moved enough, treat as drag
-                        if (dx * dx + dy * dy > 25) isClick = false  // small threshold
+                        if (dx * dx + dy * dy > 10) isClick = false  // small threshold
 
                         params.x = startX + dx
                         params.y = startY + dy
@@ -101,7 +114,6 @@ class OverlayService : Service() {
 
                     MotionEvent.ACTION_UP -> {
                         if (isClick) {
-                            // This is a click → call performClick for accessibility
                             v?.performClick()
                         } else {
                             snapToEdge(params)
