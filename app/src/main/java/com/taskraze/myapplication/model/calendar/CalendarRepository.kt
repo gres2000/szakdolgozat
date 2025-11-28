@@ -77,7 +77,6 @@ class CalendarRepository(private val authViewModel: AuthViewModel) {
     }
 
     suspend fun getOwnCalendars(): List<CalendarData> {
-        Log.d("USERID", "User Id is: $userId")
         return try {
             val doc = calendarsCollection.document(userId).get().await()
 

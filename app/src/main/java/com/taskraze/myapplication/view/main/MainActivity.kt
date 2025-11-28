@@ -92,7 +92,6 @@ class MainActivity : AppCompatActivity() {
             calendarViewModel.loadAllEvents()
 
             calendarViewModel.events.collect { events ->
-                Log.d("SCHEDULEDasd", "Scheduling notifications for ${events.size} events")
                 if (events.isNotEmpty()) {
                     notificationViewModel.scheduleAllNotifications(this@MainActivity, events)
                 }

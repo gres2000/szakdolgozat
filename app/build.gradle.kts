@@ -77,7 +77,6 @@ dependencies {
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
 
-    // Use latest MSAL; 6.+ is current in MSAL repo examples — check repo for latest
     implementation("com.microsoft.identity.client:msal:8.1.0")
     // Firebase BoM
     implementation(platform("com.google.firebase:firebase-bom:32.8.1"))

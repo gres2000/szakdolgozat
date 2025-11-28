@@ -23,14 +23,12 @@ class AuthViewModel(private val context: Context) : ViewModel() {
         val cachedUser = getCachedUser()
         if (cachedUser != null) {
             _loggedInUser.value = cachedUser
-            Log.d("AuthViewModel", "Loaded user from cache: $cachedUser")
         }
 
         viewModelScope.launch {
             val freshUser = authRepository.fetchUserDetails()
             _loggedInUser.value = freshUser
             saveUserToCache(freshUser)
-            Log.d("AuthViewModel", "Fetched user from Firestore: $freshUser")
         }
     }
 

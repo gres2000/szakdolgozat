@@ -69,6 +69,7 @@ import com.microsoft.identity.client.PublicClientApplication
 import com.microsoft.identity.client.exception.MsalException
 import java.time.ZoneId
 import androidx.core.graphics.toColorInt
+import com.google.android.gms.common.api.ApiException
 import com.taskraze.myapplication.view.chat.ChatActivity
 import com.taskraze.myapplication.viewmodel.MainViewModelFactory
 
@@ -123,25 +124,39 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
     ) { result ->
         val data = result.data
         if (data != null) {
-            val task = GoogleSignIn.getSignedInAccountFromIntent(data)
-            val account = task.result
-            if (account != null && account.account != null) {
-                viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-                    try {
-                        val scope = "oauth2:https://www.googleapis.com/auth/calendar"
-                        val token = com.google.android.gms.auth.GoogleAuthUtil.getToken(requireContext(), account.account!!, scope)
+            try {
+                val task = GoogleSignIn.getSignedInAccountFromIntent(data)
+                val account = task.getResult(ApiException::class.java) // <-- handle exceptions properly
+                if (account != null && account.account != null) {
+                    viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+                        try {
+                            val scope = "oauth2:https://www.googleapis.com/auth/calendar"
+                            val token = com.google.android.gms.auth.GoogleAuthUtil.getToken(requireContext(), account.account!!, scope)
 
-                        launch(Dispatchers.Main) {
-                            exportViewModel.exportEventsToGoogleCalendar(
-                                events = thisCalendar!!.events,
-                                accessToken = token
-                            )
+                            launch(Dispatchers.Main) {
+                                exportViewModel.exportEventsToGoogleCalendar(
+                                    events = thisCalendar!!.events,
+                                    accessToken = token
+                                )
+                            }
+
+
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                            launch(Dispatchers.Main) {
+                                Toast.makeText(requireContext(), "Failed to get Google token", Toast.LENGTH_SHORT).show()
+                            }
                         }
-                    } catch (e: Exception) {
+                    }
+                }
+            } catch (e: ApiException) {
+                when (e.statusCode) {
+                    12501 -> {
+                        Toast.makeText(requireContext(), "Google sign-in canceled", Toast.LENGTH_SHORT).show()
+                    }
+                    else -> {
                         e.printStackTrace()
-                        launch(Dispatchers.Main) {
-                            Toast.makeText(requireContext(), "Failed to get Google token", Toast.LENGTH_SHORT).show()
-                        }
+                        Toast.makeText(requireContext(), "Google sign-in failed: ${e.statusCode}", Toast.LENGTH_SHORT).show()
                     }
                 }
             }
@@ -565,18 +580,18 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
         dialog.setContentView(R.layout.choose_export_dialog)
 
         dialog.findViewById<ImageButton>(R.id.googleCalendarImageButton).setOnClickListener {
-            exportAllEventsToGoogleCalendar()
+            exportAllEventsToGoogleCalendar(dialog)
         }
 
         dialog.findViewById<ImageButton>(R.id.outlookCalendarImageButton).setOnClickListener {
-            acquireOutlookTokenAndExport()
+            acquireOutlookTokenAndExport(dialog)
         }
 
         dialog.show()
 
     }
 
-    private fun exportAllEventsToGoogleCalendar() {
+    private fun exportAllEventsToGoogleCalendar(dialog: Dialog) {
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestEmail()
             .requestScopes(Scope("https://www.googleapis.com/auth/calendar"))
@@ -586,6 +601,15 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
 
         client.signOut().addOnCompleteListener {
             googleSignInLauncher.launch(client.signInIntent)
+        }
+
+        exportViewModel.exportState.observe(viewLifecycleOwner) { state ->
+            if (state == "success") {
+                Toast.makeText(requireContext(), "Export completed!", Toast.LENGTH_SHORT).show()
+                dialog.dismiss()
+            } else if (state == "failure") {
+                Toast.makeText(requireContext(), "Export failed!", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
@@ -622,63 +646,78 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
         )
     }
 
-    private fun acquireOutlookTokenAndExport() {
+    private fun acquireOutlookTokenAndExport(dialog: Dialog) {
         val scopes = arrayOf("User.Read", "Calendars.ReadWrite")
 
         if (!::msalApp.isInitialized) {
-            Toast.makeText(requireContext(), "MSAL not ready yet", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), "Service not ready yet", Toast.LENGTH_SHORT).show()
             return
         }
 
-        msalApp.acquireToken(
-            requireActivity(),
-            scopes,
-            object : AuthenticationCallback {
-                override fun onSuccess(result: IAuthenticationResult) {
-                    msalAccount = result.account
-                    val token = result.accessToken
+        if (msalAccount != null) {
+            msalApp.signOut(object : ISingleAccountPublicClientApplication.SignOutCallback {
+                override fun onSignOut() {
+                    msalAccount = null
+                    msalApp.signIn(
+                        requireActivity(),
+                        null, // no login hint
+                        scopes,
+                        object : AuthenticationCallback {
+                            override fun onSuccess(result: IAuthenticationResult) {
+                                msalAccount = result.account
+                                val token = result.accessToken
+                                lifecycleScope.launch(Dispatchers.IO) {
+                                    exportViewModel.exportEventsToOutlookGraph(thisCalendar!!.events, token)
+                                }
 
-                    lifecycleScope.launch(Dispatchers.IO) {
-                        exportViewModel.exportEventsToOutlookGraph(thisCalendar!!.events, token)
-                    }
+                                dialog.dismiss()
+                            }
+
+                            override fun onError(exception: MsalException) {
+                                Log.e("MSAL", "Sign-in failed: ${exception.message}")
+                                Toast.makeText(requireContext(), "Outlook sign-in failed", Toast.LENGTH_SHORT).show()
+                            }
+
+                            override fun onCancel() {
+                                Log.d("MSAL", "User cancelled login")
+                            }
+                        }
+                    )
                 }
 
                 override fun onError(exception: MsalException) {
-                    Log.e("MSAL", "SignIn failed: ${exception.message}")
-                    Toast.makeText(requireContext(), "Outlook sign-in failed", Toast.LENGTH_SHORT).show()
+                    Log.e("MSAL", "Sign-out failed: ${exception.message}")
                 }
+            })
+        } else {
+            // No signed-in account → force interactive login
+            msalApp.signIn(
+                requireActivity(),
+                null, // no login hint
+                scopes,
+                object : AuthenticationCallback {
+                    override fun onSuccess(result: IAuthenticationResult) {
+                        msalAccount = result.account
+                        val token = result.accessToken
+                        lifecycleScope.launch(Dispatchers.IO) {
+                            exportViewModel.exportEventsToOutlookGraph(thisCalendar!!.events, token)
+                        }
 
-                override fun onCancel() {
-                    Log.d("MSAL", "User cancelled login")
+                        dialog.dismiss()
+
+                    }
+
+                    override fun onError(exception: MsalException) {
+                        Log.e("MSAL", "Sign-in failed: ${exception.message}")
+                        Toast.makeText(requireContext(), "Outlook sign-in failed", Toast.LENGTH_SHORT).show()
+                    }
+
+                    override fun onCancel() {
+                        Log.d("MSAL", "User cancelled login")
+                    }
                 }
-            }
-        )
-    }
-
-
-    private fun forceInteractiveLogin() {
-        val scopes = arrayOf("User.Read", "Calendars.ReadWrite")
-
-        msalApp.acquireToken(
-            requireActivity(),
-            scopes,
-            object : AuthenticationCallback {
-                override fun onSuccess(result: IAuthenticationResult) {
-                    msalAccount = result.account
-                    val token = result.accessToken
-
-                    // Continue with export using this token
-                }
-
-                override fun onError(exception: MsalException?) {
-                    exception?.printStackTrace()
-                }
-
-                override fun onCancel() {
-                    // User canceled login
-                }
-            }
-        )
+            )
+        }
     }
 
     fun Int.dpToPx(): Int = (this * Resources.getSystem().displayMetrics.density).toInt()

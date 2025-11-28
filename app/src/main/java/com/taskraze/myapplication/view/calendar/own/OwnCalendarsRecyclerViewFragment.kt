@@ -78,7 +78,6 @@ class OwnCalendarsRecyclerViewFragment : Fragment(), CalendarDialogFragment.Cale
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 calendarViewModel.loadCalendars()
                 calendarViewModel.calendars.collect { calendarList ->
-                    Log.d("SCHEDULEDasd", "Events loaded: ${calendarViewModel.events.value}")
 
                     adapter.updateData(calendarList)
                 }
