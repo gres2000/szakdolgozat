@@ -105,6 +105,7 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
     private lateinit var authViewModel: AuthViewModel
     private lateinit var msalApp: ISingleAccountPublicClientApplication
     private var msalAccount = null as com.microsoft.identity.client.IAccount?
+    private var chooseFriendDialog: Dialog? = null
 
     private val eventColors = listOf(
         "#F44336".toColorInt(), "#E91E63".toColorInt(), "#9C27B0".toColorInt(),
@@ -223,10 +224,14 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
         thisCalendar = viewModel.getCalendarToFragment()
 
         exportViewModel.exportState.observe(viewLifecycleOwner) { state ->
-            when (state) {
-                "success" -> Toast.makeText(requireContext(), "Export completed!", Toast.LENGTH_SHORT).show()
-                "failure" -> Toast.makeText(requireContext(), "Export failed!", Toast.LENGTH_SHORT).show()
+            if (state == null) return@observe
+            if (state == "success") {
+                Toast.makeText(requireContext(), "Export completed!", Toast.LENGTH_SHORT).show()
+            } else if (state == "failure") {
+                Toast.makeText(requireContext(), "Export failed!", Toast.LENGTH_SHORT).show()
             }
+            exportViewModel.resetExportState()
+            chooseFriendDialog?.dismiss()
         }
 
         (requireActivity() as AppCompatActivity).setSupportActionBar(toolbar)
@@ -260,7 +265,7 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
                 thisCalendar!!.sharedPeople,
                 null,
                 this@CalendarDetailFragment,
-                authViewModel.getUserId() == thisCalendar!!.owner.userId // TODO this should be owner.userId
+                authViewModel.getUserId() == thisCalendar!!.owner.userId
             )
             binding.recyclerViewUsers.adapter = usersAdapter
         }
@@ -498,9 +503,10 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
     }
 
     private fun showChooseFriendDialog() {
-        val dialog = Dialog(requireContext())
+        chooseFriendDialog = Dialog(requireContext())
+        val dialog = chooseFriendDialog!!
         dialog.setContentView(R.layout.choose_friend_dialog)
-        dialog.findViewById<TextView>(R.id.dialog_message).text = getString(R.string.choose_a_friend_to_add_to_this_calendar)
+        val dialogMessage = dialog.findViewById<TextView>(R.id.dialog_message)
 
         val chooseFriendRecyclerView = dialog.findViewById<RecyclerView>(R.id.chooseFriendRecyclerView)
         chooseFriendRecyclerView.layoutManager = GridLayoutManager(requireContext(), 3)
@@ -510,6 +516,16 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
             for (user in thisCalendar!!.sharedPeople){
                 friendList.remove(user)
             }
+            friendList.removeAll { it.userId == thisCalendar!!.owner.userId || it.email == thisCalendar!!.owner.email }
+
+            if (friendList.isEmpty()) {
+                dialogMessage.text = getString(R.string.no_available_friends_to_add_to_this_calendar)
+                chooseFriendRecyclerView.visibility = View.GONE
+            } else {
+                dialogMessage.text = getString(R.string.choose_a_friend_to_add_to_this_calendar)
+                chooseFriendRecyclerView.visibility = View.VISIBLE
+            }
+
             val adapter = CustomUsersAdapter(requireContext() as AppCompatActivity, friendList, this, null,false)
             adapter.setItemClickedPrompt(getString(R.string.add_selected_user_to_shared_calendar))
             chooseFriendRecyclerView.adapter = adapter
@@ -526,6 +542,11 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
             calendarViewModel.addUserToCalendar(receiverUser, thisCalendar!!.id, thisCalendar!!.owner.userId)
             (binding.recyclerViewUsers.adapter as CustomUsersAdapter).addItem(receiverUser)
             binding.recyclerViewUsers.adapter!!.notifyItemInserted(thisCalendar!!.sharedPeopleNumber)
+
+            thisCalendar!!.sharedPeopleNumber++
+
+            chooseFriendDialog?.dismiss()
+            chooseFriendDialog = null
         }
     }
 
@@ -590,7 +611,6 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
         }
 
         dialog.show()
-
     }
 
     private fun exportAllEventsToGoogleCalendar(dialog: Dialog) {
@@ -606,12 +626,14 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
         }
 
         exportViewModel.exportState.observe(viewLifecycleOwner) { state ->
+            if (state == null) return@observe
             if (state == "success") {
                 Toast.makeText(requireContext(), "Export completed!", Toast.LENGTH_SHORT).show()
                 dialog.dismiss()
             } else if (state == "failure") {
                 Toast.makeText(requireContext(), "Export failed!", Toast.LENGTH_SHORT).show()
             }
+            exportViewModel.resetExportState()
         }
     }
 

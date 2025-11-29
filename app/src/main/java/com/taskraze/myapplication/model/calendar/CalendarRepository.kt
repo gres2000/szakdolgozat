@@ -118,6 +118,7 @@ class CalendarRepository(private val authViewModel: AuthViewModel) {
     }
 
     suspend fun addSharedUserToCalendar(sharedUser: UserData, calendarId: Long, ownerId: String) {
+        Log.d("VALAMINEMJO", "Adding shared user: $sharedUser to calendarId: $calendarId owned by: $ownerId")
         try {
             val userDocRef = userInCalendarsCollection.document(sharedUser.email)
             val existingDoc = userDocRef.get().await()
@@ -128,13 +129,15 @@ class CalendarRepository(private val authViewModel: AuthViewModel) {
             val ownerDocRef = calendarsCollection.document(ownerId)
             val ownerCalendars = ownerDocRef.get().await()
                 .toObject(UserCalendarsData::class.java)?.calendars?.toMutableList() ?: mutableListOf()
-
+            Log.d("VALAMINEMJO", "Owner calendars before adding shared user: $ownerCalendars")
             val targetCalendar = ownerCalendars.firstOrNull { it.id == calendarId }
             if (targetCalendar != null) {
 
                 // avoid duplicates
-                if (targetCalendar.sharedPeople.none { it.userId == sharedUser.userId }) {
+                val userIdentifier = sharedUser.userId.ifBlank { sharedUser.email }
+                if (targetCalendar.sharedPeople.none { it.userId == userIdentifier }) {
                     targetCalendar.sharedPeople.add(sharedUser)
+                    targetCalendar.sharedPeopleNumber++
                     ownerDocRef.update("calendars", ownerCalendars).await()
                 }
             }
@@ -224,8 +227,8 @@ class CalendarRepository(private val authViewModel: AuthViewModel) {
     suspend fun deleteSharedUsersFromCalendar(sharedUsers: MutableList<UserData>, calendarId: Long) {
         try {
 
-            for (myUser in sharedUsers) {
-                val existingDoc = userInCalendarsCollection.document(myUser.email).get().await()
+            for (user in sharedUsers) {
+                val existingDoc = userInCalendarsCollection.document(user.email).get().await()
 
                 if (existingDoc.exists()) {
                     val ownerList = existingDoc.get("owners") as? List<*>
@@ -239,11 +242,11 @@ class CalendarRepository(private val authViewModel: AuthViewModel) {
                     mutableOwnerList.remove(userData)
 
                     if (mutableOwnerList.isNotEmpty()) {
-                        userInCalendarsCollection.document(myUser.email)
+                        userInCalendarsCollection.document(user.email)
                             .update("owners", mutableOwnerList)
                             .await()
                     } else {
-                        userInCalendarsCollection.document(myUser.email)
+                        userInCalendarsCollection.document(user.email)
                             .delete()
                     }
                 }

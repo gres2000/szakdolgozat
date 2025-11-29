@@ -74,13 +74,13 @@ class FoundUsersActivity : AppCompatActivity() {
                                 .map { it.receiverId }
                                 .toSet()
                             Log.d("FoundUsersActivitytag", "Pending receiver IDs: $pendingReceiverIds")
-                            dataList.removeAll(alreadyFriends)
+                            dataList.removeAll { it.userId == authViewModel.getUserId() || it.email == authViewModel.getUserId() }
                             dataList.remove(authViewModel.loggedInUser.value)
                             dataList.removeAll { pendingReceiverIds.contains(it.email) }
                             Log.d("FoundUsersActivitytag", "final receiver IDs: $dataList")
 
                             foundUsersRecyclerView.adapter =
-                                CustomFoundUsersAdapter(this@FoundUsersActivity, dataList)
+                                CustomFoundUsersAdapter(this@FoundUsersActivity, dataList, false)
                             (foundUsersRecyclerView.adapter as CustomFoundUsersAdapter).notifyDataSetChanged()
                         }
                     }

@@ -27,7 +27,7 @@ import kotlinx.coroutines.tasks.await
 import java.security.MessageDigest
 import java.util.Calendar
 
-class MainViewModel(private val userId: String, val userData: UserData) : ViewModel() {
+class MainViewModel(private val userId: String, private val userData: UserData) : ViewModel() {
     private val firestoreDB = FirebaseFirestore.getInstance()
     var auth = Firebase.auth
     private var _CalendarDataToPass: CalendarData? = null
@@ -376,9 +376,10 @@ class MainViewModel(private val userId: String, val userData: UserData) : ViewMo
         val chatsRef = database.getReference("chats")
         val usersRef = chatsRef.child(chatData.id).child("users")
 
-        val currentUserEmail = userId
 
-        val index = chatData.users.indexOfFirst { it.email == currentUserEmail }
+        val index = chatData.users.indexOfFirst {
+            it.email == userId || it.userId == userId
+        }
 
         if (index == -1) {
             Toast.makeText(context, "You are not in this chat.", Toast.LENGTH_SHORT).show()
@@ -392,7 +393,7 @@ class MainViewModel(private val userId: String, val userData: UserData) : ViewMo
                 Toast.makeText(context, "Quit chat successfully", Toast.LENGTH_SHORT).show()
 
                 val leaveMessage = FriendlyMessage(
-                    "# # # # # #\n${currentUserEmail} has left the chat\n# # # # # #",
+                    "# # # # # #\n${userId} has left the chat\n# # # # # #",
                     "System"
                 )
 

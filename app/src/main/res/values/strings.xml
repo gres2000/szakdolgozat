@@ -83,6 +83,7 @@
     <string name="overlay_menu">Overlay Menu</string>
     <string name="recommendations">Automatic recommendations based on events and tasks</string>
     <string name="tag">Tag</string>
+    <string name="no_available_friends_to_add_to_this_calendar">No available friends to add to this calendar</string>
 
 
 </resources>

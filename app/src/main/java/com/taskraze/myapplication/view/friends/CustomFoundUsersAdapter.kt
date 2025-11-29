@@ -3,7 +3,9 @@ package com.taskraze.myapplication.view.friends
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
+import android.view.View.GONE
 import android.view.ViewGroup
+import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
@@ -19,10 +21,15 @@ import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.taskraze.myapplication.model.calendar.UserData
 
-class CustomFoundUsersAdapter(private val activity: AppCompatActivity, private val dataList: MutableList<UserData>) : RecyclerView.Adapter<CustomFoundUsersAdapter.FoundUsersItemViewHolder>() {
+class CustomFoundUsersAdapter(
+    private val activity: AppCompatActivity,
+    private val dataList: MutableList<UserData>,
+    private val deleteButtonVisibility: Boolean
+) : RecyclerView.Adapter<CustomFoundUsersAdapter.FoundUsersItemViewHolder>() {
     inner class FoundUsersItemViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val profilePictureImageView: ImageView = itemView.findViewById(R.id.imageViewProfilePicture)
         val usernameTextView: TextView = itemView.findViewById(R.id.textViewUserName)
+        val deleteImageButton: ImageButton = itemView.findViewById(R.id.imageButtonDelete)
         lateinit var viewModel: MainViewModel
     }
 
@@ -37,6 +44,10 @@ class CustomFoundUsersAdapter(private val activity: AppCompatActivity, private v
         val currentItem = dataList[position]
         viewHolder.usernameTextView.text = currentItem.username
         viewHolder.profilePictureImageView.setImageResource(R.drawable.ic_account_circle_black_36dp)
+
+        if (!deleteButtonVisibility) {
+            viewHolder.deleteImageButton.visibility = GONE
+        }
 
         viewHolder.itemView.setOnClickListener {
             showFriendRequestDialog(position)
@@ -68,7 +79,7 @@ class CustomFoundUsersAdapter(private val activity: AppCompatActivity, private v
             val friendRequestData = hashMapOf(
                 "receiverId" to receiverUserId,
                 "senderId" to senderUserId,
-                "status" to "pending" // Set initial status as pending
+                "status" to "pending"
             )
 
             friendRequestsCollection

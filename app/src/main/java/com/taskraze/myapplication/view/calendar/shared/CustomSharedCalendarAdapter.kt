@@ -27,7 +27,10 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
-class CustomSharedCalendarAdapter(private val activity: AppCompatActivity, private val dataList: MutableList<CalendarData>) : RecyclerView.Adapter<CustomSharedCalendarAdapter.SharedCalendarItemViewHolder>() {
+class CustomSharedCalendarAdapter(
+    private val activity: AppCompatActivity,
+    private val dataList: MutableList<CalendarData>
+) : RecyclerView.Adapter<CustomSharedCalendarAdapter.SharedCalendarItemViewHolder>() {
     inner class SharedCalendarItemViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val titleTextView: TextView = itemView.findViewById(R.id.textViewTitleCalendarItem)
         val numberTextView: TextView = itemView.findViewById(R.id.textViewPeopleNumber)

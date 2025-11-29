@@ -98,7 +98,6 @@ class StartChatActivity: AppCompatActivity(), CustomUsersAdapter.ChatActionListe
         startNewChat.setOnClickListener{
             viewModel.viewModelScope.launch {
                 showChooseFriendDialog()
-
             }
         }
     }

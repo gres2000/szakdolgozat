@@ -16,7 +16,13 @@ import com.taskraze.myapplication.R
 import com.taskraze.myapplication.model.calendar.UserData
 import com.taskraze.myapplication.viewmodel.MainViewModel
 
-class CustomUsersAdapter(private val activity: AppCompatActivity, private val dataList: MutableList<UserData>, private val chatActionListener: ChatActionListener?, private val deleteActionListener: DeleteActionListener?, private val deleteButtonVisibility: Boolean) : RecyclerView.Adapter<CustomUsersAdapter.FriendsItemViewHolder>() {
+class CustomUsersAdapter(
+    private val activity: AppCompatActivity,
+    private val dataList: MutableList<UserData>,
+    private val chatActionListener: ChatActionListener?,
+    private val deleteActionListener: DeleteActionListener?,
+    private val deleteButtonVisibility: Boolean
+) : RecyclerView.Adapter<CustomUsersAdapter.FriendsItemViewHolder>() {
     private lateinit var dialogPrompt: String
 
     inner class FriendsItemViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
@@ -28,7 +34,6 @@ class CustomUsersAdapter(private val activity: AppCompatActivity, private val da
 
     interface ChatActionListener {
         fun onUserClickConfirmed(receiverUser: UserData)
-
     }
 
     interface DeleteActionListener {

@@ -18,8 +18,8 @@ import java.time.format.DateTimeFormatter
 
 class CalendarExportViewModel : ViewModel() {
 
-    private val _exportState = MutableLiveData<String>()
-    val exportState: LiveData<String> get() = _exportState
+    private val _exportState = MutableLiveData<String?>()
+    val exportState: LiveData<String?> get() = _exportState
 
     private val client = OkHttpClient()
     private val dtFormatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME
@@ -37,7 +37,6 @@ class CalendarExportViewModel : ViewModel() {
                     val startZoned = event.startTime.toInstant().atZone(ZoneId.systemDefault())
                     val endZoned = event.endTime.toInstant().atZone(ZoneId.systemDefault())
 
-                    // Ensure endTime > startTime
                     val adjustedEnd = if (!endZoned.isAfter(startZoned)) startZoned.plusMinutes(1) else endZoned
 
                     val startTime = dtFormatter.format(startZoned)
@@ -124,16 +123,13 @@ class CalendarExportViewModel : ViewModel() {
                     client.newCall(request).execute().use { resp ->
                         val body = resp.body?.string()
                         if (resp.isSuccessful) {
-                            Log.d("CalendarExport", "Inserted event: ${event.title}, response: $body")
                         } else {
                             Log.e("CalendarExport", "Failed event: ${event.title}, response: $body")
-                            // Only throw if you want the whole batch to fail
                             throw Exception("Outlook API failed for event: ${event.title}")
                         }
                     }
                 }
 
-                // All events succeeded
                 _exportState.postValue("success")
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -142,4 +138,7 @@ class CalendarExportViewModel : ViewModel() {
         }
     }
 
+    fun resetExportState() {
+        _exportState.value = null
+    }
 }

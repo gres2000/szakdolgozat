@@ -3,6 +3,7 @@ package com.taskraze.myapplication.view.friends
 import AuthViewModelFactory
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
 import android.widget.ImageButton
 import androidx.appcompat.app.AppCompatActivity
 import android.widget.SearchView
@@ -36,10 +37,18 @@ class FriendsActivity : AppCompatActivity(), CustomFriendRequestAdapter.OnAccept
     private lateinit var friendRequestNumberTextView: TextView
     private val searchViewQueryListener = object : SearchView.OnQueryTextListener {
         override fun onQueryTextSubmit(query: String?): Boolean {
+            // disable lsitener
+            searchBarSearchView.setOnQueryTextListener(null)
+
             if (!query.isNullOrEmpty()) {
                 val intent = Intent(this@FriendsActivity, FoundUsersActivity::class.java)
                 intent.putExtra("searchQuery", query)
                 startActivity(intent)
+
+                // re-enable listener
+                searchBarSearchView.postDelayed({
+                    searchBarSearchView.setOnQueryTextListener(this)
+                }, 1000)
             }
             return true
         }
@@ -92,10 +101,18 @@ class FriendsActivity : AppCompatActivity(), CustomFriendRequestAdapter.OnAccept
         }
 
         searchButtonImageButton.setOnClickListener {
+            // disable button
+            searchButtonImageButton.isEnabled = false
+
             val query = searchBarSearchView.query.toString()
             searchBarSearchView.onActionViewExpanded()
             searchBarSearchView.clearFocus()
             searchBarSearchView.setQuery(query, true)
+
+            // re-enable button
+            searchButtonImageButton.postDelayed({
+                searchButtonImageButton.isEnabled = true
+            }, 1000)
         }
     }
 
