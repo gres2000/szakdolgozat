@@ -85,7 +85,6 @@ class CustomEventAdapter(
                 }
             }
 
-        // Clicks
         holder.deleteEventImageButton.setOnClickListener {
             val pos = holder.bindingAdapterPosition
             if (pos != RecyclerView.NO_POSITION) showDeleteDialog(pos)
@@ -129,13 +128,10 @@ class CustomEventAdapter(
 
         buttonDelete.setOnClickListener {
             if (position != RecyclerView.NO_POSITION) {
-                // Notify fragment or listener
                 onEventActionListener?.onItemRemoved(dataList[position])
 
-                // Remove from adapter list
                 dataList.removeAt(position)
 
-                // Update RecyclerView
                 notifyItemRemoved(position)
             }
             dialog.dismiss()

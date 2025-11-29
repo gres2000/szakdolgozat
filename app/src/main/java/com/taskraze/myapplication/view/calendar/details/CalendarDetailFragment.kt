@@ -126,7 +126,7 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
         if (data != null) {
             try {
                 val task = GoogleSignIn.getSignedInAccountFromIntent(data)
-                val account = task.getResult(ApiException::class.java) // <-- handle exceptions properly
+                val account = task.getResult(ApiException::class.java)
                 if (account != null && account.account != null) {
                     viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
                         try {
@@ -452,8 +452,8 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
                         it.startTime.toInstant().atZone(ZoneId.systemDefault()).toLocalDate() == selectedDate
                     }
                 )
-
-                if (calendar.owner.userId == authViewModel.getUserId()) {
+                val userIdentifier = calendar.owner.userId.ifBlank { calendar.owner.email }
+                if (userIdentifier == authViewModel.getUserId()) {
                     calendarViewModel.updateCalendar(calendar)
                 } else {
                     calendarViewModel.updateSharedCalendar(calendar)
@@ -468,6 +468,7 @@ class CalendarDetailFragment : Fragment(), EventDetailFragment.EventDetailListen
         thisCalendar?.let { calendar ->
             calendar.events.remove(event)
             calendarViewModel.updateCalendar(calendar)
+            calendarViewModel.updateSharedCalendar(calendar)
 
             val startDate = event.startTime.toInstant()
                 .atZone(ZoneId.systemDefault())

@@ -58,7 +58,6 @@ class OverlayService : Service() {
 
     private fun setupBubbleClick() {
         bubbleIcon.setOnClickListener {
-            // Animate bubble
             bubbleIcon.animate()
                 .scaleX(1.2f)
                 .scaleY(1.2f)
