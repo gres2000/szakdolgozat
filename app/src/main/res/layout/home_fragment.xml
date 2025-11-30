@@ -112,9 +112,9 @@
 
 
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/suggestedEventsRecyclerView"
+        android:id="@+id/recommendedItemsRecyclerView"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="400dp"
         android:padding="8dp"
         android:scrollbars="vertical" />
 

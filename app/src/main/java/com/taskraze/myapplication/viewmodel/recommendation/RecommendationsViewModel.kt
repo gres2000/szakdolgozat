@@ -5,6 +5,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.firestore.FirebaseFirestore
 import com.taskraze.myapplication.model.recommendation.TagData
+import com.taskraze.myapplication.view.recommendation.Recommendation
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.launch
 
@@ -16,6 +19,11 @@ class RecommendationsViewModel(
     private val userDocRef = db
         .collection("tags")
         .document(userId)
+
+    private val recommendedCollection = db.collection("recommended_items")
+
+    private val _recommendations = MutableStateFlow<List<Recommendation>>(emptyList())
+    val recommendations: StateFlow<List<Recommendation>> = _recommendations
 
     fun saveTag(parentId: String, tag: String, weight: Int = 1) {
         val newTag = TagData(tag = tag, weight = weight, refId = parentId)
@@ -53,7 +61,7 @@ class RecommendationsViewModel(
     }
 
 
-    suspend fun getUserTags(): List<TagData> {
+    private suspend fun getUserTags(): List<TagData> {
         return try {
             val snapshot = userDocRef.get().await()
             if (snapshot.exists()) {
@@ -89,35 +97,32 @@ class RecommendationsViewModel(
         }
     }
 
+    fun resetRecommendations() {
+        _recommendations.value = emptyList()
+    }
 
-    suspend fun getRecommendedItems(): List<String> {
+    private suspend fun getRecommendedTags(): Set<String> {
         val tags = getUserTags()
-        if (tags.isEmpty()) return emptyList()
+        if (tags.isEmpty()) return emptySet()
 
         val k = minOf(3, tags.size)
         val clusters = kMeans(tags, k)
-        // Example: pick the cluster of the last tag
-        val lastTag = tags.last()
-        val cluster = clusters.values.find { it.contains(lastTag) } ?: return emptyList()
 
-        return cluster.map { it.tag }.distinct().filter { it != lastTag.tag }
+        return clusters.values.flatten().map { it.tag.trim() }.toSet()
     }
 
     private fun kMeans(tags: List<TagData>, kClusters: Int, maxIterations: Int = 100): Map<Int, List<TagData>> {
-        // 1. Convert tags to vectors (one-hot or weighted)
         val allTagNames = tags.map { it.tag }.distinct()
         val vectors = tags.map { tag ->
             allTagNames.map { name -> if (name == tag.tag) tag.weight.toDouble() else 0.0 }
         }
 
-        // 2. Randomly initialize k centroids
         val centroids = vectors.shuffled().take(kClusters).toMutableList()
         var clusters: Map<Int, MutableList<TagData>> = (0 until kClusters).associateWith { mutableListOf<TagData>() }
 
         repeat(maxIterations) {
             clusters = (0 until kClusters).associateWith { mutableListOf<TagData>() }
 
-            // 3. Assign vectors to nearest centroid
             for ((i, vec) in vectors.withIndex()) {
                 val closest = centroids.mapIndexed { index, centroid ->
                     index to euclideanDistance(vec, centroid)
@@ -125,7 +130,6 @@ class RecommendationsViewModel(
                 clusters[closest]?.add(tags[i])
             }
 
-            // 4. Update centroids
             for (i in 0 until kClusters) {
                 val clusterList = clusters[i]
                 if (!clusterList.isNullOrEmpty()) {
@@ -144,5 +148,45 @@ class RecommendationsViewModel(
 
     private fun euclideanDistance(a: List<Double>, b: List<Double>): Double {
         return kotlin.math.sqrt(a.zip(b).sumOf { (x, y) -> (x - y) * (x - y) })
+    }
+
+    fun loadRecommendationsForUser() {
+        viewModelScope.launch {
+            try {
+                val recommendedTags = getRecommendedTags()
+                val allItems = fetchAllRecommendations()
+
+                if (recommendedTags.isEmpty()) {
+                    _recommendations.value = allItems
+                    return@launch
+                }
+
+                val scored = allItems.map { item ->
+                    val matchCount = item.tags.count { it.trim() in recommendedTags }
+                    item to matchCount
+                }
+
+                val filteredSorted = scored
+                    .filter { it.second > 0 }
+                    .sortedByDescending { it.second }
+                    .map { it.first }
+
+                _recommendations.value = filteredSorted.ifEmpty { allItems }
+
+            } catch (e: Exception) {
+                Log.e("RecommendationsVM", "Failed to load recommendations: ${e.message}")
+                _recommendations.value = emptyList()
+            }
+        }
+    }
+
+    private suspend fun fetchAllRecommendations(): List<Recommendation> {
+        return try {
+            val snapshot = recommendedCollection.get().await()
+            snapshot.documents.mapNotNull { it.toObject(Recommendation::class.java) }
+        } catch (e: Exception) {
+            Log.e("RecommendationsVM", "Error fetching recommended items: ${e.message}")
+            emptyList()
+        }
     }
 }

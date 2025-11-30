@@ -25,15 +25,16 @@ import com.taskraze.myapplication.view.chat.StartChatActivity
 import com.taskraze.myapplication.view.friends.FriendsActivity
 import com.taskraze.myapplication.viewmodel.MainViewModel
 import com.taskraze.myapplication.databinding.HomeFragmentBinding
-import com.taskraze.myapplication.model.calendar.UserData
 import com.taskraze.myapplication.model.home.InternetConnectivityCallback
 import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
 import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.launch
 import androidx.core.net.toUri
 import androidx.lifecycle.ViewModelProvider
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.taskraze.myapplication.view.overlay_widget.OverlayService
 import com.taskraze.myapplication.viewmodel.MainViewModelFactory
+import com.taskraze.myapplication.viewmodel.recommendation.CustomRecommendationsAdapter
 import com.taskraze.myapplication.viewmodel.recommendation.RecommendationsViewModel
 import com.taskraze.myapplication.viewmodel.recommendation.RecommendationsViewModelFactory
 
@@ -45,7 +46,8 @@ class HomeFragment : Fragment() {
     private lateinit var openFriendsButton: Button
     private lateinit var overlayMenuSwitch: SwitchCompat
     private lateinit var recommendationsSwitch: SwitchCompat
-    private lateinit var suggestedEventsRecyclerView: RecyclerView
+    private lateinit var recommendedItemsRecyclerView: RecyclerView
+    private lateinit var adapter: CustomRecommendationsAdapter
     private lateinit var connectivityCallback: InternetConnectivityCallback
     private lateinit var authViewModel: AuthViewModel
     private lateinit var viewModel: MainViewModel
@@ -97,13 +99,23 @@ class HomeFragment : Fragment() {
         currentUserTextView = binding.textViewCurrentUser
         openChatButton = binding.openChatButton
         openFriendsButton = binding.openFriendsButton
-        suggestedEventsRecyclerView = binding.suggestedEventsRecyclerView
+        recommendedItemsRecyclerView = binding.recommendedItemsRecyclerView
         overlayMenuSwitch = binding.switchOverlayMenu
         recommendationsSwitch = binding.switchRecommendations
+
+        adapter = CustomRecommendationsAdapter(emptyList())
+        recommendedItemsRecyclerView.adapter = adapter
+        recommendedItemsRecyclerView.layoutManager = LinearLayoutManager(requireContext())
 
         lifecycleScope.launch {
             authViewModel.loggedInUser.collect { user ->
                 currentUserTextView.text = user?.username ?: getString(R.string.not_logged_in)
+            }
+        }
+
+        lifecycleScope.launch {
+            recommendationsViewModel.recommendations.collect { items ->
+                adapter.updateItems(items)
             }
         }
 
@@ -153,9 +165,17 @@ class HomeFragment : Fragment() {
 
             if (isChecked) {
                 lifecycleScope.launch {
-                    val recommendedTags = recommendationsViewModel.getRecommendedItems()
-                    Log.d("HomeFragmentasdf", "Recommended tags: $recommendedTags")
+                    recommendationsViewModel.loadRecommendationsForUser()
                 }
+
+                lifecycleScope.launch {
+                    recommendationsViewModel.recommendations.collect { items ->
+                        adapter.updateItems(items)
+                    }
+                }
+            } else {
+                adapter.updateItems(emptyList())
+                recommendationsViewModel.resetRecommendations()
             }
         }
 
