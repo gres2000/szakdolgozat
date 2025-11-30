@@ -65,7 +65,7 @@ class ChatActivity: AppCompatActivity() {
         binding.messageRecyclerView.adapter = adapter
         binding.chatTitle.text = intent.getStringExtra("chatName")
 
-        //scroll to bottom
+        // scroll to bottom
         adapter.registerAdapterDataObserver(
             MyScrollToBottomObserver(binding.messageRecyclerView, adapter, manager)
         )

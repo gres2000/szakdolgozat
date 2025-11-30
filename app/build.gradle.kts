@@ -1,13 +1,10 @@
 plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.jetbrainsKotlinAndroid)
-    // Add the Google services Gradle plugin
     id("com.google.gms.google-services")
     id("kotlin-kapt")
     id("com.google.devtools.ksp")
     id("kotlin-parcelize")
-
-
 }
 
 configurations.all {
@@ -38,7 +35,6 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // Uncomment only if you run into multidex issues
         multiDexEnabled = true
     }
 
@@ -82,7 +78,6 @@ dependencies {
     implementation("com.google.firebase:firebase-firestore-ktx")
     implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-database")
-    implementation("com.google.firebase:firebase-analytics")
 
     implementation("com.firebaseui:firebase-ui-database:8.0.2")
     implementation("com.firebaseui:firebase-ui-firestore:8.0.2")

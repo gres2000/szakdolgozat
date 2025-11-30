@@ -22,7 +22,7 @@ class CustomTaskAdapter(
     private val fragment: DailyFragment,
     private val activity: AppCompatActivity,
     private val mode: DailyFragment.Mode,
-    private val tasks: MutableList<TaskData> // directly pass the ViewModel list
+    private val tasks: MutableList<TaskData>
 ) : RecyclerView.Adapter<CustomTaskAdapter.TaskViewHolder>() {
 
     private val taskViewModel = ViewModelProvider(activity)[TaskViewModel::class.java]
@@ -55,7 +55,6 @@ class CustomTaskAdapter(
         holder.description.text = task.description
         holder.time.text = task.time
 
-        // Safe checkbox binding
         holder.checkBox.setOnCheckedChangeListener(null)
         holder.checkBox.isChecked = task.isChecked
         holder.checkBox.setOnCheckedChangeListener { _, isChecked ->
@@ -100,25 +99,5 @@ class CustomTaskAdapter(
         }
 
         dialog.show()
-    }
-
-    // Call these when ViewModel updates
-    fun addTask(task: TaskData) {
-        tasks.add(task)
-        notifyItemInserted(tasks.size - 1)
-    }
-
-    fun updateTask(task: TaskData) {
-        val index = tasks.indexOfFirst { it.taskId == task.taskId }
-        if (index != -1) {
-            tasks[index] = task
-            notifyItemChanged(index)
-        }
-    }
-
-    fun updateAllTasks(newTasks: MutableList<TaskData>) {
-        tasks.clear()
-        tasks.addAll(newTasks)
-        notifyDataSetChanged()
     }
 }
