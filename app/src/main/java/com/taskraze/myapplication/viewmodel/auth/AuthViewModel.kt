@@ -11,11 +11,18 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import androidx.core.content.edit
+import com.google.firebase.Firebase
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.auth
+import com.google.firebase.firestore.firestore
+import com.taskraze.myapplication.common.UserPreferences
 
 class AuthViewModel(private val context: Context) : ViewModel() {
 
+    private val TAG = "AuthViewModel"
     private val authRepository = AuthRepository()
-
+    private val auth: FirebaseAuth = Firebase.auth
+    private val firestoreDB = Firebase.firestore
     private val _loggedInUser = MutableStateFlow<UserData?>(null)
     val loggedInUser = _loggedInUser
 
@@ -32,7 +39,7 @@ class AuthViewModel(private val context: Context) : ViewModel() {
         }
     }
 
-    fun fetchAndCacheUser(userId: String, onComplete: (() -> Unit)? = null) {
+    private fun fetchAndCacheUser(onComplete: (() -> Unit)? = null) {
         viewModelScope.launch {
             val user = authRepository.fetchUserDetails()
             _loggedInUser.value = user
@@ -71,8 +78,68 @@ class AuthViewModel(private val context: Context) : ViewModel() {
                 email = json.optString("name", "")
             )
         } catch (e: Exception) {
-            Log.e("AuthViewModel", "Failed to parse cached user", e)
+            Log.e(TAG, "Failed to parse cached user", e)
             null
         }
+    }
+
+    fun login(email: String, password: String, onResult: (Boolean, String?) -> Unit) {
+        if (email.isBlank() || password.isBlank()) {
+            onResult(false, "Email or password cannot be empty")
+            return
+        }
+
+        auth.signInWithEmailAndPassword(email, password)
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    UserPreferences.setUserLoggedIn(context, true)
+                    fetchAndCacheUser {
+                        onResult(true, null)
+                    }
+                } else {
+                    onResult(false, "Wrong email or password")
+                }
+            }
+    }
+
+    fun logout(onResult: () -> Unit) {
+        loggedInUser.value = UserData("", "empty", "empty")
+
+        auth.signOut()
+
+        UserPreferences.logoutUser(context)
+
+        onResult()
+    }
+
+    fun register(
+        email: String,
+        password: String,
+        username: String,
+        onResult: (Boolean, String?) -> Unit
+    ) {
+        if (email.isBlank() || password.isBlank() || username.isBlank()) {
+            onResult(false, "All fields are required")
+            return
+        }
+
+        auth.createUserWithEmailAndPassword(email, password)
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    val userDoc = hashMapOf(
+                        "email" to email,
+                        "username" to username
+                    )
+                    firestoreDB.collection("registered_users").document(email)
+                        .set(userDoc)
+                        .addOnSuccessListener { Log.d(TAG, "User document written") }
+                        .addOnFailureListener { e -> Log.w(TAG, "Error writing document", e) }
+
+                    onResult(true, null)
+                } else {
+                    val message = task.exception?.message ?: "Authentication failed"
+                    onResult(false, message)
+                }
+            }
     }
 }

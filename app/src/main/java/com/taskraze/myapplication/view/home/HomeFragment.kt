@@ -108,12 +108,11 @@ class HomeFragment : Fragment() {
         }
 
         logoutButton.setOnClickListener {
-            authViewModel.loggedInUser.value = UserData("","empty", "empty")
-            viewModel.auth.signOut()
-            UserPreferences.logoutUser(requireContext())
-            val intent = Intent(requireContext(), LoginActivity::class.java)
-            startActivity(intent)
-            requireActivity().finish()
+            authViewModel.logout {
+                val intent = Intent(requireContext(), LoginActivity::class.java)
+                startActivity(intent)
+                requireActivity().finish()
+            }
         }
 
         openChatButton.setOnClickListener{

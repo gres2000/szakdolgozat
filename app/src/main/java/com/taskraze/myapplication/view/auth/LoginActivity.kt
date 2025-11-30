@@ -8,9 +8,6 @@ import android.widget.Button
 import android.widget.EditText
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.ktx.auth
-import com.google.firebase.ktx.Firebase
 import com.taskraze.myapplication.R
 import com.taskraze.myapplication.databinding.LoginActivityBinding
 import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
@@ -25,7 +22,6 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var registerButton: Button
     private lateinit var emailEditText: EditText
     private lateinit var passwordEditText: EditText
-    private lateinit var auth: FirebaseAuth
     private lateinit var authViewModel: AuthViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,7 +40,6 @@ class LoginActivity : AppCompatActivity() {
         emailEditText = findViewById(R.id.editTextEmail)
         passwordEditText = findViewById(R.id.editTextPassword)
 
-        auth = Firebase.auth
 
         val sharedPreferences = getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
         if (sharedPreferences.getBoolean("isFirstTime", true)) {
@@ -61,35 +56,15 @@ class LoginActivity : AppCompatActivity() {
             val emailInput = emailEditText.text.toString().trim()
             val passwordInput = passwordEditText.text.toString().trim()
 
-            if (emailInput.isEmpty()) {
-                emailEditText.error = "Field cannot be empty"
-                if (passwordInput.isEmpty()) passwordEditText.error = "Field cannot be empty"
-                return@setOnClickListener
-            } else if (passwordInput.isEmpty()) {
-                passwordEditText.error = "Field cannot be empty"
-                return@setOnClickListener
-            }
-
-            auth.signInWithEmailAndPassword(emailInput, passwordInput)
-                .addOnCompleteListener(this) { task ->
-                    if (task.isSuccessful) {
-                        UserPreferences.setUserLoggedIn(this, true)
-                        val userId = auth.currentUser?.uid ?: return@addOnCompleteListener
-
-                        authViewModel.fetchAndCacheUser(userId) {
-                            startActivity(Intent(this, MainActivity::class.java))
-                            finish()
-                        }
-
-                    } else {
-                        emailEditText.error = null
-                        passwordEditText.error = null
-
-                        val genericError = "Wrong email or password"
-                        emailEditText.error = genericError
-                        passwordEditText.error = genericError
-                    }
+            authViewModel.login(emailInput, passwordInput) { success, errorMsg ->
+                if (success) {
+                    startActivity(Intent(this, MainActivity::class.java))
+                    finish()
+                } else {
+                    emailEditText.error = errorMsg
+                    passwordEditText.error = errorMsg
                 }
+            }
         }
 
         registerButton.setOnClickListener {

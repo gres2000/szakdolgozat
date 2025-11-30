@@ -1,5 +1,6 @@
 package com.taskraze.myapplication.view.auth
 
+import AuthViewModelFactory
 import android.content.ContentValues.TAG
 import android.content.Intent
 import android.os.Bundle
@@ -8,12 +9,14 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.ViewModelProvider
 import com.taskraze.myapplication.R
 import com.taskraze.myapplication.databinding.RegisterActivityBinding
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import com.taskraze.myapplication.viewmodel.auth.AuthViewModel
 
 class RegisterActivity : AppCompatActivity() {
     private lateinit var binding: RegisterActivityBinding
@@ -23,7 +26,7 @@ class RegisterActivity : AppCompatActivity() {
     private lateinit var passwordEditText: EditText
     private lateinit var confirmPasswordEditText: EditText
     private lateinit var usernameEditText: EditText
-    private val firestoreDB = Firebase.firestore
+    private lateinit var authViewModel: AuthViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,6 +42,11 @@ class RegisterActivity : AppCompatActivity() {
 
         auth = Firebase.auth
 
+        authViewModel = ViewModelProvider(
+            this,
+            AuthViewModelFactory(this)
+        )[AuthViewModel::class.java]
+
         registerButton.setOnClickListener {
             clearErrors()
 
@@ -47,41 +55,20 @@ class RegisterActivity : AppCompatActivity() {
             val confirmPassword = confirmPasswordEditText.text.toString().trim()
             val username = usernameEditText.text.toString().trim()
 
-            // Validate empty fields
-            var hasError = false
-            if (username.isEmpty()) { usernameEditText.error = "Field cannot be empty"; hasError = true }
-            if (email.isEmpty()) { emailEditText.error = "Field cannot be empty"; hasError = true }
-            if (password.isEmpty()) { passwordEditText.error = "Field cannot be empty"; hasError = true }
-            if (confirmPassword.isEmpty()) { confirmPasswordEditText.error = "Field cannot be empty"; hasError = true }
-            if (hasError) return@setOnClickListener
-
-            // Validate password match
             if (password != confirmPassword) {
                 confirmPasswordEditText.error = "Passwords don't match"
                 return@setOnClickListener
             }
 
-            // Create user in Firebase
-            auth.createUserWithEmailAndPassword(email, password)
-                .addOnCompleteListener(this) { task ->
-                    if (task.isSuccessful) {
-                        // Save additional info in Firestore
-                        val userDoc = hashMapOf(
-                            "email" to email,
-                            "username" to username
-                        )
-                        firestoreDB.collection("registered_users").document(email)
-                            .set(userDoc)
-                            .addOnSuccessListener { Log.d(TAG, "User document written") }
-                            .addOnFailureListener { e -> Log.w(TAG, "Error writing document", e) }
-
-                        Toast.makeText(this, "Registration successful", Toast.LENGTH_SHORT).show()
-                        startActivity(Intent(this, LoginActivity::class.java))
-                        finish()
-                    } else {
-                        handleFirebaseAuthError(task.exception?.message)
-                    }
+            authViewModel.register(email, password, username) { success, errorMsg ->
+                if (success) {
+                    Toast.makeText(this, "Registration successful", Toast.LENGTH_SHORT).show()
+                    startActivity(Intent(this, LoginActivity::class.java))
+                    finish()
+                } else {
+                    handleFirebaseAuthError(errorMsg)
                 }
+            }
         }
     }
 

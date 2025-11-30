@@ -78,14 +78,12 @@ dependencies {
     implementation(libs.androidx.navigation.ui.ktx)
 
     implementation("com.microsoft.identity.client:msal:8.1.0")
-    // Firebase BoM
     implementation(platform("com.google.firebase:firebase-bom:32.8.1"))
     implementation("com.google.firebase:firebase-firestore-ktx")
     implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-database")
     implementation("com.google.firebase:firebase-analytics")
 
-    // FirebaseUI
     implementation("com.firebaseui:firebase-ui-database:8.0.2")
     implementation("com.firebaseui:firebase-ui-firestore:8.0.2")
     implementation("com.firebaseui:firebase-ui-auth:8.0.2")
